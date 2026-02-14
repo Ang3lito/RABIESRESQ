@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}RabiesResQ{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Sidebar collapsed: hide labels; expanded: show labels */
+      #patient-sidebar:not(.sidebar-expanded) .sidebar-label { width: 0; overflow: hidden; opacity: 0; white-space: nowrap; pointer-events: none; }
+      #patient-sidebar.sidebar-expanded .sidebar-label { width: auto; opacity: 1; }
+      #patient-sidebar:not(.sidebar-expanded) .sidebar-expanded\:hidden { display: block; }
+      #patient-sidebar:not(.sidebar-expanded) .sidebar-expanded\:block { display: none; }
+      #patient-sidebar.sidebar-expanded .sidebar-expanded\:hidden { display: none; }
+      #patient-sidebar.sidebar-expanded .sidebar-expanded\:block { display: block; }
+    </style>
+  </head>
+  <body class="min-h-screen bg-white text-slate-900">
+    <div class="flex min-h-screen">
+      <!-- Fixed left sidebar: minimized = icons only, maximized = icons + labels -->
+      <aside id="patient-sidebar" class="flex self-stretch w-16 shrink-0 flex-col border-r border-slate-200 bg-white transition-[width] duration-200 sidebar-expanded:w-48" data-collapsed="true">
+        <div class="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 px-3">
+          <a href="{{ url_for('patient_dashboard') }}" class="sidebar-label flex items-center gap-3 overflow-hidden whitespace-nowrap">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-lg font-bold text-emerald-700">R</span>
+            <span class="font-semibold text-slate-900">RabiesResQ</span>
+          </a>
+          <button type="button" id="sidebar-toggle" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100" aria-label="Toggle sidebar">
+            <svg class="sidebar-expanded:hidden h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+            <svg class="hidden h-5 w-5 sidebar-expanded:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7M18 19l-7-7 7-7"/></svg>
+          </button>
+        </div>
+        <nav class="flex flex-1 flex-col gap-1 overflow-y-auto p-2">
+          <a href="{{ url_for('patient_profile') }}" class="sidebar-item flex items-center gap-3 rounded-lg px-3 py-2.5 {% if active_page == 'profile' %}bg-emerald-50 text-emerald-700 font-medium hover:bg-emerald-100{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}" title="Profile">
+            <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            <span class="sidebar-label overflow-hidden whitespace-nowrap">Profile</span>
+          </a>
+          <a href="{{ url_for('patient_dashboard') }}" class="sidebar-item flex items-center gap-3 rounded-lg px-3 py-2.5 {% if active_page == 'dashboard' %}bg-emerald-50 text-emerald-700 font-medium hover:bg-emerald-100{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}" title="Home">
+            <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            <span class="sidebar-label overflow-hidden whitespace-nowrap">Home</span>
+          </a>
+          <a href="#" class="sidebar-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900" title="Vaccinations">
+            <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+            <span class="sidebar-label overflow-hidden whitespace-nowrap">Vaccinations</span>
+          </a>
+          <a href="{{ url_for('patient_help') }}" class="sidebar-item flex items-center gap-3 rounded-lg px-3 py-2.5 {% if active_page == 'help' %}bg-emerald-50 text-emerald-700 font-medium hover:bg-emerald-100{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}" title="Help">
+            <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span class="sidebar-label overflow-hidden whitespace-nowrap">Help</span>
+          </a>
+        </nav>
+      </aside>
+
+      <!-- Main content: no scroll, fit viewport -->
+      <div class="flex min-h-0 flex-1 flex-col">
+        <main class="flex min-h-0 flex-1 flex-col px-4 py-4 md:px-8">
+          {% include "_flash.html" %}
+          {% block content %}{% endblock %}
+        </main>
+        <footer class="shrink-0 border-t border-slate-200 py-2 text-center text-sm text-slate-500">
+          <a href="#" class="hover:text-slate-700">Privacy Policy</a>
+          <span class="mx-2">·</span>
+          <a href="#" class="hover:text-slate-700">About Us</a>
+          <span class="mx-2">·</span>
+          <a href="#" class="hover:text-slate-700">Settings</a>
+        </footer>
+      </div>
+    </div>
+
+    <script>
+      (function() {
+        var STORAGE_KEY = 'rabiesresq-sidebar-collapsed';
+        var sidebar = document.getElementById('patient-sidebar');
+        var toggle = document.getElementById('sidebar-toggle');
+        if (!sidebar || !toggle) return;
+
+        function isCollapsed() {
+          return sidebar.getAttribute('data-collapsed') === 'true';
+        }
+        function setCollapsed(collapsed) {
+          sidebar.setAttribute('data-collapsed', collapsed ? 'true' : 'false');
+          sidebar.classList.toggle('sidebar-expanded', !collapsed);
+          sidebar.classList.toggle('w-16', collapsed);
+          sidebar.classList.toggle('w-48', !collapsed);
+          try { localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0'); } catch (e) {}
+        }
+        function init() {
+          var stored = null;
+          try { stored = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+          var collapsed = stored !== null ? stored === '1' : true;
+          setCollapsed(collapsed);
+        }
+        toggle.addEventListener('click', function() {
+          setCollapsed(!isCollapsed());
+        });
+        init();
+      })();
+    </script>
+
+    <!-- Fixed logout button at bottom left -->
+    <a id="fixed-logout-btn" href="{{ url_for('auth.logout') }}" class="fixed bottom-2 left-2 z-50 flex items-center gap-1.5 rounded-md bg-red-500 border border-red-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-lg hover:bg-red-600 hover:text-white" title="Logout">
+      <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+      <span>Logout</span>
+    </a>
+  </body>
+</html>

@@ -1,0 +1,132 @@
+{% extends "base_patient.html" %}
+
+{% block title %}Profile Management - RabiesResQ{% endblock %}
+
+{% block content %}
+  <form method="post" action="{{ url_for('patient_profile_update') }}" class="space-y-6">
+    <!-- Header -->
+    <div class="sticky top-0 z-50 mb-6 flex items-center justify-between bg-white py-2 border-b border-slate-200">
+      <h1 class="text-2xl font-bold text-slate-900">Profile Management</h1>
+      <div class="flex items-center gap-3">
+        <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Notifications" title="Notifications">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        </button>
+        <button type="submit" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
+          Save Changes
+        </button>
+      </div>
+    </div>
+
+    <!-- Section 1: Personal Information -->
+    <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
+      <div class="mb-4">
+        <h2 class="text-lg font-bold text-slate-900">Personal Information</h2>
+      </div>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <label for="first_name" class="mb-1 block text-sm font-medium text-slate-700">First Name</label>
+          <input type="text" id="first_name" name="first_name" value="{{ patient.first_name or '' }}" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+        <div>
+          <label for="last_name" class="mb-1 block text-sm font-medium text-slate-700">Last Name</label>
+          <input type="text" id="last_name" name="last_name" value="{{ patient.last_name or '' }}" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+        <div>
+          <label for="date_of_birth" class="mb-1 block text-sm font-medium text-slate-700">Date of Birth</label>
+          <input type="date" id="date_of_birth" name="date_of_birth" value="{{ patient.date_of_birth or '' }}" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+        <div>
+          <label for="gender" class="mb-1 block text-sm font-medium text-slate-700">Gender</label>
+          <select id="gender" name="gender" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="">Select...</option>
+            <option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
+            <option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
+            <option value="Other" {% if patient.gender == 'Other' %}selected{% endif %}>Other</option>
+          </select>
+        </div>
+        <div class="md:col-span-2">
+          <label for="address" class="mb-1 block text-sm font-medium text-slate-700">Address</label>
+          <input type="text" id="address" name="address" value="{{ patient.address or '' }}" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+        <div class="md:col-span-2">
+          <label for="phone_number" class="mb-1 block text-sm font-medium text-slate-700">Contact Details</label>
+          <input type="tel" id="phone_number" name="phone_number" value="{{ patient.phone_number or '' }}" placeholder="e.g., +63 917 123 4567" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Account Security -->
+    <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
+      <div class="mb-4">
+        <h2 class="text-lg font-bold text-slate-900">Account Security</h2>
+      </div>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <label for="email" class="mb-1 block text-sm font-medium text-slate-700">Email</label>
+          <input type="email" id="email" name="email" value="{{ patient.email or '' }}" required class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+        <div>
+          <label for="password_display" class="mb-1 block text-sm font-medium text-slate-700">Password</label>
+          <div class="flex items-center gap-2">
+            <input type="text" id="password_display" value="••••••••" disabled class="flex-1 rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-slate-500 cursor-not-allowed">
+            <button type="button" id="change-password-btn" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">Change password</button>
+          </div>
+        </div>
+        <div id="password-change-fields" class="hidden md:col-span-2">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label for="new_password" class="mb-1 block text-sm font-medium text-slate-700">New Password</label>
+              <input type="password" id="new_password" name="new_password" placeholder="Leave empty to keep current password" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div>
+              <label for="confirm_password" class="mb-1 block text-sm font-medium text-slate-700">Confirm Password</label>
+              <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm new password" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+          </div>
+        </div>
+        <div class="md:col-span-2">
+          <label for="phone_verification" class="mb-1 block text-sm font-medium text-slate-700">Phone Number for Verification</label>
+          <input type="tel" id="phone_verification" value="{{ patient.phone_number or '' }}" disabled class="w-full rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-slate-500 cursor-not-allowed">
+          <p class="mt-1 text-xs text-slate-500">Same as Contact Details above</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Medical Information -->
+    <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
+      <div class="mb-4">
+        <h2 class="text-lg font-bold text-slate-900">Medical Information</h2>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label for="allergies" class="mb-1 block text-sm font-medium text-slate-700">Allergies</label>
+          <textarea id="allergies" name="allergies" rows="3" class="w-full resize-y rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">{{ patient.allergies or '' }}</textarea>
+        </div>
+        <div>
+          <label for="pre_existing_conditions" class="mb-1 block text-sm font-medium text-slate-700">Pre-existing Conditions</label>
+          <textarea id="pre_existing_conditions" name="pre_existing_conditions" rows="3" class="w-full resize-y rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">{{ patient.pre_existing_conditions or '' }}</textarea>
+        </div>
+        <div>
+          <label for="current_medications" class="mb-1 block text-sm font-medium text-slate-700">Current Medications</label>
+          <textarea id="current_medications" name="current_medications" rows="3" class="w-full resize-y rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">{{ patient.current_medications or '' }}</textarea>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <script>
+    // Toggle password change fields
+    (function() {
+      var changeBtn = document.getElementById('change-password-btn');
+      var passwordFields = document.getElementById('password-change-fields');
+      if (changeBtn && passwordFields) {
+        changeBtn.addEventListener('click', function() {
+          passwordFields.classList.toggle('hidden');
+          if (!passwordFields.classList.contains('hidden')) {
+            document.getElementById('new_password').focus();
+          }
+        });
+      }
+    })();
+  </script>
+{% endblock %}

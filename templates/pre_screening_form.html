@@ -1,0 +1,879 @@
+<!-- Pre-Screening Form Modal -->
+<div id="pre-screening-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+  <!-- Backdrop -->
+  <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onclick="closePreScreeningModal()"></div>
+  
+  <!-- Modal Content -->
+  <div class="flex min-h-full items-center justify-center p-4">
+    <div class="relative w-full max-w-4xl transform overflow-hidden rounded-xl bg-white shadow-xl transition-all">
+      <!-- Header -->
+      <div class="sticky top-0 z-10 border-b border-slate-200 bg-white px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-2xl font-bold text-slate-900">Pre-Screening Form</h2>
+            <p id="step-indicator" class="mt-1 text-sm text-slate-600">Step 1: Bite Details</p>
+          </div>
+          <button type="button" onclick="closePreScreeningModal()" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <!-- Progress Bar -->
+        <div class="mt-4">
+          <div class="h-2 w-full rounded-full bg-slate-200">
+            <div id="progress-bar" class="h-2 rounded-full bg-emerald-500 transition-all duration-300" style="width: 33.33%"></div>
+          </div>
+          <div class="mt-1 flex justify-between text-xs text-slate-500">
+            <span>1/3</span>
+            <span id="progress-text">Step 1 of 3</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Content -->
+      <form id="pre-screening-form" method="post" action="{{ url_for('pre_screening_submit') }}" class="px-6 py-6" onsubmit="collectAllFormData()">
+        <input type="hidden" name="form_type" id="form-type" value="case">
+        
+        <!-- Step 1: Bite Details -->
+        <div id="step-1" class="step-content">
+          <div class="mb-6">
+            <h3 class="text-lg font-bold text-slate-900">Bite Details</h3>
+            <p class="mt-1 text-sm text-slate-600">Please provide the following information about the incident to help us assess the situation.</p>
+          </div>
+
+          <!-- Type of Exposure -->
+          <div class="mb-6">
+            <label class="mb-2 block text-sm font-semibold text-slate-900">TYPE OF EXPOSURE</label>
+            <div class="grid grid-cols-2 gap-3 md:grid-cols-5">
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Bite">
+                <input type="radio" name="type_of_exposure" value="Bite" class="sr-only" required>
+                <span class="text-sm font-medium">Bite</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Scratch">
+                <input type="radio" name="type_of_exposure" value="Scratch" class="sr-only">
+                <span class="text-sm font-medium">Scratch</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Contamination of Mucous Membrane">
+                <input type="radio" name="type_of_exposure" value="Contamination of Mucous Membrane" class="sr-only">
+                <span class="text-sm font-medium text-center">Contamination of Mucous Membrane</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Non-Bite">
+                <input type="radio" name="type_of_exposure" value="Non-Bite" class="sr-only">
+                <span class="text-sm font-medium">Non-Bite</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Touch only">
+                <input type="radio" name="type_of_exposure" value="Touch only" class="sr-only">
+                <span class="text-sm font-medium text-center">Touch only / Lick on intact skin</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Date and Time Exposed -->
+          <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label for="exposure_date" class="mb-2 block text-sm font-semibold text-slate-900">DATE EXPOSED</label>
+              <input type="date" id="exposure_date" name="exposure_date" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div>
+              <label for="exposure_time" class="mb-2 block text-sm font-semibold text-slate-900">TIME EXPOSED</label>
+              <input type="time" id="exposure_time" name="exposure_time" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+          </div>
+
+          <!-- Place of Exposure and Affected Area -->
+          <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label for="place_of_exposure" class="mb-2 block text-sm font-semibold text-slate-900">PLACE OF EXPOSURE</label>
+              <select id="place_of_exposure" name="place_of_exposure" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="">Select...</option>
+                <option value="Inside home">Inside home</option>
+                <option value="Outside home">Outside home</option>
+                <option value="Workplace">Workplace</option>
+                <option value="School">School</option>
+                <option value="Street/Road">Street/Road</option>
+                <option value="Park">Park</option>
+                <option value="Market/Mall">Market/Mall</option>
+                <option value="Farm">Farm</option>
+                <option value="Neighbor's house">Neighbor's house</option>
+                <option value="Public transport">Public transport</option>
+                <option value="Other">Other</option>
+              </select>
+              <div id="place-of-exposure-other-container" class="mt-3 hidden">
+                <label for="place_of_exposure_other" class="mb-2 block text-sm font-medium text-slate-700">Specify other place of exposure</label>
+                <input type="text" id="place_of_exposure_other" name="place_of_exposure_other" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Specify...">
+              </div>
+            </div>
+            <div>
+              <label for="affected_area" class="mb-2 block text-sm font-semibold text-slate-900">AFFECTED AREA</label>
+              <select id="affected_area" name="affected_area" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="">Select...</option>
+                <option value="Head/Face">Head/Face</option>
+                <option value="Neck">Neck</option>
+                <option value="Trunk">Trunk</option>
+                <option value="Right arm">Right arm</option>
+                <option value="Left arm">Left arm</option>
+                <option value="Right hand">Right hand</option>
+                <option value="Left hand">Left hand</option>
+                <option value="Right leg">Right leg</option>
+                <option value="Left leg">Left leg</option>
+                <option value="Right foot">Right foot</option>
+                <option value="Left foot">Left foot</option>
+                <option value="Other">Other</option>
+              </select>
+              <div id="affected-area-other-container" class="mt-3 hidden">
+                <label for="affected_area_other" class="mb-2 block text-sm font-medium text-slate-700">Specify other affected area</label>
+                <input type="text" id="affected_area_other" name="affected_area_other" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Specify...">
+              </div>
+            </div>
+          </div>
+
+          <!-- Physical Examination Findings -->
+          <div class="mb-6">
+            <label class="mb-2 block text-sm font-semibold text-slate-900">PHYSICAL EXAMINATION FINDINGS</label>
+            
+            <!-- Description of Wound -->
+            <div class="mb-4">
+              <label class="mb-2 block text-sm font-medium text-slate-700">Description of Wound</label>
+              <div class="grid grid-cols-2 gap-3 md:grid-cols-5">
+                <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="Punctured">
+                  <input type="radio" name="wound_description" value="Punctured" class="sr-only">
+                  <span class="text-xs font-medium">Punctured</span>
+                </label>
+                <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="Abrasion">
+                  <input type="radio" name="wound_description" value="Abrasion" class="sr-only">
+                  <span class="text-xs font-medium">Abrasion</span>
+                </label>
+                <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="Lacerated">
+                  <input type="radio" name="wound_description" value="Lacerated" class="sr-only">
+                  <span class="text-xs font-medium">Lacerated</span>
+                </label>
+                <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="Avulsed">
+                  <input type="radio" name="wound_description" value="Avulsed" class="sr-only">
+                  <span class="text-xs font-medium">Avulsed</span>
+                </label>
+                <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="None">
+                  <input type="radio" name="wound_description" value="None" class="sr-only">
+                  <span class="text-xs font-medium">None</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Bleeding -->
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-700">Spontaneous Bleeding</label>
+                <div class="flex gap-3">
+                  <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2.5 transition-colors bleeding-spontaneous" data-value="Yes">
+                    <input type="radio" name="spontaneous_bleeding" value="Yes" class="sr-only">
+                    <span class="text-sm font-medium">Yes</span>
+                  </label>
+                  <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2.5 transition-colors bleeding-spontaneous" data-value="No">
+                    <input type="radio" name="spontaneous_bleeding" value="No" class="sr-only" checked>
+                    <span class="text-sm font-medium">No</span>
+                  </label>
+                </div>
+              </div>
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-700">Induced Bleeding</label>
+                <div class="flex gap-3">
+                  <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2.5 transition-colors bleeding-induced" data-value="Yes">
+                    <input type="radio" name="induced_bleeding" value="Yes" class="sr-only">
+                    <span class="text-sm font-medium">Yes</span>
+                  </label>
+                  <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2.5 transition-colors bleeding-induced" data-value="No">
+                    <input type="radio" name="induced_bleeding" value="No" class="sr-only" checked>
+                    <span class="text-sm font-medium">No</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Previous Anti-Rabies Immunization -->
+          <div class="mb-6">
+            <label class="mb-2 block text-sm font-semibold text-slate-900">PREVIOUS ANTI-RABIES IMMUNIZATION OF PATIENT</label>
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors prev-immunization" data-value="None">
+                <input type="radio" name="patient_prev_immunization" value="None" class="sr-only">
+                <span class="text-sm font-medium">None</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors prev-immunization" data-value="Completed">
+                <input type="radio" name="patient_prev_immunization" value="Completed" class="sr-only">
+                <span class="text-sm font-medium">Completed</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors prev-immunization" data-value="Incomplete">
+                <input type="radio" name="patient_prev_immunization" value="Incomplete" class="sr-only">
+                <span class="text-sm font-medium">Incomplete</span>
+              </label>
+            </div>
+            <div id="prev-vaccine-date-container" class="mt-4 hidden">
+              <label for="prev_vaccine_date" class="mb-2 block text-sm font-medium text-slate-700">Date of Previous Anti-Rabies Vaccine</label>
+              <input type="date" id="prev_vaccine_date" name="prev_vaccine_date" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+          </div>
+
+          <!-- Type of Animal -->
+          <div class="mb-6">
+            <label class="mb-2 block text-sm font-semibold text-slate-900">TYPE OF ANIMAL</label>
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors animal-type" data-value="Dog">
+                <input type="radio" name="animal_type" value="Dog" class="sr-only" required>
+                <span class="text-sm font-medium">Dog</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors animal-type" data-value="Cat">
+                <input type="radio" name="animal_type" value="Cat" class="sr-only">
+                <span class="text-sm font-medium">Cat</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors animal-type" data-value="Others">
+                <input type="radio" name="animal_type" value="Others" class="sr-only">
+                <span class="text-sm font-medium">Others</span>
+              </label>
+            </div>
+            <div id="other-animal-container" class="mt-4 hidden">
+              <label for="other_animal" class="mb-2 block text-sm font-medium text-slate-700">Specify other animal</label>
+              <input type="text" id="other_animal" name="other_animal" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+          </div>
+
+          <!-- Animal Status -->
+          <div class="mb-6">
+            <label class="mb-2 block text-sm font-semibold text-slate-900">ANIMAL STATUS</label>
+            <div class="grid grid-cols-2 gap-3 md:grid-cols-5">
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors animal-status" data-value="Healthy">
+                <input type="radio" name="animal_status" value="Healthy" class="sr-only" required>
+                <span class="text-xs font-medium">Healthy</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors animal-status" data-value="Killed">
+                <input type="radio" name="animal_status" value="Killed" class="sr-only">
+                <span class="text-xs font-medium">Killed</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors animal-status" data-value="Sick">
+                <input type="radio" name="animal_status" value="Sick" class="sr-only">
+                <span class="text-xs font-medium">Sick</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors animal-status" data-value="Lost">
+                <input type="radio" name="animal_status" value="Lost" class="sr-only">
+                <span class="text-xs font-medium">Lost</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors animal-status" data-value="Died">
+                <input type="radio" name="animal_status" value="Died" class="sr-only">
+                <span class="text-xs font-medium">Died</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Anti-Rabies Vaccination of Animal -->
+          <div class="mb-6">
+            <label class="mb-2 block text-sm font-semibold text-slate-900">ANTI-RABIES VACCINATION OF ANIMAL</label>
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors animal-vaccination" data-value="Updated">
+                <input type="radio" name="animal_vaccination" value="Updated" class="sr-only" required>
+                <span class="text-sm font-medium">Updated</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors animal-vaccination" data-value="None">
+                <input type="radio" name="animal_vaccination" value="None" class="sr-only">
+                <span class="text-sm font-medium">None</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors animal-vaccination" data-value="Not Updated">
+                <input type="radio" name="animal_vaccination" value="Not Updated" class="sr-only">
+                <span class="text-sm font-medium">Not Updated</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Local Wound Treatment -->
+          <div class="mb-6">
+            <label class="mb-2 block text-sm font-semibold text-slate-900">LOCAL WOUND TREATMENT</label>
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors local-treatment" data-value="Wash with Water Only">
+                <input type="radio" name="local_treatment" value="Wash with Water Only" class="sr-only" required>
+                <span class="text-xs font-medium text-center">Wash with Water Only</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors local-treatment" data-value="Washed with Water and Soap">
+                <input type="radio" name="local_treatment" value="Washed with Water and Soap" class="sr-only">
+                <span class="text-xs font-medium text-center">Washed with Water and Soap</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors local-treatment" data-value="Applied Garlic, etc.">
+                <input type="radio" name="local_treatment" value="Applied Garlic, etc." class="sr-only">
+                <span class="text-xs font-medium text-center">Applied Garlic, etc.</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors local-treatment" data-value="Others">
+                <input type="radio" name="local_treatment" value="Others" class="sr-only">
+                <span class="text-xs font-medium">Others</span>
+              </label>
+            </div>
+            <div id="other-treatment-container" class="mt-4 hidden">
+              <label for="other_treatment" class="mb-2 block text-sm font-medium text-slate-700">Specify other treatment</label>
+              <input type="text" id="other_treatment" name="other_treatment" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+          </div>
+
+          <!-- Tetanus Immunization -->
+          <div class="mb-6">
+            <label class="mb-2 block text-sm font-semibold text-slate-900">TETANUS IMMUNIZATION</label>
+            <div class="flex gap-3">
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2.5 transition-colors tetanus-immunization" data-value="Yes">
+                <input type="radio" name="tetanus_immunization" value="Yes" class="sr-only" required>
+                <span class="text-sm font-medium">Yes</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2.5 transition-colors tetanus-immunization" data-value="No">
+                <input type="radio" name="tetanus_immunization" value="No" class="sr-only">
+                <span class="text-sm font-medium">No</span>
+              </label>
+            </div>
+            <div id="tetanus-date-container" class="mt-4 hidden">
+              <label for="tetanus_date" class="mb-2 block text-sm font-medium text-slate-700">Date (for Tetanus Immunization)</label>
+              <input type="date" id="tetanus_date" name="tetanus_date" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+          </div>
+
+          <!-- Human Tetanus Immunoglobulin -->
+          <div class="mb-6">
+            <label class="mb-2 block text-sm font-semibold text-slate-900">HUMAN TETANUS IMMUNOGLOBULIN</label>
+            <div class="flex gap-3">
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2.5 transition-colors hrtig-immunization" data-value="Yes">
+                <input type="radio" name="hrtig_immunization" value="Yes" class="sr-only" required>
+                <span class="text-sm font-medium">Yes</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2.5 transition-colors hrtig-immunization" data-value="No">
+                <input type="radio" name="hrtig_immunization" value="No" class="sr-only" checked>
+                <span class="text-sm font-medium">No</span>
+              </label>
+            </div>
+            <div id="hrtig-date-container" class="mt-4 hidden">
+              <label for="hrtig_date" class="mb-2 block text-sm font-medium text-slate-700">HRIG Date</label>
+              <input type="date" id="hrtig_date" name="hrtig_date" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <p class="mt-1 text-xs text-slate-500">Required only if HRIG is Yes</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Victim Information -->
+        <div id="step-2" class="step-content hidden">
+          <div class="mb-6">
+            <h3 class="text-lg font-bold text-slate-900">Victim Information</h3>
+            <p class="mt-1 text-sm text-slate-600">Please provide the details of the person who was bitten.</p>
+          </div>
+
+          <div class="space-y-6">
+            <div>
+              <label for="full_name" class="mb-2 block text-sm font-semibold text-slate-900">Full Name</label>
+              <input type="text" id="full_name" name="full_name" value="{{ patient.first_name or '' }} {{ patient.last_name or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Enter victim's full name">
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label for="age" class="mb-2 block text-sm font-semibold text-slate-900">Age</label>
+                <input type="number" id="age" name="age" value="{{ patient.age or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Enter age">
+              </div>
+              <div>
+                <label for="barangay" class="mb-2 block text-sm font-semibold text-slate-900">Barangay (Address)</label>
+                <input type="text" id="barangay" name="barangay" value="{{ patient.address or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Enter barangay">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label for="contact_number" class="mb-2 block text-sm font-semibold text-slate-900">Contact Number</label>
+                <input type="tel" id="contact_number" name="contact_number" value="{{ patient.phone_number or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g., 09123456789">
+              </div>
+              <div>
+                <label for="email_address" class="mb-2 block text-sm font-semibold text-slate-900">Email Address</label>
+                <input type="email" id="email_address" name="email_address" value="{{ patient.email or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Enter email address">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Summary -->
+        <div id="step-3" class="step-content hidden">
+          <div class="mb-6">
+            <h3 class="text-lg font-bold text-slate-900">Pre-Screening Summary</h3>
+            <p class="mt-1 text-sm text-slate-600">Please review the information below before submitting.</p>
+          </div>
+
+          <div id="summary-content" class="space-y-6">
+            <!-- Summary will be populated by JavaScript -->
+          </div>
+          
+          <!-- Info Message -->
+          <div class="mt-6 rounded-lg border-2 border-emerald-200 bg-emerald-50 p-4">
+            <div class="flex items-start gap-3">
+              <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+              <p class="text-sm font-medium text-emerald-800">You can now go to Dr. Pau Animal Bite Clinic for treatment.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="mt-8 flex justify-end gap-3 border-t border-slate-200 pt-6">
+          <button type="button" id="back-btn" onclick="previousStep()" class="hidden rounded-lg border-2 border-slate-300 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Back</button>
+          <button type="button" id="next-btn" onclick="nextStep()" class="rounded-lg bg-emerald-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-emerald-600">Next</button>
+          <button type="submit" id="submit-btn" class="hidden rounded-lg bg-emerald-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-emerald-600">Submit & Continue to Dashboard</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentStep = 1;
+const totalSteps = 3;
+let formData = {};
+
+function openPreScreeningModal(formType = 'case') {
+  document.getElementById('pre-screening-modal').classList.remove('hidden');
+  document.getElementById('form-type').value = formType;
+  currentStep = 1;
+  formData = {};
+  showStep(1);
+  document.body.style.overflow = 'hidden';
+  initializeRadioButtons();
+}
+
+function initializeRadioButtons() {
+  // Initialize all radio button labels with default styling
+  const radioGroups = ['exposure-type', 'wound-type', 'bleeding-spontaneous', 'bleeding-induced', 'prev-immunization', 'animal-type', 'animal-status', 'animal-vaccination', 'local-treatment', 'tetanus-immunization', 'hrtig-immunization'];
+  
+  radioGroups.forEach(groupClass => {
+    document.querySelectorAll('.' + groupClass).forEach(label => {
+      const radio = label.querySelector('input[type="radio"]');
+      if (radio) {
+        // Set default styling
+        label.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+        label.classList.add('border-slate-300', 'bg-white', 'text-slate-900');
+        
+        // If checked, apply selected styling
+        if (radio.checked) {
+          label.classList.remove('border-slate-300', 'bg-white', 'text-slate-900');
+          label.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+        }
+      }
+    });
+  });
+}
+
+function closePreScreeningModal() {
+  document.getElementById('pre-screening-modal').classList.add('hidden');
+  document.body.style.overflow = 'auto';
+  currentStep = 1;
+  formData = {};
+  document.getElementById('pre-screening-form').reset();
+  showStep(1);
+}
+
+function showStep(step) {
+  // Hide all steps
+  document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+  
+  // Show current step
+  document.getElementById(`step-${step}`).classList.remove('hidden');
+  
+  // Update progress bar
+  const progress = (step / totalSteps) * 100;
+  document.getElementById('progress-bar').style.width = progress + '%';
+  
+  // Update step indicator
+  const stepNames = ['', 'Bite Details', 'Victim Info', 'Summary'];
+  document.getElementById('step-indicator').textContent = `Step ${step}: ${stepNames[step]}`;
+  document.getElementById('progress-text').textContent = `Step ${step} of ${totalSteps}`;
+  
+  // Update buttons
+  document.getElementById('back-btn').classList.toggle('hidden', step === 1);
+  document.getElementById('next-btn').classList.toggle('hidden', step === totalSteps);
+  document.getElementById('submit-btn').classList.toggle('hidden', step !== totalSteps);
+  
+  // Initialize radio buttons for the step
+  initializeRadioButtons();
+}
+
+function goToStep(step) {
+  currentStep = step;
+  if (step === 3) {
+    populateSummary();
+  }
+  showStep(step);
+}
+
+function nextStep() {
+  if (validateStep(currentStep)) {
+    collectStepData(currentStep);
+    if (currentStep < totalSteps) {
+      currentStep++;
+      if (currentStep === 3) {
+        populateSummary();
+      }
+      showStep(currentStep);
+    }
+  }
+}
+
+function previousStep() {
+  if (currentStep > 1) {
+    currentStep--;
+    showStep(currentStep);
+  }
+}
+
+function validateStep(step) {
+  const stepElement = document.getElementById(`step-${step}`);
+  const requiredFields = stepElement.querySelectorAll('[required]');
+  let isValid = true;
+  
+  requiredFields.forEach(field => {
+    if (!field.value || (field.type === 'radio' && !stepElement.querySelector(`[name="${field.name}"]:checked`))) {
+      isValid = false;
+      field.classList.add('border-red-500');
+    } else {
+      field.classList.remove('border-red-500');
+    }
+  });
+  
+  if (!isValid) {
+    alert('Please fill in all required fields.');
+  }
+  
+  return isValid;
+}
+
+function collectStepData(step) {
+  const stepElement = document.getElementById(`step-${step}`);
+  const inputs = stepElement.querySelectorAll('input, select, textarea');
+  inputs.forEach(input => {
+    if (input.type === 'radio') {
+      if (input.checked) {
+        formData[input.name] = input.value;
+      }
+    } else {
+      formData[input.name] = input.value;
+    }
+  });
+}
+
+function collectAllFormData() {
+  // Collect data from all steps before submission
+  collectStepData(1);
+  collectStepData(2);
+  
+  // Ensure all form fields have values
+  const form = document.getElementById('pre-screening-form');
+  const allInputs = form.querySelectorAll('input, select, textarea');
+  allInputs.forEach(input => {
+    if (input.type === 'radio') {
+      if (input.checked && formData[input.name] !== input.value) {
+        formData[input.name] = input.value;
+      }
+    } else if (input.type !== 'hidden' && input.name) {
+      if (formData[input.name] === undefined) {
+        formData[input.name] = input.value;
+      }
+    }
+  });
+  
+  return true; // Allow form submission
+}
+
+function computeRiskCategoryFromForm(data) {
+  const typeOfExposure = (data.type_of_exposure || '').trim();
+  const affectedArea = (data.affected_area || '').trim();
+  const woundDescription = (data.wound_description || '').trim();
+  const animalStatus = (data.animal_status || '').trim();
+  const animalVaccination = (data.animal_vaccination || '').trim();
+  const prevImmunization = (data.patient_prev_immunization || '').trim();
+
+  const spontaneous = (data.spontaneous_bleeding || 'No').trim();
+  const induced = (data.induced_bleeding || 'No').trim();
+
+  let bleedingType = 'None';
+  if (spontaneous === 'Yes' && induced === 'Yes') {
+    bleedingType = 'Both spontaneous and induced';
+  } else if (spontaneous === 'Yes') {
+    bleedingType = 'Spontaneous';
+  } else if (induced === 'Yes') {
+    bleedingType = 'Induced';
+  }
+
+  // Store for later display if needed
+  data.bleeding_type = bleedingType;
+
+  const highRiskExposures = ['Bite', 'Contamination of Mucous Membrane'];
+  const highRiskAreas = ['Head/Face', 'Neck'];
+  const severeWounds = ['Punctured', 'Lacerated', 'Avulsed'];
+  const highRiskAnimalStatus = ['Sick', 'Died', 'Lost'];
+
+  if (
+    highRiskExposures.includes(typeOfExposure) ||
+    highRiskAreas.includes(affectedArea) ||
+    bleedingType === 'Spontaneous' ||
+    bleedingType === 'Both spontaneous and induced' ||
+    severeWounds.includes(woundDescription) ||
+    highRiskAnimalStatus.includes(animalStatus)
+  ) {
+    return 'Category III';
+  }
+
+  if (
+    typeOfExposure === 'Scratch' ||
+    typeOfExposure === 'Non-Bite' ||
+    woundDescription === 'Abrasion' ||
+    bleedingType === 'Induced'
+  ) {
+    return 'Category II';
+  }
+
+  return 'Category I';
+}
+
+function populateSummary() {
+  // Collect all form data before showing summary
+  collectStepData(1);
+  collectStepData(2);
+
+  const riskCategory = computeRiskCategoryFromForm(formData);
+  let riskColor = '#10B981'; // default for Category I or others
+  if (riskCategory === 'Category III') {
+    riskColor = '#FA5053';
+  } else if (riskCategory === 'Category II') {
+    riskColor = '#FFB343';
+  }
+  
+  const summaryContent = document.getElementById('summary-content');
+  summaryContent.innerHTML = `
+    <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
+      <div class="mb-4 flex items-center justify-between">
+        <h4 class="text-base font-bold text-slate-900">Patient Information</h4>
+        <button type="button" onclick="goToStep(2)" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">Edit</button>
+      </div>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <p class="text-xs text-slate-500">Full Name</p>
+          <p class="font-semibold text-slate-900">${formData.full_name || 'N/A'}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Age</p>
+          <p class="font-semibold text-slate-900">${formData.age || 'N/A'}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Contact Number</p>
+          <p class="font-semibold text-slate-900">${formData.contact_number || 'N/A'}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Email Address</p>
+          <p class="font-semibold text-slate-900">${formData.email_address || 'N/A'}</p>
+        </div>
+        <div class="md:col-span-2">
+          <p class="text-xs text-slate-500">Barangay (Address)</p>
+          <p class="font-semibold text-slate-900">${formData.barangay || 'N/A'}</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
+      <div class="mb-4 flex items-center justify-between">
+        <h4 class="text-base font-bold text-slate-900">Bite Details</h4>
+        <button type="button" onclick="goToStep(1)" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">Edit</button>
+      </div>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div class="md:col-span-2">
+          <p class="text-xs text-slate-500">Risk Category</p>
+          <p class="font-semibold" style="color: ${riskColor};">${riskCategory}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Type of Exposure</p>
+          <p class="font-semibold text-slate-900">${formData.type_of_exposure || 'N/A'}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Type of Animal</p>
+          <p class="font-semibold text-slate-900">${formData.animal_type || 'N/A'}${formData.other_animal ? ' (' + formData.other_animal + ')' : ''}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Animal Status</p>
+          <p class="font-semibold text-slate-900">${formData.animal_status || 'N/A'}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Date Exposed</p>
+          <p class="font-semibold text-slate-900">${formData.exposure_date || 'N/A'}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Time Exposed</p>
+          <p class="font-semibold text-slate-900">${formData.exposure_time || 'N/A'}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Place of Exposure</p>
+          <p class="font-semibold text-slate-900">${formData.place_of_exposure || 'N/A'}${formData.place_of_exposure_other ? ' (' + formData.place_of_exposure_other + ')' : ''}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Affected Area</p>
+          <p class="font-semibold text-slate-900">${formData.affected_area || 'N/A'}${formData.affected_area_other ? ' (' + formData.affected_area_other + ')' : ''}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Prev Anti-Rabies Immunization</p>
+          <p class="font-semibold text-slate-900">${formData.patient_prev_immunization || 'N/A'}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Date of Prev Vaccine</p>
+          <p class="font-semibold text-slate-900">${formData.prev_vaccine_date || 'N/A'}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Anti-Rabies Vaccination of Animal</p>
+          <p class="font-semibold text-slate-900">${formData.animal_vaccination || 'N/A'}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Physical Examination Findings</p>
+          <p class="font-semibold text-slate-900">${formData.wound_description || 'N/A'}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Local Wound Treatment</p>
+          <p class="font-semibold text-slate-900">${formData.local_treatment || 'N/A'}${formData.other_treatment ? ' (' + formData.other_treatment + ')' : ''}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Tetanus Immunization</p>
+          <p class="font-semibold text-slate-900">${formData.tetanus_immunization || 'N/A'}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Date (for Tetanus Immunization)</p>
+          <p class="font-semibold text-slate-900">${formData.tetanus_date || 'N/A'}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Human Tetanus Immunoglobulin</p>
+          <p class="font-semibold text-slate-900">${formData.hrtig_immunization || 'N/A'}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">HRIG Date</p>
+          <p class="font-semibold text-slate-900">${formData.hrtig_date || 'N/A'}</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Radio button styling
+document.addEventListener('DOMContentLoaded', function() {
+  // Handle radio button visual selection
+  const radioGroups = ['exposure-type', 'wound-type', 'bleeding-spontaneous', 'bleeding-induced', 'prev-immunization', 'animal-type', 'animal-status', 'animal-vaccination', 'local-treatment', 'tetanus-immunization', 'hrtig-immunization'];
+  
+  radioGroups.forEach(groupClass => {
+    document.querySelectorAll('.' + groupClass).forEach(label => {
+      const radio = label.querySelector('input[type="radio"]');
+      if (radio) {
+        // Initialize styling
+        if (!radio.checked) {
+          label.classList.add('border-slate-300', 'bg-white', 'text-slate-900');
+        }
+        
+        radio.addEventListener('change', function() {
+          // Remove selected state from siblings
+          document.querySelectorAll('.' + groupClass).forEach(l => {
+            l.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+            l.classList.add('border-slate-300', 'bg-white', 'text-slate-900');
+          });
+          // Add selected state to current
+          if (this.checked) {
+            label.classList.remove('border-slate-300', 'bg-white', 'text-slate-900');
+            label.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+          }
+        });
+      }
+    });
+  });
+
+  // Conditional field visibility
+  document.querySelectorAll('input[name="patient_prev_immunization"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+      const container = document.getElementById('prev-vaccine-date-container');
+      if (this.value === 'Completed' || this.value === 'Incomplete') {
+        container.classList.remove('hidden');
+      } else {
+        container.classList.add('hidden');
+      }
+    });
+  });
+
+  document.querySelectorAll('input[name="animal_type"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+      const container = document.getElementById('other-animal-container');
+      if (this.value === 'Others') {
+        container.classList.remove('hidden');
+      } else {
+        container.classList.add('hidden');
+      }
+    });
+  });
+
+  document.querySelectorAll('input[name="local_treatment"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+      const container = document.getElementById('other-treatment-container');
+      if (this.value === 'Others') {
+        container.classList.remove('hidden');
+      } else {
+        container.classList.add('hidden');
+      }
+    });
+  });
+
+  document.querySelectorAll('input[name="tetanus_immunization"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+      const container = document.getElementById('tetanus-date-container');
+      if (this.value === 'Yes') {
+        container.classList.remove('hidden');
+      } else {
+        container.classList.add('hidden');
+      }
+    });
+  });
+
+  document.querySelectorAll('input[name="hrtig_immunization"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+      const container = document.getElementById('hrtig-date-container');
+      const dateInput = document.getElementById('hrtig_date');
+      if (this.value === 'Yes') {
+        container.classList.remove('hidden');
+        if (dateInput) dateInput.required = true;
+      } else {
+        container.classList.add('hidden');
+        if (dateInput) {
+          dateInput.required = false;
+          dateInput.value = '';
+        }
+      }
+    });
+  });
+
+  var placeSelect = document.getElementById('place_of_exposure');
+  var placeOtherContainer = document.getElementById('place-of-exposure-other-container');
+  var placeOtherInput = document.getElementById('place_of_exposure_other');
+  if (placeSelect && placeOtherContainer && placeOtherInput) {
+    placeSelect.addEventListener('change', function() {
+      if (this.value === 'Other') {
+        placeOtherContainer.classList.remove('hidden');
+        placeOtherInput.required = true;
+      } else {
+        placeOtherContainer.classList.add('hidden');
+        placeOtherInput.required = false;
+        placeOtherInput.value = '';
+      }
+    });
+  }
+
+  var affectedSelect = document.getElementById('affected_area');
+  var affectedOtherContainer = document.getElementById('affected-area-other-container');
+  var affectedOtherInput = document.getElementById('affected_area_other');
+  if (affectedSelect && affectedOtherContainer && affectedOtherInput) {
+    affectedSelect.addEventListener('change', function() {
+      if (this.value === 'Other') {
+        affectedOtherContainer.classList.remove('hidden');
+        affectedOtherInput.required = true;
+      } else {
+        affectedOtherContainer.classList.add('hidden');
+        affectedOtherInput.required = false;
+        affectedOtherInput.value = '';
+      }
+    });
+  }
+});
+</script>

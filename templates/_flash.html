@@ -1,0 +1,17 @@
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="mb-6 space-y-3">
+      {% for category, message in messages %}
+        {% set base = "rounded-md border px-4 py-3 text-sm" %}
+        {% if category == "success" %}
+          <div class="{{ base }} border-emerald-200 bg-emerald-50 text-emerald-900">{{ message }}</div>
+        {% elif category == "error" %}
+          <div class="{{ base }} border-rose-200 bg-rose-50 text-rose-900">{{ message }}</div>
+        {% else %}
+          <div class="{{ base }} border-slate-200 bg-white text-slate-900">{{ message }}</div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+

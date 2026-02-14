@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Staff Dashboard - RabiesResQ{% endblock %}
+
+{% block content %}
+  <div class="rounded-xl border bg-white p-6 shadow-sm">
+    <h1 class="text-xl font-semibold">Staff Dashboard</h1>
+    <p class="mt-1 text-sm text-slate-600">Welcome, {{ staff.first_name or staff.username }}.</p>
+
+    <div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div class="rounded-lg border bg-slate-50 p-4">
+        <h2 class="text-sm font-semibold">Account</h2>
+        <dl class="mt-2 space-y-1 text-sm">
+          <div class="flex justify-between gap-4"><dt class="text-slate-600">Username</dt><dd class="font-medium">{{ staff.username }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-slate-600">Email</dt><dd class="font-medium">{{ staff.email }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-slate-600">Role</dt><dd class="font-medium">clinic_personnel</dd></div>
+        </dl>
+      </div>
+
+      <div class="rounded-lg border bg-slate-50 p-4">
+        <h2 class="text-sm font-semibold">Clinic Personnel</h2>
+        <dl class="mt-2 space-y-1 text-sm">
+          <div class="flex justify-between gap-4"><dt class="text-slate-600">Clinic</dt><dd class="font-medium">{{ staff.clinic_name }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-slate-600">Title</dt><dd class="font-medium">{{ staff.title }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-slate-600">Employee ID</dt><dd class="font-medium">{{ staff.employee_id }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-slate-600">License</dt><dd class="font-medium">{{ staff.license_number or '—' }}</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="mt-6">
+      <a class="inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800" href="{{ url_for('auth.logout') }}">
+        Logout
+      </a>
+    </div>
+  </div>
+{% endblock %}
+
