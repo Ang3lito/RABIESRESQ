@@ -846,11 +846,6 @@ def create_app():
             first_name = (staff["first_name"] or "").strip()
             last_name = (staff["last_name"] or "").strip()
             staff_display_name = " ".join(part for part in [title, first_name, last_name] if part)
-        maintenance = _run_case_status_maintenance(staff["clinic_id"])
-
-        maintenance = _run_case_status_maintenance(staff["clinic_id"])
-
-        maintenance = _run_case_status_maintenance(staff["clinic_id"])
         welcome_name = (
             f"{(staff['title'] or '').strip()} {(staff['last_name'] or '').strip()}".strip()
             or (staff["first_name"] or "").strip()

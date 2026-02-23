@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Appointment Review - RabiesResQ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      integrity="sha512-SnH5WK+bZxgPHs44uWix+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkR4j8tBT9q4o6r7gYxAjgQ8K3X0M3fN9lWQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+  </head>
+  <body class="min-h-screen bg-slate-100 text-slate-900">
+    <div class="flex min-h-screen flex-col lg:flex-row">
+      <aside class="w-full border-r border-slate-200 bg-white lg:w-64">
+        <div class="flex h-full flex-col p-6">
+          <a href="{{ url_for('staff_dashboard') }}" class="text-2xl font-bold text-blue-800">RabiesResQ</a>
+          <nav class="mt-8 space-y-2 text-sm">
+            <a href="{{ url_for('staff_dashboard') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-100">
+              <i class="fa-solid fa-table-columns"></i>
+              Dashboard
+            </a>
+            <a href="{{ url_for('staff_patients') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-100">
+              <i class="fa-solid fa-user-group"></i>
+              Patients
+            </a>
+            <a
+              href="{{ url_for('staff_appointments') }}"
+              class="flex items-center gap-3 rounded-xl bg-emerald-100 px-4 py-3 font-medium text-emerald-700"
+            >
+              <i class="fa-regular fa-calendar"></i>
+              Appointments
+            </a>
+          </nav>
+
+          <div class="mt-auto pt-8">
+            <a
+              href="#"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 font-semibold text-white transition hover:bg-emerald-600"
+            >
+              <i class="fa-solid fa-plus"></i>
+              New Patient
+            </a>
+            <div class="mt-4 space-y-2 text-sm">
+              <a href="#" class="flex items-center gap-3 rounded-xl px-4 py-2 text-slate-600 hover:bg-slate-100">
+                <i class="fa-solid fa-gear"></i>
+                Settings
+              </a>
+              <a href="{{ url_for('auth.logout') }}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 font-semibold text-white transition hover:bg-red-600">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                Logout
+              </a>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="flex-1 p-4 sm:p-6 lg:p-8">
+        <div class="rounded-2xl bg-white p-4 shadow-sm sm:p-6">
+          <header class="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
+            {% if request.endpoint == "staff_dashboard" %}
+              <div class="relative w-full lg:max-w-md">
+                <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input
+                  type="text"
+                  placeholder="Search patients, cases..."
+                  class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none ring-emerald-300 transition focus:ring"
+                />
+              </div>
+            {% else %}
+              <nav class="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                {% for crumb in breadcrumbs %}
+                  {% if crumb.href %}
+                    <a href="{{ crumb.href }}" class="hover:text-slate-700">{{ crumb.label }}</a>
+                  {% else %}
+                    <span class="font-bold text-blue-600">{{ crumb.label }}</span>
+                  {% endif %}
+                  {% if not loop.last %}
+                    <span>/</span>
+                  {% endif %}
+                {% endfor %}
+              </nav>
+            {% endif %}
+
+            <div class="flex items-center gap-3">
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-slate-700">
+                <i class="fa-solid fa-user"></i>
+              </div>
+              <div class="leading-tight">
+                <p class="text-sm font-semibold">{{ staff_display_name }}</p>
+                <p class="text-xs text-slate-500">Veterinarian</p>
+              </div>
+            </div>
+          </header>
+
+          <section class="mt-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h1 class="text-4xl font-bold text-blue-900">{{ patient_name }}</h1>
+              <p class="mt-1 text-slate-600">Appointment ID: {{ appointment.id }}</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <form method="post" action="{{ url_for('approve_appointment', appointment_id=appointment.id) }}">
+                <button type="submit" class="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">
+                  Approve
+                </button>
+              </form>
+              <form method="post" action="{{ url_for('remove_appointment', appointment_id=appointment.id) }}" onsubmit="return confirm('Are you sure you want to remove this appointment request?');">
+                <button type="submit" class="rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600">
+                  Remove
+                </button>
+              </form>
+            </div>
+          </section>
+
+          <section class="mt-6 grid grid-cols-1 gap-5 xl:grid-cols-3">
+            <form method="post" action="{{ url_for('edit_appointment', appointment_id=appointment.id) }}" class="xl:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+              <h2 class="text-2xl font-semibold text-blue-900">Appointment Details</h2>
+              <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label class="mb-1 block text-sm text-slate-600" for="patient_name">Patient Name</label>
+                  <input
+                    id="patient_name"
+                    name="patient_name"
+                    type="text"
+                    value="{{ patient_name }}"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                  />
+                </div>
+                <div>
+                  <label class="mb-1 block text-sm text-slate-600" for="appointment_date">Date</label>
+                  <input
+                    id="appointment_date"
+                    name="appointment_date"
+                    type="date"
+                    value="{{ appointment_date }}"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                  />
+                </div>
+                <div>
+                  <label class="mb-1 block text-sm text-slate-600" for="appointment_time">Time</label>
+                  <input
+                    id="appointment_time"
+                    name="appointment_time"
+                    type="time"
+                    value="{{ appointment_time }}"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                  />
+                </div>
+              </div>
+
+              <div class="mt-5">
+                <button type="submit" class="rounded-xl bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+                  Save Changes
+                </button>
+              </div>
+            </form>
+
+            <article class="rounded-2xl border border-slate-200 bg-white p-5">
+              <h2 class="text-2xl font-semibold text-blue-900">Review Details</h2>
+              <dl class="mt-4 space-y-3 text-sm">
+                <div>
+                  <dt class="text-slate-500">Category</dt>
+                  <dd class="font-semibold text-slate-800">{{ appointment.category }}</dd>
+                </div>
+                <div>
+                  <dt class="text-slate-500">Contact Info</dt>
+                  <dd class="font-semibold text-slate-800">{{ appointment.phone_number or 'N/A' }}</dd>
+                  <dd class="font-semibold text-slate-800">{{ appointment.email or 'N/A' }}</dd>
+                </div>
+                <div>
+                  <dt class="text-slate-500">Pre-screening Remarks</dt>
+                  <dd class="text-slate-700">{{ appointment.wound_description or 'No remarks recorded.' }}</dd>
+                </div>
+              </dl>
+            </article>
+          </section>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
