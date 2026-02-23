@@ -529,7 +529,8 @@ def create_app():
             return redirect(url_for("patient_dashboard"))
 
         target_patient_id = patient["id"]
-        if full_name or age or barangay or contact_number or email_address:
+        has_victim_info = bool(full_name or age or barangay or contact_number or email_address)
+        if has_victim_info:
             name_parts = full_name.split(" ", 1) if full_name else ["", ""]
             first_name = name_parts[0] if len(name_parts) > 0 else None
             last_name = name_parts[1] if len(name_parts) > 1 else None
