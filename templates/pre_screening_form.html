@@ -358,6 +358,20 @@
 
           <div class="space-y-6">
             <div>
+              <label for="relationship_to_user" class="mb-2 block text-sm font-semibold text-slate-900">Relationship to Account User</label>
+              <select
+                id="relationship_to_user"
+                name="relationship_to_user"
+                class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="Self" selected>Self</option>
+                <option value="Child">Child</option>
+                <option value="Relative">Relative</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div>
               <label for="full_name" class="mb-2 block text-sm font-semibold text-slate-900">Full Name</label>
               <input type="text" id="full_name" name="full_name" value="{{ patient.first_name or '' }} {{ patient.last_name or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Enter victim's full name">
             </div>

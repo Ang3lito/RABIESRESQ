@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS patients (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL UNIQUE,
+  user_id INTEGER NOT NULL,
   first_name TEXT,
   last_name TEXT,
   phone_number TEXT,
@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS patients (
   pre_existing_conditions TEXT,
   current_medications TEXT,
   notification_settings TEXT,
+  relationship_to_user TEXT NOT NULL DEFAULT 'Self',
   onboarding_completed INTEGER NOT NULL DEFAULT 0 CHECK(onboarding_completed IN (0,1)),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -291,6 +292,8 @@ CREATE INDEX IF NOT EXISTS idx_audit_case ON medical_audit_logs(case_id);
 -- =========================
 
 CREATE INDEX IF NOT EXISTS idx_clinic_personnel_clinic_id ON clinic_personnel(clinic_id);
+
+CREATE INDEX IF NOT EXISTS idx_patients_user_id ON patients(user_id);
 
 CREATE INDEX IF NOT EXISTS idx_appointments_personnel_id ON appointments(clinic_personnel_id);
 

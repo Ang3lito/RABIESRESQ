@@ -9,7 +9,32 @@
   <body class="min-h-screen bg-slate-50 text-slate-900">
     <header class="border-b bg-white">
       <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-        <a href="{{ url_for('index') }}" class="text-lg font-semibold">RabiesResQ</a>
+        {% if request.endpoint == "staff_dashboard" %}
+          <div class="relative w-full max-w-md">
+            <input
+              type="text"
+              placeholder="Search patients, cases..."
+              class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm outline-none ring-emerald-300 transition focus:ring"
+            />
+          </div>
+        {% else %}
+          <nav class="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+            {% if breadcrumbs %}
+              {% for crumb in breadcrumbs %}
+                {% if crumb.href %}
+                  <a href="{{ crumb.href }}" class="hover:text-slate-700">{{ crumb.label }}</a>
+                {% else %}
+                  <span class="font-bold text-blue-600">{{ crumb.label }}</span>
+                {% endif %}
+                {% if not loop.last %}
+                  <span>/</span>
+                {% endif %}
+              {% endfor %}
+            {% else %}
+              <a href="{{ url_for('index') }}" class="text-lg font-semibold text-slate-900">RabiesResQ</a>
+            {% endif %}
+          </nav>
+        {% endif %}
         <nav class="flex items-center gap-4 text-sm">
           {% if session.get('user_id') %}
             <span class="text-slate-600">Signed in as <span class="font-medium">{{ session.get('username') }}</span></span>
