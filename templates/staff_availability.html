@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Manage availability - RabiesResQ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      integrity="sha512-SnH5WK+bZxgPHs44uWix+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkR4j8tBT9q4o6r7gYxAjgQ8K3X0M3fN9lWQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+  </head>
+  <body class="min-h-screen bg-slate-100 text-slate-900">
+    <div class="flex min-h-screen flex-col lg:flex-row">
+      <aside class="w-full border-r border-slate-200 bg-white lg:w-64">
+        <div class="flex h-full flex-col p-6">
+          <a href="{{ url_for('staff_dashboard') }}" class="text-2xl font-bold text-blue-800">RabiesResQ</a>
+
+          <nav class="mt-8 space-y-2 text-sm">
+            <a href="{{ url_for('staff_dashboard') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-100">
+              <i class="fa-solid fa-table-columns"></i>
+              Dashboard
+            </a>
+            <a href="{{ url_for('staff_patients') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-100">
+              <i class="fa-solid fa-user-group"></i>
+              Patients
+            </a>
+            <a
+              href="{{ url_for('staff_appointments') }}"
+              class="flex items-center gap-3 rounded-xl bg-emerald-100 px-4 py-3 font-medium text-emerald-700"
+            >
+              <i class="fa-regular fa-calendar"></i>
+              Appointments
+            </a>
+            <a href="#" class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-100">
+              <i class="fa-solid fa-syringe"></i>
+              Vaccinations
+            </a>
+            <a href="#" class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-100">
+              <i class="fa-solid fa-chart-simple"></i>
+              Reports
+            </a>
+          </nav>
+
+          <div class="mt-auto pt-8">
+            <a href="#" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 font-semibold text-white transition hover:bg-emerald-600">
+              <i class="fa-solid fa-plus"></i>
+              New Patient
+            </a>
+            <div class="mt-4 space-y-2 text-sm">
+              <a href="#" class="flex items-center gap-3 rounded-xl px-4 py-2 text-slate-600 hover:bg-slate-100">
+                <i class="fa-solid fa-gear"></i>
+                Settings
+              </a>
+              <a href="{{ url_for('auth.logout') }}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 font-semibold text-white transition hover:bg-red-600">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                Logout
+              </a>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="flex-1 p-4 sm:p-6 lg:p-8">
+        <div class="rounded-2xl bg-white p-4 shadow-sm sm:p-6">
+          <header class="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
+            <nav class="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+              {% for crumb in breadcrumbs %}
+                {% if crumb.href %}
+                  <a href="{{ crumb.href }}" class="hover:text-slate-700">{{ crumb.label }}</a>
+                {% else %}
+                  <span class="font-bold text-blue-600">{{ crumb.label }}</span>
+                {% endif %}
+                {% if not loop.last %}
+                  <span>/</span>
+                {% endif %}
+              {% endfor %}
+            </nav>
+            <div class="flex items-center gap-3">
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-slate-700">
+                <i class="fa-solid fa-user"></i>
+              </div>
+              <div class="leading-tight">
+                <p class="text-sm font-semibold">{{ staff_display_name }}</p>
+                <p class="text-xs text-slate-500">Veterinarian</p>
+              </div>
+            </div>
+          </header>
+
+          <section class="mt-6">
+            <h1 class="text-4xl font-bold text-blue-900">Manage availability</h1>
+            <p class="mt-1 text-slate-600">Add or remove appointment slots for your clinic (45-minute intervals; lunch break excluded).</p>
+          </section>
+
+          <section class="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <h2 class="text-lg font-semibold text-slate-900">Add slots for a date range</h2>
+            <form method="post" action="{{ url_for('staff_availability_post') }}" class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <!-- Date range (From above, To below) -->
+              <div class="space-y-3">
+                <div>
+                  <label for="slot_date_from" class="mb-1 block text-sm font-medium text-slate-700">From date</label>
+                  <input type="date" id="slot_date_from" name="slot_date_from" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+                </div>
+                <div>
+                  <label for="slot_date_to" class="mb-1 block text-sm font-medium text-slate-700">To date</label>
+                  <input type="date" id="slot_date_to" name="slot_date_to" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+                </div>
+              </div>
+
+              <!-- Start / End time stacked -->
+              <div class="space-y-3">
+                <div>
+                  <label for="start_time" class="mb-1 block text-sm font-medium text-slate-700">Start time</label>
+                  <input type="time" id="start_time" name="start_time" value="08:00" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+                </div>
+                <div>
+                  <label for="end_time" class="mb-1 block text-sm font-medium text-slate-700">End time</label>
+                  <input type="time" id="end_time" name="end_time" value="17:00" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+                </div>
+              </div>
+
+              <!-- Lunch break stacked -->
+              <div class="space-y-3">
+                <div>
+                  <label for="lunch_start" class="mb-1 block text-sm font-medium text-slate-700">Lunch start</label>
+                  <input type="time" id="lunch_start" name="lunch_start" value="12:00" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+                </div>
+                <div>
+                  <label for="lunch_end" class="mb-1 block text-sm font-medium text-slate-700">Lunch end</label>
+                  <input type="time" id="lunch_end" name="lunch_end" value="13:00" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+                </div>
+              </div>
+
+              <div class="flex flex-col items-stretch justify-end space-y-2">
+                <button type="submit" class="w-full rounded-lg bg-emerald-500 px-4 py-2.5 font-medium text-white hover:bg-emerald-600">
+                  Add slots
+                </button>
+                <input type="hidden" name="duration_minutes" value="45" />
+                <input type="hidden" name="max_bookings" value="1" />
+              </div>
+            </form>
+          </section>
+
+          <section class="mt-4 overflow-x-auto rounded-2xl border border-slate-200">
+            <table class="min-w-full divide-y divide-slate-200 text-sm">
+              <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th class="px-4 py-3 align-top">
+                    <div class="flex items-center gap-2">
+                      <span>Date &amp; time</span>
+                      <form method="get" action="{{ url_for('staff_availability') }}" class="text-xs font-normal">
+                        <input
+                          type="date"
+                          name="filter_date"
+                          value="{{ filter_date or from_date }}"
+                          class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-900"
+                          onchange="this.form.submit()"
+                        />
+                      </form>
+                    </div>
+                  </th>
+                  <th class="px-4 py-3">Duration</th>
+                  <th class="px-4 py-3">Status</th>
+                  <th class="px-4 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 bg-white">
+                {% if slots %}
+                  {% for slot in slots %}
+                    <tr class="hover:bg-slate-50">
+                      <td class="px-4 py-3 font-medium text-slate-700">{{ slot.display_datetime }}</td>
+                      <td class="px-4 py-3 text-slate-600">{{ slot.duration_minutes }} min</td>
+                      <td class="px-4 py-3">
+                        {% if not slot.is_active %}
+                          <span class="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600">Inactive</span>
+                        {% elif slot.is_taken %}
+                          <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">Booked</span>
+                        {% else %}
+                          <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">Available</span>
+                        {% endif %}
+                      </td>
+                      <td class="px-4 py-3">
+                        {% if slot.is_active and not slot.is_taken %}
+                          <form method="post" action="{{ url_for('staff_availability_deactivate', slot_id=slot.id) }}" class="inline">
+                            <button type="submit" class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-600 hover:bg-slate-100">Deactivate</button>
+                          </form>
+                        {% endif %}
+                        {% if not slot.is_taken %}
+                          <form method="post" action="{{ url_for('staff_availability_delete', slot_id=slot.id) }}" class="inline" onsubmit="return confirm('Delete this slot?');">
+                            <button type="submit" class="ml-1 rounded-lg border border-red-200 bg-white px-2 py-1 text-xs text-red-600 hover:bg-red-50">Delete</button>
+                          </form>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr>
+                    <td colspan="4" class="px-4 py-8 text-center text-slate-500">No slots in this date range. Use the form above to add slots.</td>
+                  </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </section>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

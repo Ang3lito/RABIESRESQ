@@ -1,4 +1,7 @@
 import functools
+import logging
+import secrets
+from datetime import datetime, timedelta, timezone
 
 from flask import (
     Blueprint,
@@ -20,28 +23,44 @@ from email_service import send_email
 
 bp = Blueprint("auth", __name__)
 
-_RESET_SALT = "rabiesresq-password-reset"
-_RESET_MAX_AGE_SECONDS = 60 * 60  # 1 hour
+_OTP_EXPIRY_MINUTES = 10
+_RESET_TOKEN_SALT = "rabiesresq-password-reset-token"
+_RESET_TOKEN_MAX_AGE_SECONDS = 15 * 60  # 15 minutes
+_MAX_VERIFY_ATTEMPTS = 5
+
+logger = logging.getLogger(__name__)
 
 
 def _normalize_email(value: str | None) -> str:
     return (value or "").strip().lower()
 
 
-def _reset_serializer() -> URLSafeTimedSerializer:
+def _is_valid_email(email: str) -> bool:
+    if not email or len(email) > 254:
+        return False
+    return "@" in email and "." in email.split("@")[-1]
+
+
+def _generate_otp() -> str:
+    return "".join(secrets.choice("0123456789") for _ in range(6))
+
+
+def _reset_token_serializer() -> URLSafeTimedSerializer:
     return URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
 
 
-def _make_reset_token(user_id: int, email: str | None) -> str:
-    return _reset_serializer().dumps({"user_id": user_id, "email": email}, salt=_RESET_SALT)
+def _make_reset_token(email: str) -> str:
+    return _reset_token_serializer().dumps(
+        {"email": email}, salt=_RESET_TOKEN_SALT
+    )
 
 
 def _verify_reset_token(token: str) -> dict | None:
     try:
-        data = _reset_serializer().loads(token, salt=_RESET_SALT, max_age=_RESET_MAX_AGE_SECONDS)
-        if not isinstance(data, dict):
-            return None
-        if "user_id" not in data:
+        data = _reset_token_serializer().loads(
+            token, salt=_RESET_TOKEN_SALT, max_age=_RESET_TOKEN_MAX_AGE_SECONDS
+        )
+        if not isinstance(data, dict) or "email" not in data:
             return None
         return data
     except (SignatureExpired, BadSignature):
@@ -236,73 +255,143 @@ def forgot_password():
     return render_template("forgot_password.html")
 
 
-@bp.post("/forgot-password")
-def forgot_password_post():
+@bp.post("/forgot-password/request")
+def forgot_password_request():
     email = _normalize_email(request.form.get("email"))
     if not email:
         flash("Email is required.", "error")
         return render_template("forgot_password.html", email=email)
+    if not _is_valid_email(email):
+        flash("Please enter a valid email address.", "error")
+        return render_template("forgot_password.html", email=email)
 
-    # Always respond generically to avoid account enumeration.
     db = get_db()
     user = db.execute("SELECT id, email FROM users WHERE email = ? LIMIT 1", (email,)).fetchone()
     if user is not None:
-        token = _make_reset_token(user["id"], user["email"])
-        reset_url = url_for("auth.reset_password", token=token, _external=True)
-        send_email(
-            to_email=email,
-            subject="RabiesResQ Password Reset",
-            body=f"Use this link to reset your password (valid for 1 hour):\n\n{reset_url}\n",
+        code = _generate_otp()
+        expires_at = (datetime.now(timezone.utc) + timedelta(minutes=_OTP_EXPIRY_MINUTES)).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
         )
+        try:
+            db.execute(
+                "UPDATE password_reset_codes SET is_used = 1 WHERE email = ?",
+                (email,),
+            )
+            db.execute(
+                "INSERT INTO password_reset_codes (email, code, expires_at, is_used, attempts) VALUES (?, ?, ?, 0, 0)",
+                (email, code, expires_at),
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
+            logger.exception("Failed to store password reset code")
+        else:
+            send_email(
+                to_email=email,
+                subject="RabiesResQ Password Reset Code",
+                body=f"Your RabiesResQ verification code is: {code}. Valid for {_OTP_EXPIRY_MINUTES} minutes. Do not share.",
+            )
+            logger.info("Password reset code sent for email (id redacted)")
 
-    flash("If an account exists for that email, a password reset link has been sent.", "success")
-    return redirect(url_for("auth.login"))
+    flash("If an account exists for that email, a verification code has been sent.", "success")
+    return redirect(url_for("auth.forgot_password_verify", email=email))
 
 
-@bp.get("/reset-password/<token>")
-def reset_password(token: str):
-    data = _verify_reset_token(token)
-    if not data:
-        flash("Reset link is invalid or expired. Please request a new one.", "error")
+@bp.get("/forgot-password/verify")
+def forgot_password_verify():
+    email = _normalize_email(request.args.get("email"))
+    if not email:
+        return redirect(url_for("auth.forgot_password"))
+    return render_template("forgot_password_verify.html", email=email)
+
+
+@bp.post("/forgot-password/verify")
+def forgot_password_verify_post():
+    email = _normalize_email(request.form.get("email"))
+    code = (request.form.get("code") or "").strip()
+    if not email:
+        flash("Email is required.", "error")
+        return redirect(url_for("auth.forgot_password_verify"))
+    if not code or len(code) != 6 or not code.isdigit():
+        flash("Please enter the 6-digit code.", "error")
+        return render_template("forgot_password_verify.html", email=email)
+
+    db = get_db()
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    row = db.execute(
+        "SELECT id, code, attempts FROM password_reset_codes WHERE email = ? AND expires_at > ? AND is_used = 0 ORDER BY created_at DESC LIMIT 1",
+        (email, now),
+    ).fetchone()
+
+    if row is None:
+        flash("No valid code found for this email. Please request a new code.", "error")
+        return render_template("forgot_password_verify.html", email=email)
+
+    if row["code"] != code:
+        attempts = (row["attempts"] or 0) + 1
+        db.execute(
+            "UPDATE password_reset_codes SET attempts = ? WHERE id = ?",
+            (attempts, row["id"]),
+        )
+        db.commit()
+        if attempts >= _MAX_VERIFY_ATTEMPTS:
+            db.execute("UPDATE password_reset_codes SET is_used = 1 WHERE id = ?", (row["id"],))
+            db.commit()
+            flash("Too many failed attempts. Please request a new code.", "error")
+        else:
+            flash("Invalid code. Please try again.", "error")
+        return render_template("forgot_password_verify.html", email=email)
+
+    db.execute("UPDATE password_reset_codes SET is_used = 1 WHERE id = ?", (row["id"],))
+    db.commit()
+
+    reset_token = _make_reset_token(email)
+    return redirect(url_for("auth.forgot_password_reset", token=reset_token))
+
+
+@bp.get("/forgot-password/reset")
+def forgot_password_reset():
+    token = request.args.get("token")
+    if not token or not _verify_reset_token(token):
+        flash("Reset link is invalid or expired. Please start over.", "error")
         return redirect(url_for("auth.forgot_password"))
     return render_template("reset_password.html", token=token)
 
 
-@bp.post("/reset-password/<token>")
-def reset_password_post(token: str):
-    data = _verify_reset_token(token)
+@bp.post("/forgot-password/reset")
+def forgot_password_reset_post():
+    token = request.form.get("token") or request.args.get("token") or ""
+    data = _verify_reset_token(token) if token else None
     if not data:
-        flash("Reset link is invalid or expired. Please request a new one.", "error")
+        flash("Reset link is invalid or expired. Please start over.", "error")
         return redirect(url_for("auth.forgot_password"))
 
+    email = data.get("email")
     password = request.form.get("password") or ""
     confirm_password = request.form.get("confirm_password") or ""
+
     if not password:
         flash("Password is required.", "error")
+        return render_template("reset_password.html", token=token)
+    if len(password) < 8:
+        flash("Password must be at least 8 characters.", "error")
         return render_template("reset_password.html", token=token)
     if password != confirm_password:
         flash("Passwords do not match.", "error")
         return render_template("reset_password.html", token=token)
 
-    user_id = int(data["user_id"])
-    email = data.get("email")
-
     db = get_db()
-    user = db.execute("SELECT id, email FROM users WHERE id = ? LIMIT 1", (user_id,)).fetchone()
+    user = db.execute("SELECT id FROM users WHERE email = ? LIMIT 1", (email,)).fetchone()
     if user is None:
-        flash("Unable to reset password. Please request a new link.", "error")
-        return redirect(url_for("auth.forgot_password"))
-
-    # If the token contained an email, require it to match.
-    if email is not None and user["email"] != email:
-        flash("Unable to reset password. Please request a new link.", "error")
+        flash("Unable to reset password. Please request a new code.", "error")
         return redirect(url_for("auth.forgot_password"))
 
     try:
         db.execute(
             "UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-            (generate_password_hash(password), user_id),
+            (generate_password_hash(password), user["id"]),
         )
+        db.execute("UPDATE password_reset_codes SET is_used = 1 WHERE email = ?", (email,))
         db.commit()
     except Exception:
         db.rollback()

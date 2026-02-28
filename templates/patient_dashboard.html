@@ -33,49 +33,106 @@
     </div>
 
     <!-- Cases and Appointments Section -->
-    {% if appointments %}
+    {% if has_any_appointments %}
     <div class="flex min-h-0 flex-1 flex-col space-y-4">
       <div class="shrink-0">
-        <h2 class="text-lg font-bold text-slate-900">Appointments</h2>
-        <div class="mt-2 space-y-3">
-          {% for appointment in appointments %}
-          <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <div class="flex items-start justify-between">
-              <div class="flex-1">
-                <div class="flex items-center gap-3">
-                  <h3 class="font-semibold text-slate-900">Appointment #{{ appointment.id }}</h3>
-                  {% if appointment.status == 'Cancelled' %}
-                  <span class="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-700">Cancelled</span>
-                  {% else %}
-                  <span class="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">{{ appointment.status or 'Scheduled' }}</span>
-                  {% if appointment.risk_level %}
-                    {% if appointment.risk_level == 'Category III' %}
-                    <span class="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">Risk: {{ appointment.risk_level }}</span>
-                    {% elif appointment.risk_level == 'Category II' %}
-                    <span class="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700">Risk: {{ appointment.risk_level }}</span>
-                    {% else %}
-                    <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Risk: {{ appointment.risk_level }}</span>
-                    {% endif %}
-                  {% endif %}
-                  {% endif %}
-                </div>
-                <p class="mt-1 text-sm text-slate-600">
-                  <span class="font-medium">Date:</span> {{ appointment.appointment_datetime or 'N/A' }} | 
-                  <span class="font-medium">Type:</span> {{ appointment.type or 'N/A' }}
-                </p>
-              </div>
-              <div class="shrink-0">
-                {% if appointment.status == 'Cancelled' %}
-                  <button type="button" class="rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-500 cursor-not-allowed" disabled>Cancelled</button>
-                {% else %}
-                  <form method="post" action="{{ url_for('patient_cancel_appointment', appointment_id=appointment.id) }}">
-                    <button type="submit" class="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50" onclick="return confirm('Cancel this appointment?');">Cancel</button>
-                  </form>
-                {% endif %}
-              </div>
-            </div>
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 class="text-lg font-bold text-slate-900">Appointments</h2>
+          <div class="flex flex-wrap gap-2 text-xs">
+            {% set current_status = selected_status or '' %}
+            <a
+              href="{{ url_for('patient_dashboard') }}"
+              class="rounded-full border px-3 py-1 font-medium {% if not current_status %}border-emerald-500 bg-emerald-500 text-white{% else %}border-slate-200 bg-white text-slate-700 hover:bg-slate-50{% endif %}"
+            >
+              All
+            </a>
+            <a
+              href="{{ url_for('patient_dashboard', status='pending') }}"
+              class="rounded-full border px-3 py-1 font-medium {% if current_status == 'pending' %}border-emerald-500 bg-emerald-500 text-white{% else %}border-slate-200 bg-white text-slate-700 hover:bg-slate-50{% endif %}"
+            >
+              Pending
+            </a>
+            <a
+              href="{{ url_for('patient_dashboard', status='scheduled') }}"
+              class="rounded-full border px-3 py-1 font-medium {% if current_status == 'scheduled' %}border-emerald-500 bg-emerald-500 text-white{% else %}border-slate-200 bg-white text-slate-700 hover:bg-slate-50{% endif %}"
+            >
+              Scheduled
+            </a>
+            <a
+              href="{{ url_for('patient_dashboard', status='completed') }}"
+              class="rounded-full border px-3 py-1 font-medium {% if current_status == 'completed' %}border-emerald-500 bg-emerald-500 text-white{% else %}border-slate-200 bg-white text-slate-700 hover:bg-slate-50{% endif %}"
+            >
+              Completed
+            </a>
+            <a
+              href="{{ url_for('patient_dashboard', status='canceled') }}"
+              class="rounded-full border px-3 py-1 font-medium {% if current_status == 'canceled' %}border-emerald-500 bg-emerald-500 text-white{% else %}border-slate-200 bg-white text-slate-700 hover:bg-slate-50{% endif %}"
+            >
+              Cancelled
+            </a>
+            <a
+              href="{{ url_for('patient_dashboard', status='missed') }}"
+              class="rounded-full border px-3 py-1 font-medium {% if current_status == 'missed' %}border-emerald-500 bg-emerald-500 text-white{% else %}border-slate-200 bg-white text-slate-700 hover:bg-slate-50{% endif %}"
+            >
+              Missed
+            </a>
           </div>
-          {% endfor %}
+        </div>
+        <div class="mt-2 space-y-3">
+          {% if appointments %}
+            {% for appointment in appointments %}
+            <a
+              href="{{ url_for('patient_appointment_view', appointment_id=appointment.id) }}"
+              class="block rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-emerald-300 hover:shadow-md"
+            >
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                  <div class="flex flex-wrap items-center gap-3">
+                    <h3 class="font-semibold text-slate-900">Appointment #{{ appointment.id }}</h3>
+                    {% set raw_status = appointment.status or 'Scheduled' %}
+                    {% set display_status = 'Cancelled' if raw_status in ['Removed', 'Cancelled'] else raw_status %}
+                    {% if display_status == 'Cancelled' %}
+                    <span class="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-700">{{ display_status }}</span>
+                    {% else %}
+                    <span class="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">{{ display_status }}</span>
+                    {% if appointment.risk_level %}
+                      {% if appointment.risk_level == 'Category III' %}
+                      <span class="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">Risk: {{ appointment.risk_level }}</span>
+                      {% elif appointment.risk_level == 'Category II' %}
+                      <span class="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700">Risk: {{ appointment.risk_level }}</span>
+                      {% else %}
+                      <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Risk: {{ appointment.risk_level }}</span>
+                      {% endif %}
+                    {% endif %}
+                    {% endif %}
+                  </div>
+                  <p class="mt-1 text-sm text-slate-600">
+                    <span class="font-medium">For:</span>
+                    {% set rel = (appointment.victim_relationship or 'Self') %}
+                    {% if rel|lower == 'self' %}
+                      Self
+                    {% else %}
+                      {{ rel }} - {{ appointment.victim_first_name or '' }} {{ appointment.victim_last_name or '' }}
+                    {% endif %}
+                  </p>
+                  <p class="mt-0.5 text-sm text-slate-600">
+                    <span class="font-medium">Date:</span> {{ appointment.appointment_datetime or 'N/A' }} | 
+                    <span class="font-medium">Type:</span> {{ appointment.type or 'N/A' }}
+                  </p>
+                </div>
+                <div class="shrink-0 self-center">
+                  <span class="inline-flex items-center rounded-md border border-emerald-500 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                    View details
+                  </span>
+                </div>
+              </div>
+            </a>
+            {% endfor %}
+          {% else %}
+            <div class="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+              No appointments for this status yet. Try a different filter above.
+            </div>
+          {% endif %}
         </div>
       </div>
     </div>

@@ -1,9 +1,10 @@
 import os
-from datetime import datetime
+import sqlite3
+from datetime import datetime, timedelta
 
 import click
 from dotenv import load_dotenv
-from flask import Flask, flash, redirect, render_template, request, session, url_for
+from flask import Flask, flash, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.security import generate_password_hash
 
 from auth import login_required, role_required
@@ -185,9 +186,23 @@ def create_app():
         finally:
             db.execute("PRAGMA foreign_keys = ON")
 
+    def _ensure_appointments_patient_hidden_column():
+        db = get_db()
+        cols = {row["name"] for row in db.execute("PRAGMA table_info(appointments)").fetchall()}
+        if "patient_hidden" not in cols:
+            db.execute(
+                """
+                ALTER TABLE appointments
+                ADD COLUMN patient_hidden INTEGER NOT NULL DEFAULT 0
+                CHECK(patient_hidden IN (0,1))
+                """
+            )
+            db.commit()
+
     with app.app_context():
         _ensure_patient_onboarding_column()
         _migrate_patients_for_dependents()
+        _ensure_appointments_patient_hidden_column()
 
     def _get_primary_patient(user_id: int):
         db = get_db()
@@ -342,7 +357,7 @@ def create_app():
             flash("Account profile missing, contact admin.", "error")
             return redirect(url_for("auth.login"))
 
-        # Fetch cases and appointments for this patient
+        # Fetch cases for the primary self patient (for now)
         cases = db.execute(
             """
             SELECT c.*, psd.wound_description, psd.bleeding_type, psd.local_treatment,
@@ -356,22 +371,62 @@ def create_app():
             (patient["id"],),
         ).fetchall()
 
-        appointments = db.execute(
+        # Fetch appointments for all patients under this user (self + dependents)
+        all_appointments = db.execute(
             """
             SELECT
                 a.*,
                 c.type_of_exposure,
                 c.exposure_date,
-                c.risk_level
+                c.risk_level,
+                p.first_name AS victim_first_name,
+                p.last_name AS victim_last_name,
+                p.relationship_to_user AS victim_relationship
             FROM appointments a
             JOIN cases c ON c.id = a.case_id
-            WHERE a.patient_id = ?
+            JOIN patients p ON p.id = a.patient_id
+            WHERE p.user_id = ?
+              AND COALESCE(a.patient_hidden, 0) = 0
             ORDER BY a.appointment_datetime DESC
             """,
-            (patient["id"],),
+            (session["user_id"],),
         ).fetchall()
 
-        return render_template("patient_dashboard.html", patient=patient, cases=cases, appointments=appointments, active_page="dashboard")
+        # Optional status filter for dashboard chips
+        status_filter = (request.args.get("status") or "").strip().lower()
+
+        def _bucket_status(row: sqlite3.Row) -> str:
+            status_value = (row["status"] or "").strip().lower()
+            if status_value in ("cancelled", "canceled", "removed"):
+                return "canceled"
+            if status_value in ("completed",):
+                return "completed"
+            if status_value in ("no show", "missed"):
+                return "missed"
+            if status_value in ("pending", "queued"):
+                return "pending"
+            # Treat all other active / future-like statuses as "scheduled"
+            return "scheduled"
+
+        if status_filter in ("pending", "completed", "canceled", "scheduled", "missed"):
+            appointments = [row for row in all_appointments if _bucket_status(row) == status_filter]
+        else:
+            appointments = all_appointments
+
+        clinics = db.execute("SELECT id, name FROM clinics ORDER BY name").fetchall()
+
+        has_any_appointments = len(all_appointments) > 0
+
+        return render_template(
+            "patient_dashboard.html",
+            patient=patient,
+            cases=cases,
+            appointments=appointments,
+            clinics=clinics,
+            has_any_appointments=has_any_appointments,
+            selected_status=status_filter if status_filter in ("pending", "completed", "canceled", "scheduled", "missed") else "",
+            active_page="dashboard",
+        )
 
     @app.get("/patient/profile")
     @role_required("patient")
@@ -402,20 +457,15 @@ def create_app():
 
         db = get_db()
 
-        patient = _get_primary_patient(session["user_id"])
-
-        if patient is None:
-            session.clear()
-            flash("Account profile missing, contact admin.", "error")
-            return redirect(url_for("auth.login"))
-
+        # Ensure the appointment belongs to any patient under this user (self or dependents)
         appt = db.execute(
             """
-            SELECT id, status
-            FROM appointments
-            WHERE id = ? AND patient_id = ?
+            SELECT a.id, a.status
+            FROM appointments a
+            JOIN patients p ON p.id = a.patient_id
+            WHERE a.id = ? AND p.user_id = ?
             """,
-            (appointment_id, patient["id"]),
+            (appointment_id, session["user_id"]),
         ).fetchone()
 
         if appt is None:
@@ -430,13 +480,372 @@ def create_app():
             """
             UPDATE appointments
             SET status = ?
-            WHERE id = ? AND patient_id = ?
+            WHERE id = ?
             """,
-            ("Cancelled", appointment_id, patient["id"]),
+            ("Cancelled", appointment_id),
         )
         db.commit()
         flash("Appointment cancelled.", "success")
         return redirect(url_for("patient_dashboard"))
+
+    @app.post("/patient/appointments/<int:appointment_id>/hide")
+    @role_required("patient")
+    def patient_hide_appointment(appointment_id: int):
+        if not session.get("patient_onboarding_done"):
+            return redirect(url_for("patient_onboarding"))
+
+        db = get_db()
+
+        # Ensure the appointment belongs to any patient under this user (self or dependents)
+        appt = db.execute(
+            """
+            SELECT a.id
+            FROM appointments a
+            JOIN patients p ON p.id = a.patient_id
+            WHERE a.id = ? AND p.user_id = ?
+            """,
+            (appointment_id, session["user_id"]),
+        ).fetchone()
+
+        if appt is None:
+            flash("Appointment not found.", "error")
+            return redirect(url_for("patient_dashboard"))
+
+        db.execute(
+            """
+            UPDATE appointments
+            SET patient_hidden = 1
+            WHERE id = ?
+            """,
+            (appointment_id,),
+        )
+        db.commit()
+
+        flash("Appointment removed from your list.", "success")
+        return redirect(url_for("patient_dashboard"))
+
+    @app.get("/patient/appointments/<int:appointment_id>")
+    @role_required("patient")
+    def patient_appointment_view(appointment_id: int):
+        if not session.get("patient_onboarding_done"):
+            return redirect(url_for("patient_onboarding"))
+
+        db = get_db()
+        appt = db.execute(
+            """
+            SELECT
+              a.*,
+              p.first_name AS victim_first_name,
+              p.last_name AS victim_last_name,
+              p.relationship_to_user AS victim_relationship,
+              p.phone_number,
+              p.address,
+              c.id AS case_id,
+              c.type_of_exposure,
+              c.exposure_date,
+              COALESCE(c.risk_level, c.category, 'N/A') AS risk_level,
+              psd.wound_description,
+              psd.bleeding_type,
+              psd.local_treatment
+            FROM appointments a
+            JOIN patients p ON p.id = a.patient_id
+            JOIN cases c ON c.id = a.case_id
+            LEFT JOIN pre_screening_details psd ON psd.case_id = c.id
+            WHERE a.id = ? AND p.user_id = ?
+            """,
+            (appointment_id, session["user_id"]),
+        ).fetchone()
+
+        if appt is None:
+            flash("Appointment not found.", "error")
+            return redirect(url_for("patient_dashboard"))
+
+        victim_name = " ".join(
+            part
+            for part in [
+                (appt["victim_first_name"] or "").strip(),
+                (appt["victim_last_name"] or "").strip(),
+            ]
+            if part
+        ) or "Unknown"
+
+        appt_datetime_display = appt["appointment_datetime"] or ""
+        appt_date_display = ""
+        appt_time_display = ""
+        if appt["appointment_datetime"]:
+            try:
+                dt = datetime.fromisoformat(appt["appointment_datetime"])
+                appt_datetime_display = dt.strftime("%b %d, %Y @ %I:%M %p")
+                appt_date_display = dt.strftime("%Y-%m-%d")
+                appt_time_display = dt.strftime("%H:%M")
+            except ValueError:
+                pass
+
+        status_value = (appt["status"] or "").strip()
+        status_lower = status_value.lower()
+        can_edit = status_lower in ("pending", "queued", "no show")
+
+        return render_template(
+            "patient_appointment_view.html",
+            appointment=appt,
+            victim_name=victim_name,
+            appt_datetime_display=appt_datetime_display,
+            appt_date_display=appt_date_display,
+            appt_time_display=appt_time_display,
+            can_edit=can_edit,
+            active_page="dashboard",
+        )
+
+    @app.get("/patient/appointments/<int:appointment_id>/edit")
+    @role_required("patient")
+    def patient_appointment_edit(appointment_id: int):
+        if not session.get("patient_onboarding_done"):
+            return redirect(url_for("patient_onboarding"))
+
+        db = get_db()
+        appt = db.execute(
+            """
+            SELECT a.*
+            FROM appointments a
+            JOIN patients p ON p.id = a.patient_id
+            WHERE a.id = ? AND p.user_id = ?
+            """,
+            (appointment_id, session["user_id"]),
+        ).fetchone()
+
+        if appt is None:
+            flash("Appointment not found.", "error")
+            return redirect(url_for("patient_dashboard"))
+
+        status_value = (appt["status"] or "").strip()
+        status_lower = status_value.lower()
+        if status_lower not in ("pending", "queued", "no show"):
+            flash("This appointment can no longer be rescheduled.", "info")
+            return redirect(url_for("patient_appointment_view", appointment_id=appointment_id))
+
+        current_display = appt["appointment_datetime"] or ""
+        if appt["appointment_datetime"]:
+            try:
+                dt = datetime.fromisoformat(appt["appointment_datetime"])
+                current_display = dt.strftime("%b %d, %Y @ %I:%M %p")
+            except ValueError:
+                pass
+
+        # Fetch available future slots for this clinic
+        now_iso = datetime.now().isoformat()
+        rows = db.execute(
+            """
+            SELECT s.id, s.slot_datetime, s.max_bookings,
+                   (SELECT COUNT(*) FROM appointments a2
+                    WHERE a2.clinic_id = s.clinic_id
+                      AND a2.appointment_datetime = s.slot_datetime
+                      AND a2.id != ?
+                      AND LOWER(COALESCE(a2.status, '')) != 'cancelled') AS booking_count
+            FROM availability_slots s
+            WHERE s.clinic_id = ?
+              AND s.is_active = 1
+              AND s.slot_datetime > ?
+            ORDER BY s.slot_datetime ASC
+            """,
+            (appointment_id, appt["clinic_id"], now_iso),
+        ).fetchall()
+
+        available_slots = []
+        for row in rows:
+            if (row["booking_count"] or 0) >= (row["max_bookings"] or 1):
+                continue
+            dt_str = row["slot_datetime"] or ""
+            display = dt_str
+            if dt_str:
+                try:
+                    display = datetime.fromisoformat(dt_str).strftime("%b %d, %Y @ %I:%M %p")
+                except ValueError:
+                    pass
+            available_slots.append(
+                {
+                    "id": row["id"],
+                    "display_datetime": display,
+                }
+            )
+
+        return render_template(
+            "patient_appointment_edit.html",
+            appointment=appt,
+            current_datetime_display=current_display,
+            available_slots=available_slots,
+            active_page="dashboard",
+        )
+
+    @app.post("/patient/appointments/<int:appointment_id>/edit")
+    @role_required("patient")
+    def patient_appointment_edit_post(appointment_id: int):
+        if not session.get("patient_onboarding_done"):
+            return redirect(url_for("patient_onboarding"))
+
+        db = get_db()
+        appt = db.execute(
+            """
+            SELECT a.*
+            FROM appointments a
+            JOIN patients p ON p.id = a.patient_id
+            WHERE a.id = ? AND p.user_id = ?
+            """,
+            (appointment_id, session["user_id"]),
+        ).fetchone()
+
+        if appt is None:
+            flash("Appointment not found.", "error")
+            return redirect(url_for("patient_dashboard"))
+
+        status_value = (appt["status"] or "").strip()
+        status_lower = status_value.lower()
+        if status_lower not in ("pending", "queued", "no show"):
+            flash("This appointment can no longer be rescheduled.", "info")
+            return redirect(url_for("patient_appointment_view", appointment_id=appointment_id))
+
+        slot_id_raw = (request.form.get("appointment_slot_id") or "").strip()
+        if not slot_id_raw:
+            flash("Please select a new time.", "error")
+            return redirect(url_for("patient_appointment_edit", appointment_id=appointment_id))
+
+        try:
+            slot_id = int(slot_id_raw)
+        except ValueError:
+            flash("Invalid slot selection.", "error")
+            return redirect(url_for("patient_appointment_edit", appointment_id=appointment_id))
+
+        slot_row = db.execute(
+            """
+            SELECT id, slot_datetime, max_bookings
+            FROM availability_slots
+            WHERE id = ? AND clinic_id = ? AND is_active = 1
+            """,
+            (slot_id, appt["clinic_id"]),
+        ).fetchone()
+
+        if not slot_row:
+            flash("Selected slot is no longer available.", "error")
+            return redirect(url_for("patient_appointment_edit", appointment_id=appointment_id))
+
+        slot_datetime = slot_row["slot_datetime"]
+        if not slot_datetime:
+            flash("Selected slot is invalid.", "error")
+            return redirect(url_for("patient_appointment_edit", appointment_id=appointment_id))
+
+        if slot_datetime <= datetime.now().isoformat():
+            flash("The selected slot is in the past. Please choose another date and time.", "error")
+            return redirect(url_for("patient_appointment_edit", appointment_id=appointment_id))
+
+        # Check capacity excluding this appointment itself
+        existing_count = db.execute(
+            """
+            SELECT COUNT(*) AS n
+            FROM appointments
+            WHERE clinic_id = ?
+              AND appointment_datetime = ?
+              AND id != ?
+              AND LOWER(COALESCE(status, '')) != 'cancelled'
+            """,
+            (appt["clinic_id"], slot_datetime, appointment_id),
+        ).fetchone()["n"]
+        max_bookings = slot_row["max_bookings"] or 1
+        if existing_count >= max_bookings:
+            flash("This time slot is no longer available. Please choose another.", "error")
+            return redirect(url_for("patient_appointment_edit", appointment_id=appointment_id))
+
+        db.execute(
+            """
+            UPDATE appointments
+            SET appointment_datetime = ?
+            WHERE id = ?
+            """,
+            (slot_datetime, appointment_id),
+        )
+        db.commit()
+
+        flash("Appointment rescheduled.", "success")
+        return redirect(url_for("patient_appointment_view", appointment_id=appointment_id))
+
+    @app.get("/patient/availability")
+    @role_required("patient", "clinic_personnel")
+    def patient_availability():
+        """Return available slots for a clinic (and optional date).
+
+        Used by the patient pre-screening / reschedule flows and by staff when
+        rescheduling an appointment. Staff are always restricted to their own clinic.
+        """
+        db = get_db()
+
+        if session.get("role") == "clinic_personnel":
+            # Staff: always use their own clinic_id, ignore query param
+            staff_row = db.execute(
+                "SELECT clinic_id FROM clinic_personnel WHERE user_id = ?",
+                (session["user_id"],),
+            ).fetchone()
+            if staff_row is None:
+                return jsonify([])
+            clinic_id = staff_row["clinic_id"]
+        else:
+            clinic_id = request.args.get("clinic_id", "").strip()
+            if not clinic_id:
+                row = db.execute("SELECT id FROM clinics LIMIT 1").fetchone()
+                if not row:
+                    return jsonify([])
+                clinic_id = row["id"]
+            else:
+                try:
+                    clinic_id = int(clinic_id)
+                except ValueError:
+                    return jsonify([])
+
+        date_param = request.args.get("date", "").strip()
+        from_param = request.args.get("from", "").strip()
+        to_param = request.args.get("to", "").strip()
+        now_iso = datetime.now().isoformat()
+
+        if date_param:
+            from_date = to_date = date_param
+        elif from_param and to_param:
+            from_date, to_date = from_param, to_param
+        else:
+            from_date = datetime.now().date().isoformat()
+            to_date = (datetime.now().date() + timedelta(days=60)).isoformat()
+
+        rows = db.execute(
+            """
+            SELECT s.id, s.slot_datetime, s.max_bookings,
+                   (SELECT COUNT(*) FROM appointments a
+                    WHERE a.clinic_id = s.clinic_id
+                      AND a.appointment_datetime = s.slot_datetime
+                      AND LOWER(COALESCE(a.status, '')) != 'cancelled') AS booking_count
+            FROM availability_slots s
+            WHERE s.clinic_id = ?
+              AND s.is_active = 1
+              AND DATE(s.slot_datetime) >= ?
+              AND DATE(s.slot_datetime) <= ?
+              AND s.slot_datetime > ?
+            ORDER BY s.slot_datetime ASC
+            """,
+            (clinic_id, from_date, to_date, now_iso),
+        ).fetchall()
+
+        out = []
+        for row in rows:
+            if (row["booking_count"] or 0) >= (row["max_bookings"] or 1):
+                continue
+            dt_str = row["slot_datetime"] or ""
+            time_display = dt_str
+            if dt_str:
+                try:
+                    time_display = datetime.fromisoformat(dt_str).strftime("%I:%M %p")
+                except ValueError:
+                    pass
+            out.append({
+                "id": row["id"],
+                "slot_datetime": dt_str,
+                "time_display": time_display,
+            })
+        return jsonify(out)
 
     @app.post("/patient/pre-screening/submit")
     @role_required("patient")
@@ -457,7 +866,6 @@ def create_app():
         # Get or create default clinic (use first clinic or create default)
         clinic = db.execute("SELECT id FROM clinics LIMIT 1").fetchone()
         if not clinic:
-            # Create default clinic if none exists
             db.execute("INSERT INTO clinics (name, address) VALUES (?, ?)", ("Default Clinic", None))
             db.commit()
             clinic = db.execute("SELECT id FROM clinics LIMIT 1").fetchone()
@@ -465,6 +873,17 @@ def create_app():
 
         # Get form data
         form_type = request.form.get("form_type", "case")
+        appointment_slot_id_raw = request.form.get("appointment_slot_id", "").strip()
+        appointment_datetime_form = request.form.get("appointment_datetime", "").strip()
+        form_clinic_id = request.form.get("clinic_id", "").strip()
+        if form_type == "appointment" and form_clinic_id:
+            try:
+                fid = int(form_clinic_id)
+                row = db.execute("SELECT id FROM clinics WHERE id = ?", (fid,)).fetchone()
+                if row:
+                    clinic_id = row["id"]
+            except ValueError:
+                pass
         type_of_exposure = request.form.get("type_of_exposure", "").strip()
         exposure_date = request.form.get("exposure_date", "").strip()
         exposure_time = request.form.get("exposure_time", "").strip()
@@ -489,12 +908,27 @@ def create_app():
         hrtig_date = request.form.get("hrtig_date", "").strip() or None
         
         # Victim info (update patient if provided)
-        full_name = request.form.get("full_name", "").strip()
+        victim_first_name = request.form.get("victim_first_name", "").strip()
+        victim_last_name = request.form.get("victim_last_name", "").strip()
+        victim_middle_initial = request.form.get("victim_middle_initial", "").strip()
         age = request.form.get("age", "").strip()
         barangay = request.form.get("barangay", "").strip()
+        victim_address = request.form.get("victim_address", "").strip()
         contact_number = request.form.get("contact_number", "").strip()
         email_address = request.form.get("email_address", "").strip().lower()
         relationship_to_user = (request.form.get("relationship_to_user", "Self") or "Self").strip()
+
+        # Build combined address: Barangay, Street (or just barangay / just street)
+        combined_address = None
+        if barangay and victim_address:
+            combined_address = f"{barangay}, {victim_address}"
+        elif barangay:
+            combined_address = barangay
+        elif victim_address:
+            combined_address = victim_address
+
+        first_name = victim_first_name or None
+        last_name = victim_last_name or None
 
         # Validation
         errors = []
@@ -529,12 +963,8 @@ def create_app():
             return redirect(url_for("patient_dashboard"))
 
         target_patient_id = patient["id"]
-        has_victim_info = bool(full_name or age or barangay or contact_number or email_address)
+        has_victim_info = bool(first_name or last_name or age or barangay or combined_address or contact_number or email_address)
         if has_victim_info:
-            name_parts = full_name.split(" ", 1) if full_name else ["", ""]
-            first_name = name_parts[0] if len(name_parts) > 0 else None
-            last_name = name_parts[1] if len(name_parts) > 1 else None
-
             parsed_age = patient["age"]
             if age:
                 try:
@@ -547,7 +977,7 @@ def create_app():
                 # Update only the primary self record, never dependent rows.
                 new_first_name = first_name if first_name else patient["first_name"]
                 new_last_name = last_name if last_name else patient["last_name"]
-                new_address = barangay if barangay else patient["address"]
+                new_address = combined_address if combined_address else patient["address"]
                 new_phone = contact_number if contact_number else patient["phone_number"]
 
                 db.execute(
@@ -579,7 +1009,7 @@ def create_app():
                         first_name,
                         last_name,
                         contact_number or None,
-                        barangay or None,
+                        combined_address or None,
                         parsed_age,
                         relationship_to_user,
                         1,
@@ -679,12 +1109,60 @@ def create_app():
                 ),
             )
 
-            # Create appointment if form_type is "appointment"
+            # Create appointment if form_type is "appointment" (use chosen slot)
             if form_type == "appointment":
-                from datetime import datetime, timedelta
-                # Set appointment datetime to tomorrow at 9 AM as default
-                appointment_datetime = (datetime.now() + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0).isoformat()
-                
+                slot_datetime = None
+                slot_row = None
+                if appointment_slot_id_raw:
+                    try:
+                        slot_row = db.execute(
+                            """
+                            SELECT id, slot_datetime, max_bookings
+                            FROM availability_slots
+                            WHERE id = ? AND clinic_id = ? AND is_active = 1
+                            """,
+                            (int(appointment_slot_id_raw), clinic_id),
+                        ).fetchone()
+                        if slot_row:
+                            slot_datetime = slot_row["slot_datetime"]
+                    except ValueError:
+                        pass
+                if not slot_datetime and appointment_datetime_form:
+                    slot_row = db.execute(
+                        """
+                        SELECT id, slot_datetime, max_bookings
+                        FROM availability_slots
+                        WHERE clinic_id = ? AND slot_datetime = ? AND is_active = 1
+                        """,
+                        (clinic_id, appointment_datetime_form),
+                    ).fetchone()
+                    if slot_row:
+                        slot_datetime = slot_row["slot_datetime"]
+
+                if not slot_datetime:
+                    db.rollback()
+                    flash("Invalid or unavailable appointment slot. Please choose another date and time.", "error")
+                    return redirect(url_for("patient_dashboard"))
+
+                if slot_datetime <= datetime.now().isoformat():
+                    db.rollback()
+                    flash("The selected slot is in the past. Please choose another date and time.", "error")
+                    return redirect(url_for("patient_dashboard"))
+
+                existing_count = db.execute(
+                    """
+                    SELECT COUNT(*) AS n FROM appointments
+                    WHERE clinic_id = ? AND appointment_datetime = ?
+                    AND LOWER(COALESCE(status, '')) != 'cancelled'
+                    """,
+                    (clinic_id, slot_datetime),
+                ).fetchone()["n"]
+                max_bookings = (slot_row["max_bookings"] or 1) if slot_row else 1
+                if existing_count >= max_bookings:
+                    db.rollback()
+                    flash("This time slot is no longer available. Please choose another.", "error")
+                    return redirect(url_for("patient_dashboard"))
+
                 db.execute(
                     """
                     INSERT INTO appointments (
@@ -695,7 +1173,7 @@ def create_app():
                     (
                         target_patient_id,
                         clinic_id,
-                        appointment_datetime,
+                        slot_datetime,
                         "Pending",
                         "Pre-screening",
                         case_id,
@@ -1070,6 +1548,118 @@ def create_app():
             todays_appointments=todays_appointments,
         )
 
+    @app.get("/staff/profile")
+    @role_required("clinic_personnel", "system_admin")
+    def staff_profile():
+        if session.get("role") == "system_admin":
+            return redirect(url_for("admin_dashboard"))
+
+        db = get_db()
+        staff = db.execute(
+            """
+            SELECT cp.*, u.username, u.email, c.name AS clinic_name
+            FROM clinic_personnel cp
+            JOIN users u ON u.id = cp.user_id
+            JOIN clinics c ON c.id = cp.clinic_id
+            WHERE cp.user_id = ?
+            """,
+            (session["user_id"],),
+        ).fetchone()
+
+        if staff is None:
+            session.clear()
+            flash("Account profile missing, contact admin.", "error")
+            return redirect(url_for("auth.login"))
+
+        return render_template("staff_profile.html", staff=staff, active_page="profile")
+
+    @app.post("/staff/profile")
+    @role_required("clinic_personnel", "system_admin")
+    def staff_profile_update():
+        if session.get("role") == "system_admin":
+            return redirect(url_for("admin_dashboard"))
+
+        db = get_db()
+        staff = db.execute(
+            """
+            SELECT cp.*, u.username, u.email
+            FROM clinic_personnel cp
+            JOIN users u ON u.id = cp.user_id
+            WHERE cp.user_id = ?
+            """,
+            (session["user_id"],),
+        ).fetchone()
+
+        if staff is None:
+            session.clear()
+            flash("Account profile missing, contact admin.", "error")
+            return redirect(url_for("auth.login"))
+
+        username = (request.form.get("username") or "").strip()
+        email = (request.form.get("email") or "").strip().lower()
+        first_name = (request.form.get("first_name") or "").strip()
+        last_name = (request.form.get("last_name") or "").strip()
+        title = (request.form.get("title") or "").strip()
+        phone_number = (request.form.get("phone_number") or "").strip()
+        specialty = (request.form.get("specialty") or "").strip()
+
+        errors: list[str] = []
+        if not username:
+            errors.append("Username is required.")
+        if not email:
+            errors.append("Email is required.")
+        elif "@" not in email:
+            errors.append("Email must be valid.")
+
+        # Check for username/email uniqueness (excluding current user)
+        existing = db.execute(
+            """
+            SELECT id
+            FROM users
+            WHERE id != ? AND (LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?))
+            LIMIT 1
+            """,
+            (session["user_id"], username, email),
+        ).fetchone()
+        if existing:
+            errors.append("Username or email is already in use.")
+
+        if errors:
+            for msg in errors:
+                flash(msg, "error")
+            return render_template("staff_profile.html", staff=staff, active_page="profile")
+
+        db.execute(
+            """
+            UPDATE users
+            SET username = ?, email = ?
+            WHERE id = ?
+            """,
+            (username, email, session["user_id"]),
+        )
+
+        db.execute(
+            """
+            UPDATE clinic_personnel
+            SET first_name = ?,
+                last_name = ?,
+                title = ?,
+                phone_number = ?,
+                specialty = ?
+            WHERE user_id = ?
+            """,
+            (first_name or None, last_name or None, title or None, phone_number or None, specialty or None, session["user_id"]),
+        )
+
+        db.commit()
+
+        # Keep session username/email in sync
+        session["username"] = username
+        session["email"] = email
+
+        flash("Profile updated successfully.", "success")
+        return redirect(url_for("staff_profile"))
+
     @app.get("/staff/patients")
     @role_required("clinic_personnel", "system_admin")
     def staff_patients():
@@ -1240,7 +1830,7 @@ def create_app():
 
 
         return render_template(
-            "patients.html",
+            "staff_patients.html",
             staff=staff,
             staff_display_name=staff_display_name,
             cases=cases,
@@ -1378,13 +1968,243 @@ def create_app():
 
 
         return render_template(
-            "appointments.html",
+            "staff_appointments.html",
             staff=staff,
             staff_display_name=staff_display_name,
             appointments=appointments,
             search=search,
             breadcrumbs=breadcrumbs,
+            active_page="appointments",
         )
+
+    def _get_staff_and_clinic():
+        db = get_db()
+        staff = db.execute(
+            """
+            SELECT cp.*, u.username, u.email
+            FROM clinic_personnel cp
+            JOIN users u ON u.id = cp.user_id
+            WHERE cp.user_id = ?
+            """,
+            (session["user_id"],),
+        ).fetchone()
+        if staff is None:
+            return None, None
+        return db, staff
+
+    @app.get("/staff/appointments/availability")
+    @role_required("clinic_personnel", "system_admin")
+    def staff_availability():
+        if session.get("role") == "system_admin":
+            return redirect(url_for("admin_dashboard"))
+        db, staff = _get_staff_and_clinic()
+        if staff is None:
+            session.clear()
+            flash("Account profile missing, contact admin.", "error")
+            return redirect(url_for("auth.login"))
+
+        staff_display_name = staff["username"]
+        if staff["first_name"] or staff["last_name"]:
+            title = (staff["title"] or "").strip()
+            first_name = (staff["first_name"] or "").strip()
+            last_name = (staff["last_name"] or "").strip()
+            staff_display_name = " ".join(part for part in [title, first_name, last_name] if part)
+
+        filter_date = (request.args.get("filter_date") or "").strip()
+        today = datetime.now().date().isoformat()
+        if not filter_date:
+            filter_date = today
+        from_date = filter_date
+        to_date = filter_date
+
+        rows = db.execute(
+            """
+            SELECT s.id, s.slot_datetime, s.duration_minutes, s.max_bookings, s.is_active,
+                   (SELECT COUNT(*) FROM appointments a
+                    WHERE a.clinic_id = s.clinic_id
+                      AND a.appointment_datetime = s.slot_datetime
+                      AND LOWER(COALESCE(a.status, '')) != 'cancelled') AS booking_count
+            FROM availability_slots s
+            WHERE s.clinic_id = ?
+              AND DATE(s.slot_datetime) >= ?
+              AND DATE(s.slot_datetime) <= ?
+            ORDER BY s.slot_datetime ASC
+            """,
+            (staff["clinic_id"], from_date, to_date),
+        ).fetchall()
+
+        slots = []
+        for row in rows:
+            dt_str = row["slot_datetime"] or ""
+            display_datetime = dt_str
+            if dt_str:
+                try:
+                    display_datetime = datetime.fromisoformat(dt_str).strftime("%b %d, %Y @ %I:%M %p")
+                except ValueError:
+                    pass
+            slots.append({
+                "id": row["id"],
+                "slot_datetime": dt_str,
+                "display_datetime": display_datetime,
+                "duration_minutes": row["duration_minutes"],
+                "max_bookings": row["max_bookings"],
+                "is_active": bool(row["is_active"]),
+                "booking_count": row["booking_count"] or 0,
+                "is_taken": (row["booking_count"] or 0) >= (row["max_bookings"] or 1),
+            })
+
+        breadcrumbs = [
+            {"label": "Home", "href": url_for("staff_dashboard")},
+            {"label": "Appointments", "href": url_for("staff_appointments")},
+            {"label": "Manage availability", "href": None},
+        ]
+        return render_template(
+            "staff_availability.html",
+            staff=staff,
+            staff_display_name=staff_display_name,
+            slots=slots,
+            filter_date=filter_date,
+            from_date=from_date,
+            to_date=to_date,
+            breadcrumbs=breadcrumbs,
+            active_page="appointments",
+        )
+
+    @app.post("/staff/appointments/availability")
+    @role_required("clinic_personnel", "system_admin")
+    def staff_availability_post():
+        if session.get("role") == "system_admin":
+            return redirect(url_for("admin_dashboard"))
+        db, staff = _get_staff_and_clinic()
+        if staff is None:
+            session.clear()
+            flash("Account profile missing, contact admin.", "error")
+            return redirect(url_for("auth.login"))
+
+        slot_date_from = (request.form.get("slot_date_from") or "").strip()
+        slot_date_to = (request.form.get("slot_date_to") or "").strip()
+        start_time = (request.form.get("start_time") or "08:00").strip()
+        end_time = (request.form.get("end_time") or "17:00").strip()
+        lunch_start = (request.form.get("lunch_start") or "12:00").strip()
+        lunch_end = (request.form.get("lunch_end") or "13:00").strip()
+        duration_minutes = request.form.get("duration_minutes", "45").strip() or "45"
+        max_bookings = request.form.get("max_bookings", "1").strip() or "1"
+
+        try:
+            duration_minutes = int(duration_minutes)
+            max_bookings = int(max_bookings)
+        except ValueError:
+            duration_minutes = 45
+            max_bookings = 1
+        if duration_minutes < 1:
+            duration_minutes = 45
+        if max_bookings < 1:
+            max_bookings = 1
+
+        if not slot_date_from or not slot_date_to:
+            flash("Please select both From and To dates.", "error")
+            return redirect(url_for("staff_availability"))
+
+        try:
+            date_from = datetime.strptime(slot_date_from, "%Y-%m-%d").date()
+            date_to = datetime.strptime(slot_date_to, "%Y-%m-%d").date()
+        except ValueError:
+            flash("Invalid date format.", "error")
+            return redirect(url_for("staff_availability"))
+
+        if date_from > date_to:
+            flash("From date must be before or equal to To date.", "error")
+            return redirect(url_for("staff_availability"))
+
+        def parse_time(t):
+            try:
+                return datetime.strptime(t, "%H:%M").time()
+            except ValueError:
+                return None
+
+        st = parse_time(start_time)
+        et = parse_time(end_time)
+        ls = parse_time(lunch_start)
+        le = parse_time(lunch_end)
+        if st is None or et is None:
+            flash("Invalid start or end time.", "error")
+            return redirect(url_for("staff_availability"))
+        if ls is None:
+            ls = datetime.strptime("12:00", "%H:%M").time()
+        if le is None:
+            le = datetime.strptime("13:00", "%H:%M").time()
+
+        created = 0
+        current_date = date_from
+        interval = timedelta(minutes=45)
+        while current_date <= date_to:
+            current = datetime.combine(current_date, st)
+            end_dt = datetime.combine(current_date, et)
+            lunch_start_dt = datetime.combine(current_date, ls)
+            lunch_end_dt = datetime.combine(current_date, le)
+            while current < end_dt:
+                if current >= lunch_end_dt or current < lunch_start_dt:
+                    slot_dt = current.isoformat()
+                    try:
+                        db.execute(
+                            """
+                            INSERT INTO availability_slots (clinic_id, slot_datetime, duration_minutes, max_bookings, is_active)
+                            VALUES (?, ?, ?, ?, 1)
+                            """,
+                            (staff["clinic_id"], slot_dt, duration_minutes, max_bookings),
+                        )
+                        created += 1
+                    except sqlite3.IntegrityError:
+                        pass
+                current += interval
+            current_date += timedelta(days=1)
+
+        db.commit()
+        flash(f"Created {created} slot(s) from {slot_date_from} to {slot_date_to}.", "success")
+        return redirect(url_for("staff_availability"))
+
+    @app.post("/staff/appointments/availability/<int:slot_id>/delete")
+    @role_required("clinic_personnel", "system_admin")
+    def staff_availability_delete(slot_id: int):
+        if session.get("role") == "system_admin":
+            return redirect(url_for("admin_dashboard"))
+        db, staff = _get_staff_and_clinic()
+        if staff is None:
+            return redirect(url_for("auth.login"))
+        row = db.execute(
+            "SELECT id FROM availability_slots WHERE id = ? AND clinic_id = ?",
+            (slot_id, staff["clinic_id"]),
+        ).fetchone()
+        if row:
+            db.execute("DELETE FROM availability_slots WHERE id = ? AND clinic_id = ?", (slot_id, staff["clinic_id"]))
+            db.commit()
+            flash("Slot deleted.", "success")
+        else:
+            flash("Slot not found.", "error")
+        return redirect(url_for("staff_availability"))
+
+    @app.post("/staff/appointments/availability/<int:slot_id>/deactivate")
+    @role_required("clinic_personnel", "system_admin")
+    def staff_availability_deactivate(slot_id: int):
+        if session.get("role") == "system_admin":
+            return redirect(url_for("admin_dashboard"))
+        db, staff = _get_staff_and_clinic()
+        if staff is None:
+            return redirect(url_for("auth.login"))
+        row = db.execute(
+            "SELECT id FROM availability_slots WHERE id = ? AND clinic_id = ?",
+            (slot_id, staff["clinic_id"]),
+        ).fetchone()
+        if row:
+            db.execute(
+                "UPDATE availability_slots SET is_active = 0 WHERE id = ? AND clinic_id = ?",
+                (slot_id, staff["clinic_id"]),
+            )
+            db.commit()
+            flash("Slot deactivated.", "success")
+        else:
+            flash("Slot not found.", "error")
+        return redirect(url_for("staff_availability"))
 
     @app.get("/staff/appointments/<int:appointment_id>")
     @role_required("clinic_personnel", "system_admin")
@@ -1424,10 +2244,16 @@ def create_app():
               p.address,
               u.email,
               c.id AS case_id,
+              c.type_of_exposure,
+              c.exposure_date,
               COALESCE(c.risk_level, c.category, 'N/A') AS category,
               psd.wound_description,
               psd.bleeding_type,
-              psd.local_treatment
+              psd.local_treatment,
+              psd.patient_prev_immunization,
+              psd.prev_vaccine_date,
+              psd.tetanus_date,
+              psd.hrtig_immunization
             FROM appointments a
             JOIN patients p ON p.id = a.patient_id
             LEFT JOIN users u ON u.id = p.user_id
@@ -1461,7 +2287,7 @@ def create_app():
 
 
         return render_template(
-            "appointment_view.html",
+            "staff_appointment_view.html",
             staff=staff,
             staff_display_name=staff_display_name,
             appointment=appt,
@@ -1469,6 +2295,7 @@ def create_app():
             appointment_date=appt_date,
             appointment_time=appt_time,
             breadcrumbs=breadcrumbs,
+            active_page="appointments",
         )
 
     @app.post("/staff/appointments/<int:appointment_id>/approve")
@@ -1559,7 +2386,7 @@ def create_app():
 
         appt = db.execute(
             """
-            SELECT id, patient_id, clinic_id
+            SELECT id, patient_id, clinic_id, status
             FROM appointments
             WHERE id = ? AND clinic_id = ?
             """,
@@ -1569,32 +2396,55 @@ def create_app():
             flash("Appointment not found.", "error")
             return redirect(url_for("staff_appointments"))
 
-        patient_name = (request.form.get("patient_name") or "").strip()
-        appointment_date = (request.form.get("appointment_date") or "").strip()
-        appointment_time = (request.form.get("appointment_time") or "").strip()
-
-        if not appointment_date or not appointment_time:
-            flash("Appointment date and time are required.", "error")
+        slot_id_raw = (request.form.get("appointment_slot_id") or "").strip()
+        if not slot_id_raw:
+            flash("Please select a new time slot.", "error")
             return redirect(url_for("view_appointment", appointment_id=appointment_id))
 
         try:
-            new_datetime = datetime.fromisoformat(f"{appointment_date}T{appointment_time}").isoformat()
+            slot_id = int(slot_id_raw)
         except ValueError:
-            flash("Invalid date/time format.", "error")
+            flash("Invalid slot selection.", "error")
             return redirect(url_for("view_appointment", appointment_id=appointment_id))
 
-        if patient_name:
-            parts = patient_name.split(" ", 1)
-            first_name = parts[0]
-            last_name = parts[1] if len(parts) > 1 else ""
-            db.execute(
-                """
-                UPDATE patients
-                SET first_name = ?, last_name = ?
-                WHERE id = ?
-                """,
-                (first_name, last_name, appt["patient_id"]),
-            )
+        slot_row = db.execute(
+            """
+            SELECT id, slot_datetime, max_bookings
+            FROM availability_slots
+            WHERE id = ? AND clinic_id = ? AND is_active = 1
+            """,
+            (slot_id, appt["clinic_id"]),
+        ).fetchone()
+
+        if not slot_row:
+            flash("Selected slot is no longer available.", "error")
+            return redirect(url_for("view_appointment", appointment_id=appointment_id))
+
+        slot_datetime = slot_row["slot_datetime"]
+        if not slot_datetime:
+            flash("Selected slot is invalid.", "error")
+            return redirect(url_for("view_appointment", appointment_id=appointment_id))
+
+        if slot_datetime <= datetime.now().isoformat():
+            flash("The selected slot is in the past. Please choose another date and time.", "error")
+            return redirect(url_for("view_appointment", appointment_id=appointment_id))
+
+        # Capacity check excluding this appointment itself
+        existing_count = db.execute(
+            """
+            SELECT COUNT(*) AS n
+            FROM appointments
+            WHERE clinic_id = ?
+              AND appointment_datetime = ?
+              AND id != ?
+              AND LOWER(COALESCE(status, '')) != 'cancelled'
+            """,
+            (appt["clinic_id"], slot_datetime, appointment_id),
+        ).fetchone()["n"]
+        max_bookings = slot_row["max_bookings"] or 1
+        if existing_count >= max_bookings:
+            flash("This time slot is no longer available. Please choose another.", "error")
+            return redirect(url_for("view_appointment", appointment_id=appointment_id))
 
         db.execute(
             """
@@ -1602,10 +2452,9 @@ def create_app():
             SET appointment_datetime = ?
             WHERE id = ? AND clinic_id = ?
             """,
-            (new_datetime, appointment_id, staff["clinic_id"]),
+            (slot_datetime, appointment_id, staff["clinic_id"]),
         )
         db.commit()
-
 
         flash("Appointment updated.", "success")
         return redirect(url_for("view_appointment", appointment_id=appointment_id))
@@ -1765,7 +2614,7 @@ def create_app():
         ]
 
         return render_template(
-            "patient_view.html",
+            "staff_patient_view.html",
             staff=staff,
             staff_display_name=staff_display_name,
             case=case_row,
@@ -1777,6 +2626,7 @@ def create_app():
             next_appointment_display=next_appointment_display,
             notes=notes,
             breadcrumbs=breadcrumbs,
+            active_page="patients",
         )
 
     @app.post("/staff/cases/<int:case_id>/delete")
@@ -2037,12 +2887,13 @@ def create_app():
         ]
 
         return render_template(
-            "patient_edit.html",
+            "staff_patient_edit.html",
             staff=staff,
             staff_display_name=staff_display_name,
             case=case_patient,
             patient_name=patient_name,
             breadcrumbs=breadcrumbs,
+            active_page="patients",
         )
 
     @app.get("/admin/dashboard")

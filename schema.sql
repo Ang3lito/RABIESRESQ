@@ -160,6 +160,18 @@ CREATE TABLE IF NOT EXISTS appointments (
   FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS availability_slots (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  clinic_id INTEGER NOT NULL,
+  slot_datetime TEXT NOT NULL,
+  duration_minutes INTEGER NOT NULL DEFAULT 45,
+  max_bookings INTEGER NOT NULL DEFAULT 1,
+  is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN (0,1)),
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(clinic_id, slot_datetime),
+  FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS vaccination_records (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   case_id INTEGER NOT NULL,
@@ -257,6 +269,16 @@ CREATE TABLE IF NOT EXISTS patient_guidance (
   FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE RESTRICT
 );
 
+CREATE TABLE IF NOT EXISTS password_reset_codes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL,
+  code TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  is_used INTEGER NOT NULL DEFAULT 0 CHECK(is_used IN (0,1)),
+  attempts INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 -- =========================
 -- Required indexes
 -- =========================
@@ -270,6 +292,8 @@ CREATE INDEX IF NOT EXISTS idx_eval_guideline_id ON pre_screening_evaluations(gu
 CREATE INDEX IF NOT EXISTS idx_appt_case_id ON appointments(case_id);
 CREATE INDEX IF NOT EXISTS idx_appt_patient_id ON appointments(patient_id);
 CREATE INDEX IF NOT EXISTS idx_appt_clinic_id ON appointments(clinic_id);
+
+CREATE INDEX IF NOT EXISTS idx_availability_slots_clinic_datetime ON availability_slots(clinic_id, slot_datetime);
 
 CREATE INDEX IF NOT EXISTS idx_vax_case_id ON vaccination_records(case_id);
 
@@ -307,5 +331,35 @@ CREATE INDEX IF NOT EXISTS idx_notifications_target_role ON notifications(target
 
 CREATE INDEX IF NOT EXISTS idx_reports_generated_by_user_id ON reports(generated_by_user_id);
 
+CREATE INDEX IF NOT EXISTS idx_password_reset_codes_email_expires ON password_reset_codes(email, expires_at);
+
 COMMIT;
+
+-- =========================
+-- Migration for existing DBs (run once if table does not exist)
+-- =========================
+-- availability_slots (scheduling):
+-- CREATE TABLE IF NOT EXISTS availability_slots (
+--   id INTEGER PRIMARY KEY AUTOINCREMENT,
+--   clinic_id INTEGER NOT NULL,
+--   slot_datetime TEXT NOT NULL,
+--   duration_minutes INTEGER NOT NULL DEFAULT 45,
+--   max_bookings INTEGER NOT NULL DEFAULT 1,
+--   is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN (0,1)),
+--   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+--   UNIQUE(clinic_id, slot_datetime),
+--   FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE CASCADE
+-- );
+-- CREATE INDEX IF NOT EXISTS idx_availability_slots_clinic_datetime ON availability_slots(clinic_id, slot_datetime);
+--
+-- CREATE TABLE IF NOT EXISTS password_reset_codes (
+--   id INTEGER PRIMARY KEY AUTOINCREMENT,
+--   email TEXT NOT NULL,
+--   code TEXT NOT NULL,
+--   expires_at TEXT NOT NULL,
+--   is_used INTEGER NOT NULL DEFAULT 0 CHECK(is_used IN (0,1)),
+--   attempts INTEGER NOT NULL DEFAULT 0,
+--   created_at TEXT DEFAULT CURRENT_TIMESTAMP
+-- );
+-- CREATE INDEX IF NOT EXISTS idx_password_reset_codes_email_expires ON password_reset_codes(email, expires_at);
 
