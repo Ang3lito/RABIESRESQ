@@ -199,10 +199,49 @@ def create_app():
             )
             db.commit()
 
+    def _ensure_vaccination_card_tables():
+        db = get_db()
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS vaccination_card (
+                case_id INTEGER PRIMARY KEY,
+                anti_rabies TEXT,
+                pvrv TEXT,
+                pcec_batch TEXT,
+                pcec_mfg_date TEXT,
+                pcec_expiry TEXT,
+                erig_hrig TEXT,
+                tetanus_prophylaxis TEXT,
+                tetanus_toxoid TEXT,
+                ats TEXT,
+                htig TEXT,
+                remarks TEXT,
+                FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS vaccination_card_doses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                case_id INTEGER NOT NULL,
+                record_type TEXT NOT NULL CHECK(record_type IN ('pre_exposure','post_exposure','booster')),
+                day_number INTEGER NOT NULL,
+                dose_date TEXT,
+                type_of_vaccine TEXT,
+                dose TEXT,
+                route_site TEXT,
+                given_by TEXT,
+                FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE
+            )
+        """)
+        db.execute(
+            "CREATE INDEX IF NOT EXISTS idx_vaccination_card_doses_case_type ON vaccination_card_doses(case_id, record_type)"
+        )
+        db.commit()
+
     with app.app_context():
         _ensure_patient_onboarding_column()
         _migrate_patients_for_dependents()
         _ensure_appointments_patient_hidden_column()
+        _ensure_vaccination_card_tables()
 
     def _get_primary_patient(user_id: int):
         db = get_db()
@@ -224,77 +263,125 @@ def create_app():
     def _run_case_status_maintenance(clinic_id: int):
         db = get_db()
 
-        to_no_show = db.execute(
+        def _normalize_risk(value: str | None) -> str:
+            normalized = (value or "").strip().lower()
+            if normalized in {"category i", "category 1", "i", "1"}:
+                return "category i"
+            if normalized in {"category ii", "category 2", "ii", "2"}:
+                return "category ii"
+            if normalized in {"category iii", "category 3", "iii", "3"}:
+                return "category iii"
+            return normalized
+
+        case_rows = db.execute(
             """
-            UPDATE cases
-            SET case_status = 'No Show'
+            SELECT id, risk_level, category, COALESCE(case_status, 'Pending') AS case_status
+            FROM cases
             WHERE clinic_id = ?
-              AND LOWER(COALESCE(case_status, 'pending')) = 'pending'
-              AND EXISTS (
-                SELECT 1
-                FROM appointments a
-                WHERE a.case_id = cases.id
-                  AND a.clinic_id = cases.clinic_id
-                  AND LOWER(COALESCE(a.status, '')) IN ('approved', 'pending', 'queued')
-                  AND datetime(a.appointment_datetime) <= datetime('now', 'localtime', '-10 hours')
-              )
             """,
             (clinic_id,),
-        ).rowcount
+        ).fetchall()
 
-        if to_no_show:
-            db.execute(
+        case_updates = 0
+        to_completed = 0
+        to_pending = 0
+        to_no_show = 0
+
+        for case_row in case_rows:
+            case_id = case_row["id"]
+            category_value = _normalize_risk(case_row["risk_level"] or case_row["category"])
+            active_record_type = "pre_exposure" if category_value == "category i" else "post_exposure"
+            expected_doses = 3 if active_record_type == "pre_exposure" else 5
+
+            completed_doses = db.execute(
                 """
-                UPDATE appointments
-                SET status = 'No Show'
-                WHERE clinic_id = ?
-                  AND LOWER(COALESCE(status, '')) IN ('approved', 'pending', 'queued')
-                  AND datetime(appointment_datetime) <= datetime('now', 'localtime', '-10 hours')
-                  AND case_id IN (
-                    SELECT id
-                    FROM cases
-                    WHERE clinic_id = ?
-                      AND LOWER(COALESCE(case_status, '')) = 'no show'
-                  )
+                SELECT COUNT(*) AS completed
+                FROM vaccination_card_doses
+                WHERE case_id = ?
+                  AND record_type = ?
+                  AND TRIM(COALESCE(dose_date, '')) <> ''
+                  AND TRIM(COALESCE(type_of_vaccine, '')) <> ''
+                  AND TRIM(COALESCE(given_by, '')) <> ''
                 """,
-                (clinic_id, clinic_id),
-            )
+                (case_id, active_record_type),
+            ).fetchone()["completed"]
 
-        archived_from_no_show = db.execute(
-            """
-            UPDATE cases
-            SET case_status = 'archived'
-            WHERE clinic_id = ?
-              AND LOWER(COALESCE(case_status, '')) = 'no show'
-              AND EXISTS (
+            has_overdue_active_appointment = db.execute(
+                """
                 SELECT 1
-                FROM appointments a
-                WHERE a.case_id = cases.id
-                  AND a.clinic_id = cases.clinic_id
-                  AND datetime(a.appointment_datetime) <= datetime('now', 'localtime', '-24 hours')
-              )
-            """,
-            (clinic_id,),
-        ).rowcount
-
-        if archived_from_no_show:
-            db.execute(
-                """
-                UPDATE appointments
-                SET status = 'Removed'
-                WHERE clinic_id = ?
-                  AND case_id IN (
-                    SELECT id
-                    FROM cases
-                    WHERE clinic_id = ?
-                      AND LOWER(COALESCE(case_status, '')) = 'archived'
-                  )
+                FROM appointments
+                WHERE case_id = ?
+                  AND clinic_id = ?
+                  AND LOWER(COALESCE(status, '')) NOT IN ('removed', 'cancelled', 'canceled')
+                  AND datetime(appointment_datetime) < datetime('now', 'localtime', '-2 hours')
+                ORDER BY datetime(appointment_datetime) DESC, id DESC
+                LIMIT 1
                 """,
-                (clinic_id, clinic_id),
-            )
+                (case_id, clinic_id),
+            ).fetchone() is not None
+
+            current_status = (case_row["case_status"] or "Pending").strip().lower()
+
+            # Keep explicit/manual completion sticky.
+            if current_status == "completed":
+                desired_status = "Completed"
+            elif expected_doses and completed_doses >= expected_doses:
+                desired_status = "Completed"
+            elif completed_doses == 0 and has_overdue_active_appointment:
+                desired_status = "No Show"
+            else:
+                # If progress exists but next schedule is missing, keep Pending so staff can schedule.
+                desired_status = "Pending"
+            if current_status != desired_status.lower():
+                db.execute(
+                    """
+                    UPDATE cases
+                    SET case_status = ?
+                    WHERE id = ? AND clinic_id = ?
+                    """,
+                    (desired_status, case_id, clinic_id),
+                )
+                case_updates += 1
+
+            if desired_status == "Completed":
+                to_completed += 1
+                db.execute(
+                    """
+                    UPDATE appointments
+                    SET status = 'Completed'
+                    WHERE id = (
+                        SELECT id
+                        FROM appointments
+                        WHERE case_id = ? AND clinic_id = ?
+                        ORDER BY datetime(appointment_datetime) DESC, id DESC
+                        LIMIT 1
+                    )
+                    """,
+                    (case_id, clinic_id),
+                )
+            elif desired_status == "No Show":
+                to_no_show += 1
+                db.execute(
+                    """
+                    UPDATE appointments
+                    SET status = 'No Show'
+                    WHERE case_id = ?
+                      AND clinic_id = ?
+                      AND LOWER(COALESCE(status, '')) NOT IN ('removed', 'cancelled', 'canceled')
+                      AND datetime(appointment_datetime) < datetime('now', 'localtime', '-2 hours')
+                    """,
+                    (case_id, clinic_id),
+                )
+            else:
+                to_pending += 1
 
         db.commit()
-        return {"to_no_show": to_no_show or 0, "archived_from_no_show": archived_from_no_show or 0}
+        return {
+            "updated_cases": case_updates,
+            "to_completed": to_completed,
+            "to_pending": to_pending,
+            "to_no_show": to_no_show,
+        }
 
     # Auth blueprint
     from auth import bp as auth_bp
@@ -756,10 +843,11 @@ def create_app():
         db.execute(
             """
             UPDATE appointments
-            SET appointment_datetime = ?
+            SET appointment_datetime = ?,
+                status = ?
             WHERE id = ?
             """,
-            (slot_datetime, appointment_id),
+            (slot_datetime, "Rescheduled", appointment_id),
         )
         db.commit()
 
@@ -1319,6 +1407,8 @@ def create_app():
             flash("Account profile missing, contact admin.", "error")
             return redirect(url_for("auth.login"))
 
+        _run_case_status_maintenance(staff["clinic_id"])
+
         staff_display_name = staff["username"]
         if staff["first_name"] or staff["last_name"]:
             title = (staff["title"] or "").strip()
@@ -1360,10 +1450,7 @@ def create_app():
             SELECT COUNT(*) AS total
             FROM cases c
             WHERE c.clinic_id = ?
-              AND (
-                c.case_status IS NULL
-                OR LOWER(c.case_status) NOT IN ('closed', 'resolved', 'completed', 'cancelled', 'archived')
-              )
+              AND LOWER(COALESCE(c.case_status, 'pending')) = 'pending'
             """,
             (clinic_id,),
         ).fetchone()["total"]
@@ -1396,12 +1483,17 @@ def create_app():
         appointment_status = db.execute(
             """
             SELECT
-              SUM(CASE WHEN LOWER(status) = 'missed' THEN 1 ELSE 0 END) AS missed,
+              (
+                SELECT COUNT(*)
+                FROM cases c
+                WHERE c.clinic_id = ?
+                  AND LOWER(COALESCE(c.case_status, '')) = 'no show'
+              ) AS missed,
               SUM(CASE WHEN LOWER(status) = 'rescheduled' THEN 1 ELSE 0 END) AS rescheduled
             FROM appointments
             WHERE clinic_id = ?
             """,
-            (clinic_id,),
+            (clinic_id, clinic_id),
         ).fetchone()
         missed_count = appointment_status["missed"] or 0
         rescheduled_count = appointment_status["rescheduled"] or 0
@@ -1431,67 +1523,6 @@ def create_app():
             count = bite_map[label]
             pct = round((count / total_bite_cases) * 100) if total_bite_cases else 0
             common_bite_types.append({"label": label, "percent": pct})
-
-        place_row = db.execute(
-            """
-            SELECT COALESCE(place_of_exposure, 'Unspecified') AS place_name, COUNT(*) AS total
-            FROM cases
-            WHERE clinic_id = ?
-            GROUP BY place_name
-            ORDER BY total DESC
-            LIMIT 1
-            """,
-            (clinic_id,),
-        ).fetchone()
-        if place_row:
-            demographic_summary = (
-                f"Most cases were reported in {place_row['place_name']} "
-                f"({place_row['total']} case{'s' if place_row['total'] != 1 else ''})."
-            )
-        else:
-            demographic_summary = "No case location data available yet."
-
-        busiest_day_row = db.execute(
-            """
-            SELECT STRFTIME('%w', appointment_datetime) AS day_num, COUNT(*) AS total
-            FROM appointments
-            WHERE clinic_id = ?
-            GROUP BY day_num
-            ORDER BY total DESC
-            LIMIT 1
-            """,
-            (clinic_id,),
-        ).fetchone()
-        busiest_hour_row = db.execute(
-            """
-            SELECT STRFTIME('%H', appointment_datetime) AS hour_24, COUNT(*) AS total
-            FROM appointments
-            WHERE clinic_id = ?
-            GROUP BY hour_24
-            ORDER BY total DESC
-            LIMIT 1
-            """,
-            (clinic_id,),
-        ).fetchone()
-        day_names = {
-            "0": "Sunday",
-            "1": "Monday",
-            "2": "Tuesday",
-            "3": "Wednesday",
-            "4": "Thursday",
-            "5": "Friday",
-            "6": "Saturday",
-        }
-        if busiest_day_row and busiest_hour_row and busiest_hour_row["hour_24"] is not None:
-            day_name = day_names.get(busiest_day_row["day_num"], "Unknown day")
-            start_hour = int(busiest_hour_row["hour_24"])
-            end_hour = (start_hour + 1) % 24
-            peak_flow_summary = (
-                f"Busiest day is {day_name}, with highest traffic around "
-                f"{start_hour:02d}:00-{end_hour:02d}:00."
-            )
-        else:
-            peak_flow_summary = "No appointment traffic data available yet."
 
         todays_appointments_rows = db.execute(
             """
@@ -1543,8 +1574,6 @@ def create_app():
             missed_count=missed_count,
             rescheduled_count=rescheduled_count,
             common_bite_types=common_bite_types,
-            demographic_summary=demographic_summary,
-            peak_flow_summary=peak_flow_summary,
             todays_appointments=todays_appointments,
         )
 
@@ -1571,7 +1600,23 @@ def create_app():
             flash("Account profile missing, contact admin.", "error")
             return redirect(url_for("auth.login"))
 
-        return render_template("staff_profile.html", staff=staff, active_page="profile")
+        staff_display_name = staff["username"]
+        if staff["first_name"] or staff["last_name"]:
+            title = (staff["title"] or "").strip()
+            fn = (staff["first_name"] or "").strip()
+            ln = (staff["last_name"] or "").strip()
+            staff_display_name = " ".join(part for part in [title, fn, ln] if part)
+        breadcrumbs = [
+            {"label": "Home", "href": url_for("staff_dashboard")},
+            {"label": "Profile", "href": None},
+        ]
+        return render_template(
+            "staff_profile.html",
+            staff=staff,
+            staff_display_name=staff_display_name,
+            breadcrumbs=breadcrumbs,
+            active_page="profile",
+        )
 
     @app.post("/staff/profile")
     @role_required("clinic_personnel", "system_admin")
@@ -1599,7 +1644,6 @@ def create_app():
         email = (request.form.get("email") or "").strip().lower()
         first_name = (request.form.get("first_name") or "").strip()
         last_name = (request.form.get("last_name") or "").strip()
-        title = (request.form.get("title") or "").strip()
         phone_number = (request.form.get("phone_number") or "").strip()
         specialty = (request.form.get("specialty") or "").strip()
 
@@ -1627,7 +1671,23 @@ def create_app():
         if errors:
             for msg in errors:
                 flash(msg, "error")
-            return render_template("staff_profile.html", staff=staff, active_page="profile")
+            staff_display_name = staff["username"]
+            if staff["first_name"] or staff["last_name"]:
+                title = (staff["title"] or "").strip()
+                fn = (staff["first_name"] or "").strip()
+                ln = (staff["last_name"] or "").strip()
+                staff_display_name = " ".join(part for part in [title, fn, ln] if part)
+            breadcrumbs = [
+                {"label": "Home", "href": url_for("staff_dashboard")},
+                {"label": "Profile", "href": None},
+            ]
+            return render_template(
+                "staff_profile.html",
+                staff=staff,
+                staff_display_name=staff_display_name,
+                breadcrumbs=breadcrumbs,
+                active_page="profile",
+            )
 
         db.execute(
             """
@@ -1643,12 +1703,11 @@ def create_app():
             UPDATE clinic_personnel
             SET first_name = ?,
                 last_name = ?,
-                title = ?,
                 phone_number = ?,
                 specialty = ?
             WHERE user_id = ?
             """,
-            (first_name or None, last_name or None, title or None, phone_number or None, specialty or None, session["user_id"]),
+            (first_name or None, last_name or None, phone_number or None, specialty or None, session["user_id"]),
         )
 
         db.commit()
@@ -1771,22 +1830,12 @@ def create_app():
                         SELECT a.appointment_datetime
                         FROM appointments a
                         WHERE a.case_id = c.id
-                          AND LOWER(COALESCE(a.status, '')) NOT IN ('removed', 'cancelled')
+                          AND LOWER(COALESCE(a.status, '')) NOT IN ('removed', 'cancelled', 'canceled')
                         ORDER BY datetime(a.appointment_datetime) ASC, a.id ASC
                         LIMIT 1
                     ),
                     'N/A'
-                ) AS schedule,
-                COALESCE(
-                    (
-                        SELECT vr.next_dose_date
-                        FROM vaccination_records vr
-                        WHERE vr.case_id = c.id
-                        ORDER BY datetime(vr.date_administered) DESC, vr.id DESC
-                        LIMIT 1
-                    ),
-                    'N/A'
-                ) AS next_dose
+                ) AS initial_schedule
             FROM cases c
             JOIN patients p ON p.id = c.patient_id
             LEFT JOIN users u ON u.id = p.user_id
@@ -1802,12 +1851,73 @@ def create_app():
 
         case_items = []
         for row in cases_rows:
-            schedule_display = row["schedule"] if row["schedule"] else "N/A"
-            if row["schedule"] and row["schedule"] != "N/A":
+            schedule_display = row["initial_schedule"] if row["initial_schedule"] else "N/A"
+            if row["initial_schedule"] and row["initial_schedule"] != "N/A":
                 try:
-                    schedule_display = datetime.fromisoformat(row["schedule"]).strftime("%b %d, %Y @ %I:%M %p")
+                    schedule_display = datetime.fromisoformat(row["initial_schedule"]).strftime("%b %d, %Y @ %I:%M %p")
                 except ValueError:
-                    schedule_display = row["schedule"]
+                    schedule_display = row["initial_schedule"]
+
+            category_value = (row["category"] or "").strip().lower()
+            active_record_type = "pre_exposure" if category_value == "category i" else "post_exposure"
+            expected_doses = 3 if active_record_type == "pre_exposure" else 5
+            schedule_days = [0, 7, 28] if active_record_type == "pre_exposure" else [0, 3, 7, 14, 28]
+
+            dose_rows = db.execute(
+                """
+                SELECT day_number, dose_date, type_of_vaccine, given_by
+                FROM vaccination_card_doses
+                WHERE case_id = ?
+                  AND record_type = ?
+                ORDER BY day_number ASC
+                """,
+                (row["case_id"], active_record_type),
+            ).fetchall()
+            active_rows = {dose["day_number"]: dict(dose) for dose in dose_rows}
+
+            doses_completed = 0
+            for dose in active_rows.values():
+                dose_date = (dose.get("dose_date") or "").strip()
+                type_of_vaccine = (dose.get("type_of_vaccine") or "").strip()
+                given_by = (dose.get("given_by") or "").strip()
+                if dose_date and type_of_vaccine and given_by:
+                    doses_completed += 1
+
+            schedule_or_next_dose = schedule_display
+            if 0 < doses_completed < expected_doses:
+                day0_row = active_rows.get(0)
+                day0_raw = ((day0_row or {}).get("dose_date") or "").strip() if day0_row else ""
+                day0_date = None
+                if day0_raw:
+                    try:
+                        day0_date = datetime.fromisoformat(day0_raw).date()
+                    except ValueError:
+                        day0_date = None
+
+                next_due_date = None
+                for day in schedule_days:
+                    dose = active_rows.get(day)
+                    dose_date_raw = ((dose or {}).get("dose_date") or "").strip() if dose else ""
+                    type_of_vaccine = ((dose or {}).get("type_of_vaccine") or "").strip() if dose else ""
+                    given_by = ((dose or {}).get("given_by") or "").strip() if dose else ""
+                    if dose_date_raw and type_of_vaccine and given_by:
+                        continue
+                    if dose_date_raw:
+                        try:
+                            next_due_date = datetime.fromisoformat(dose_date_raw).date()
+                        except ValueError:
+                            next_due_date = None
+                    elif day0_date and day > 0:
+                        next_due_date = day0_date + timedelta(days=day)
+                    if next_due_date:
+                        break
+
+                if next_due_date:
+                    schedule_or_next_dose = next_due_date.strftime("%b %d, %Y")
+
+            if doses_completed >= expected_doses:
+                schedule_or_next_dose = "N/A"
+
             case_items.append(
                 {
                     "id": row["case_id"],
@@ -1816,8 +1926,7 @@ def create_app():
                     "exposure_date": row["exposure_date"] or "N/A",
                     "category": row["category"],
                     "case_status": row["case_status"],
-                    "schedule": schedule_display,
-                    "next_dose": row["next_dose"] if row["next_dose"] else "N/A",
+                    "schedule_next_dose": schedule_or_next_dose,
                 }
             )
 
@@ -1838,6 +1947,7 @@ def create_app():
             selected_status=case_status,
             search=search,
             breadcrumbs=breadcrumbs,
+            active_page="cases",
         )
 
     @app.get("/staff/appointments")
@@ -2271,20 +2381,23 @@ def create_app():
         patient_name = " ".join(part for part in [(appt["first_name"] or "").strip(), (appt["last_name"] or "").strip()] if part) or "Unknown"
         appt_date = ""
         appt_time = ""
+        requested_schedule_display = None
         if appt["appointment_datetime"]:
             try:
                 dt = datetime.fromisoformat(appt["appointment_datetime"])
                 appt_date = dt.strftime("%Y-%m-%d")
                 appt_time = dt.strftime("%H:%M")
+                requested_schedule_display = dt.strftime("%B %d, %Y at %I:%M %p")
             except ValueError:
-                pass
+                requested_schedule_display = appt["appointment_datetime"]
+        if not requested_schedule_display:
+            requested_schedule_display = "Not set"
 
         breadcrumbs = [
             {"label": "Home", "href": url_for("staff_dashboard")},
             {"label": "Appointments", "href": url_for("staff_appointments")},
             {"label": f"#{appt['id']}", "href": None},
         ]
-
 
         return render_template(
             "staff_appointment_view.html",
@@ -2294,6 +2407,7 @@ def create_app():
             patient_name=patient_name,
             appointment_date=appt_date,
             appointment_time=appt_time,
+            requested_schedule_display=requested_schedule_display,
             breadcrumbs=breadcrumbs,
             active_page="appointments",
         )
@@ -2449,10 +2563,11 @@ def create_app():
         db.execute(
             """
             UPDATE appointments
-            SET appointment_datetime = ?
+            SET appointment_datetime = ?,
+                status = ?
             WHERE id = ? AND clinic_id = ?
             """,
-            (slot_datetime, appointment_id, staff["clinic_id"]),
+            (slot_datetime, "Rescheduled", appointment_id, staff["clinic_id"]),
         )
         db.commit()
 
@@ -2493,6 +2608,15 @@ def create_app():
             SELECT
               c.*,
               cl.name AS clinic_name,
+              p.phone_number,
+              u.email,
+              psd.wound_description,
+              psd.bleeding_type,
+              psd.local_treatment,
+              psd.patient_prev_immunization,
+              psd.prev_vaccine_date,
+              psd.tetanus_date,
+              psd.hrtig_immunization,
               COALESCE(
                 NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''),
                 u.username,
@@ -2501,6 +2625,7 @@ def create_app():
             FROM cases c
             JOIN patients p ON p.id = c.patient_id
             LEFT JOIN users u ON u.id = p.user_id
+            LEFT JOIN pre_screening_details psd ON psd.case_id = c.id
             JOIN clinics cl ON cl.id = c.clinic_id
             WHERE c.id = ?
               AND c.clinic_id = ?
@@ -2549,10 +2674,6 @@ def create_app():
                     "administered_by_name": row["administered_by_name"],
                 }
             )
-
-        expected_doses = 5
-        doses_completed = len(dose_records)
-        progress_pct = min(round((doses_completed / expected_doses) * 100), 100) if expected_doses else 0
 
         next_appointment = db.execute(
             """
@@ -2607,6 +2728,116 @@ def create_app():
                 }
             )
 
+        vc_row = db.execute(
+            "SELECT * FROM vaccination_card WHERE case_id = ?", (case_id,)
+        ).fetchone()
+        vaccination_card = dict(vc_row) if vc_row else {}
+        vaccination_card_doses_rows = db.execute(
+            """
+            SELECT id, case_id, record_type, day_number, dose_date, type_of_vaccine, dose, route_site, given_by
+            FROM vaccination_card_doses
+            WHERE case_id = ?
+            ORDER BY record_type, day_number
+            """,
+            (case_id,),
+        ).fetchall()
+        card_doses_by_type = {"pre_exposure": {}, "post_exposure": {}, "booster": {}}
+        for row in vaccination_card_doses_rows:
+            r = row["record_type"]
+            d = row["day_number"]
+            if r in card_doses_by_type:
+                card_doses_by_type[r][d] = dict(row)
+
+        category_value = (case_row["risk_level"] or case_row["category"] or "").strip().lower()
+        active_record_type = "pre_exposure" if category_value == "category i" else "post_exposure"
+        dose_type_label = (
+            "Pre-Exposure Dose"
+            if active_record_type == "pre_exposure"
+            else "Post-Exposure Dose"
+        )
+        expected_doses = 3 if active_record_type == "pre_exposure" else 5
+        doses_completed = 0
+        for row in card_doses_by_type.get(active_record_type, {}).values():
+            dose_date = (row.get("dose_date") or "").strip()
+            type_of_vaccine = (row.get("type_of_vaccine") or "").strip()
+            given_by = (row.get("given_by") or "").strip()
+            if dose_date and type_of_vaccine and given_by:
+                doses_completed += 1
+        progress_pct = min(round((doses_completed / expected_doses) * 100), 100) if expected_doses else 0
+
+        # Compute next due dose from vaccination schedule and prioritize it
+        # over appointment table values for the Vaccination Status card.
+        schedule_days = [0, 7, 28] if active_record_type == "pre_exposure" else [0, 3, 7, 14, 28]
+        active_rows = card_doses_by_type.get(active_record_type, {})
+        day0_row = active_rows.get(0)
+        day0_raw = ((day0_row or {}).get("dose_date") or "").strip() if day0_row else ""
+        day0_date = None
+        if day0_raw:
+            try:
+                day0_date = datetime.fromisoformat(day0_raw).date()
+            except ValueError:
+                day0_date = None
+
+        next_due_date = None
+        for day in schedule_days:
+            row = active_rows.get(day)
+            dose_date_raw = ((row or {}).get("dose_date") or "").strip() if row else ""
+            type_of_vaccine = ((row or {}).get("type_of_vaccine") or "").strip() if row else ""
+            given_by = ((row or {}).get("given_by") or "").strip() if row else ""
+
+            # Completed dose rows do not count as next due.
+            if dose_date_raw and type_of_vaccine and given_by:
+                continue
+
+            if dose_date_raw:
+                try:
+                    next_due_date = datetime.fromisoformat(dose_date_raw).date()
+                except ValueError:
+                    next_due_date = None
+            elif day0_date and day > 0:
+                next_due_date = day0_date + timedelta(days=day)
+
+            if next_due_date:
+                break
+
+        if next_due_date:
+            next_appointment_display = next_due_date.strftime("%B %d, %Y")
+
+        # Backward-compatible display: if legacy vaccination_records is empty,
+        # populate Dose Records from completed rows in vaccination_card_doses.
+        if not dose_records:
+            active_rows = card_doses_by_type.get(active_record_type, {})
+            derived_dose_records = []
+            def _ordinal(n: int) -> str:
+                if 10 <= (n % 100) <= 20:
+                    suffix = "th"
+                else:
+                    suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+                return f"{n}{suffix}"
+
+            for day in sorted(active_rows.keys()):
+                row = active_rows[day]
+                dose_date_raw = (row.get("dose_date") or "").strip()
+                type_of_vaccine = (row.get("type_of_vaccine") or "").strip()
+                given_by = (row.get("given_by") or "").strip()
+                if not (dose_date_raw and type_of_vaccine and given_by):
+                    continue
+                try:
+                    dose_date_display = datetime.fromisoformat(dose_date_raw).strftime("%B %d, %Y")
+                except ValueError:
+                    dose_date_display = dose_date_raw
+                dose_index = len(derived_dose_records) + 1
+                derived_dose_records.append(
+                    {
+                        "id": row.get("id"),
+                        "dose_number": _ordinal(dose_index),
+                        "date_administered": dose_date_display,
+                        "next_dose_date": None,
+                        "administered_by_name": given_by,
+                    }
+                )
+            dose_records = derived_dose_records
+
         breadcrumbs = [
             {"label": "Home", "href": url_for("staff_dashboard")},
             {"label": "Patients", "href": url_for("staff_patients")},
@@ -2625,9 +2856,65 @@ def create_app():
             next_appointment=next_appointment,
             next_appointment_display=next_appointment_display,
             notes=notes,
+            vaccination_card=vaccination_card,
+            card_doses_by_type=card_doses_by_type,
+            active_record_type=active_record_type,
+            dose_type_label=dose_type_label,
             breadcrumbs=breadcrumbs,
-            active_page="patients",
+            active_page="cases",
         )
+
+    @app.post("/staff/cases/<int:case_id>/notes")
+    @role_required("clinic_personnel", "system_admin")
+    def add_case_note(case_id: int):
+        if session.get("role") == "system_admin":
+            return redirect(url_for("admin_dashboard"))
+
+        db = get_db()
+        staff = db.execute(
+            """
+            SELECT clinic_id
+            FROM clinic_personnel
+            WHERE user_id = ?
+            """,
+            (session["user_id"],),
+        ).fetchone()
+        if staff is None:
+            session.clear()
+            flash("Account profile missing, contact admin.", "error")
+            return redirect(url_for("auth.login"))
+
+        case_row = db.execute(
+            """
+            SELECT id
+            FROM cases
+            WHERE id = ? AND clinic_id = ?
+            """,
+            (case_id, staff["clinic_id"]),
+        ).fetchone()
+        if case_row is None:
+            flash("Case not found.", "error")
+            return redirect(url_for("staff_patients"))
+
+        note_content = (request.form.get("note_content") or "").strip()
+        if not note_content:
+            flash("Note cannot be empty.", "error")
+            return redirect(url_for("view_patient_case", case_id=case_id))
+        if len(note_content) > 1000:
+            flash("Note is too long. Maximum is 1000 characters.", "error")
+            return redirect(url_for("view_patient_case", case_id=case_id))
+
+        db.execute(
+            """
+            INSERT INTO case_notes (case_id, user_id, note_content)
+            VALUES (?, ?, ?)
+            """,
+            (case_id, session["user_id"], note_content),
+        )
+        db.commit()
+
+        flash("Note added.", "success")
+        return redirect(url_for("view_patient_case", case_id=case_id))
 
     @app.post("/staff/cases/<int:case_id>/delete")
     @role_required("clinic_personnel", "system_admin")
@@ -2765,6 +3052,13 @@ def create_app():
               c.animal_detail,
               c.category,
               c.risk_level,
+              psd.wound_description,
+              psd.bleeding_type,
+              psd.local_treatment,
+              psd.patient_prev_immunization,
+              psd.prev_vaccine_date,
+              psd.tetanus_date,
+              psd.hrtig_immunization,
               p.id AS patient_id,
               p.first_name,
               p.last_name,
@@ -2775,6 +3069,7 @@ def create_app():
             FROM cases c
             JOIN patients p ON p.id = c.patient_id
             LEFT JOIN users u ON u.id = p.user_id
+            LEFT JOIN pre_screening_details psd ON psd.case_id = c.id
             WHERE c.id = ?
               AND c.clinic_id = ?
             """,
@@ -2794,6 +3089,16 @@ def create_app():
             type_of_exposure = (request.form.get("type_of_exposure") or "").strip()
             animal_detail = (request.form.get("animal_detail") or "").strip()
             risk_level = (request.form.get("risk_level") or request.form.get("category") or "").strip()
+            wound_description = (request.form.get("wound_description") or "").strip()
+            bleeding_type = (request.form.get("bleeding_type") or "").strip()
+            local_treatment = (request.form.get("local_treatment") or "").strip()
+            patient_prev_immunization = (request.form.get("patient_prev_immunization") or "").strip()
+            prev_vaccine_date = (request.form.get("prev_vaccine_date") or "").strip()
+            tetanus_date = (request.form.get("tetanus_date") or "").strip()
+            hrtig_raw = (request.form.get("hrtig_immunization") or "").strip()
+            hrtig_immunization = None
+            if hrtig_raw in {"0", "1"}:
+                hrtig_immunization = int(hrtig_raw)
 
             first_name = None
             last_name = None
@@ -2861,6 +3166,99 @@ def create_app():
                     (email, case_patient["patient_id"]),
                 )
 
+            db.execute(
+                """
+                INSERT INTO pre_screening_details (
+                    case_id,
+                    wound_description,
+                    bleeding_type,
+                    local_treatment,
+                    patient_prev_immunization,
+                    prev_vaccine_date,
+                    tetanus_date,
+                    hrtig_immunization
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(case_id) DO UPDATE SET
+                    wound_description = excluded.wound_description,
+                    bleeding_type = excluded.bleeding_type,
+                    local_treatment = excluded.local_treatment,
+                    patient_prev_immunization = excluded.patient_prev_immunization,
+                    prev_vaccine_date = excluded.prev_vaccine_date,
+                    tetanus_date = excluded.tetanus_date,
+                    hrtig_immunization = excluded.hrtig_immunization
+                """,
+                (
+                    case_id,
+                    wound_description or None,
+                    bleeding_type or None,
+                    local_treatment or None,
+                    patient_prev_immunization or None,
+                    prev_vaccine_date or None,
+                    tetanus_date or None,
+                    hrtig_immunization,
+                ),
+            )
+
+            def _v(name):
+                return (request.form.get(name) or "").strip()
+
+            db.execute(
+                """
+                INSERT INTO vaccination_card (
+                    case_id, anti_rabies, pvrv, pcec_batch, pcec_mfg_date, pcec_expiry,
+                    erig_hrig, tetanus_prophylaxis, tetanus_toxoid, ats, htig, remarks
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(case_id) DO UPDATE SET
+                    anti_rabies = excluded.anti_rabies,
+                    pvrv = excluded.pvrv,
+                    pcec_batch = excluded.pcec_batch,
+                    pcec_mfg_date = excluded.pcec_mfg_date,
+                    pcec_expiry = excluded.pcec_expiry,
+                    erig_hrig = excluded.erig_hrig,
+                    tetanus_prophylaxis = excluded.tetanus_prophylaxis,
+                    tetanus_toxoid = excluded.tetanus_toxoid,
+                    ats = excluded.ats,
+                    htig = excluded.htig,
+                    remarks = excluded.remarks
+                """,
+                (
+                    case_id,
+                    _v("vc_anti_rabies"),
+                    _v("vc_pvrv"),
+                    _v("vc_pcec_batch"),
+                    _v("vc_pcec_mfg_date"),
+                    _v("vc_pcec_expiry"),
+                    _v("vc_erig_hrig"),
+                    _v("vc_tetanus_prophylaxis"),
+                    _v("vc_tetanus_toxoid"),
+                    _v("vc_ats"),
+                    _v("vc_htig"),
+                    _v("vc_remarks"),
+                ),
+            )
+
+            db.execute("DELETE FROM vaccination_card_doses WHERE case_id = ?", (case_id,))
+            for record_type, prefix, days in [
+                ("pre_exposure", "vc_pre", [0, 7, 28]),
+                ("post_exposure", "vc_post", [0, 3, 7, 14, 28]),
+                ("booster", "vc_booster", [0, 3]),
+            ]:
+                for day in days:
+                    dose_date = _v(f"{prefix}_{day}_date")
+                    type_of_vaccine = _v(f"{prefix}_{day}_type")
+                    dose = _v(f"{prefix}_{day}_dose")
+                    route_site = _v(f"{prefix}_{day}_route_site")
+                    given_by = _v(f"{prefix}_{day}_given_by")
+                    if any([dose_date, type_of_vaccine, dose, route_site, given_by]):
+                        db.execute(
+                            """
+                            INSERT INTO vaccination_card_doses (
+                                case_id, record_type, day_number, dose_date, type_of_vaccine, dose, route_site, given_by
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                            """,
+                            (case_id, record_type, day, dose_date or None, type_of_vaccine or None, dose or None, route_site or None, given_by or None),
+                        )
+
             db.commit()
 
             flash("Case information updated.", "success")
@@ -2879,6 +3277,73 @@ def create_app():
             )
             or "Unknown Patient"
         )
+
+        vc_row = db.execute(
+            "SELECT * FROM vaccination_card WHERE case_id = ?", (case_id,)
+        ).fetchone()
+        vaccination_card = dict(vc_row) if vc_row else {}
+        vaccination_card_doses_rows = db.execute(
+            """
+            SELECT id, case_id, record_type, day_number, dose_date, type_of_vaccine, dose, route_site, given_by
+            FROM vaccination_card_doses
+            WHERE case_id = ?
+            ORDER BY record_type, day_number
+            """,
+            (case_id,),
+        ).fetchall()
+        card_doses_by_type = {"pre_exposure": {}, "post_exposure": {}, "booster": {}}
+        for row in vaccination_card_doses_rows:
+            r = row["record_type"]
+            d = row["day_number"]
+            if r in card_doses_by_type:
+                card_doses_by_type[r][d] = dict(row)
+
+        personnel_rows = db.execute(
+            """
+            SELECT cp.title, cp.first_name, cp.last_name, u.username
+            FROM clinic_personnel cp
+            JOIN users u ON u.id = cp.user_id
+            WHERE cp.clinic_id = ?
+            ORDER BY cp.title, cp.first_name, cp.last_name, u.username
+            """,
+            (case_patient["clinic_id"],),
+        ).fetchall()
+        personnel_options = []
+        seen_personnel = set()
+        for row in personnel_rows:
+            title = (row["title"] or "").strip()
+            first_name = (row["first_name"] or "").strip()
+            last_name = (row["last_name"] or "").strip()
+            username = (row["username"] or "").strip()
+            display_name = " ".join(part for part in [title, first_name, last_name] if part) or username
+            if display_name and display_name not in seen_personnel:
+                seen_personnel.add(display_name)
+                personnel_options.append(display_name)
+
+        suggested_dates_by_type = {"pre_exposure": {}, "post_exposure": {}, "booster": {}}
+        schedule_days = {
+            "pre_exposure": [0, 7, 28],
+            "post_exposure": [0, 3, 7, 14, 28],
+            "booster": [0, 3],
+        }
+        for record_type, days in schedule_days.items():
+            day0_row = card_doses_by_type.get(record_type, {}).get(0)
+            day0_raw = (day0_row.get("dose_date") if day0_row else "") or ""
+            if not day0_raw:
+                continue
+            try:
+                day0_date = datetime.fromisoformat(day0_raw).date()
+            except ValueError:
+                continue
+            for day in days:
+                if day == 0:
+                    continue
+                existing_row = card_doses_by_type.get(record_type, {}).get(day)
+                existing_date = (existing_row.get("dose_date") if existing_row else "") or ""
+                if existing_date:
+                    continue
+                suggested_dates_by_type[record_type][day] = (day0_date + timedelta(days=day)).isoformat()
+
         breadcrumbs = [
             {"label": "Home", "href": url_for("staff_dashboard")},
             {"label": "Patients", "href": url_for("staff_patients")},
@@ -2892,8 +3357,12 @@ def create_app():
             staff_display_name=staff_display_name,
             case=case_patient,
             patient_name=patient_name,
+            vaccination_card=vaccination_card,
+            card_doses_by_type=card_doses_by_type,
+            personnel_options=personnel_options,
+            suggested_dates_by_type=suggested_dates_by_type,
             breadcrumbs=breadcrumbs,
-            active_page="patients",
+            active_page="cases",
         )
 
     @app.get("/admin/dashboard")

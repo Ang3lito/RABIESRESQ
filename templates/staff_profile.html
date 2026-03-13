@@ -1,162 +1,79 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Edit Profile - RabiesResQ</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-      integrity="sha512-SnH5WK+bZxgPHs44uWix+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkR4j8tBT9q4o6r7gYxAjgQ8K3X0M3fN9lWQ=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    />
-  </head>
-  <body class="min-h-screen bg-slate-100 text-slate-900">
-    <div class="flex min-h-screen flex-col lg:flex-row">
-      <aside class="w-full border-r border-slate-200 bg-white lg:w-64">
-        <div class="flex h-full flex-col p-6">
-          <a href="{{ url_for('staff_dashboard') }}" class="text-2xl font-bold text-blue-800">RabiesResQ</a>
+{% extends "staff_base.html" %}
 
-          <nav class="mt-8 space-y-2 text-sm">
-            <a
-              href="{{ url_for('staff_dashboard') }}"
-              class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-100"
-            >
-              <i class="fa-solid fa-table-columns"></i>
-              Dashboard
-            </a>
-            <a href="{{ url_for('staff_patients') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-100">
-              <i class="fa-solid fa-user-group"></i>
-              Patients
-            </a>
-            <a href="{{ url_for('staff_appointments') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-100">
-              <i class="fa-regular fa-calendar"></i>
-              Appointments
-            </a>
-          </nav>
+{% block title %}Edit Profile - RabiesResQ{% endblock %}
 
-          <div class="mt-auto pt-8">
-            <div class="mt-4 space-y-2 text-sm">
-              <a href="{{ url_for('auth.logout') }}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 font-semibold text-white transition hover:bg-red-600">
-                <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                Logout
-              </a>
-            </div>
-          </div>
-        </div>
-      </aside>
+{% block header_left %}
+  <nav class="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+    {% for crumb in breadcrumbs %}
+      {% if crumb.href %}
+        <a href="{{ crumb.href }}" class="hover:text-slate-700">{{ crumb.label }}</a>
+      {% else %}
+        <span class="font-bold text-blue-600">{{ crumb.label }}</span>
+      {% endif %}
+      {% if not loop.last %}
+        <span>/</span>
+      {% endif %}
+    {% endfor %}
+  </nav>
+{% endblock %}
 
-      <main class="flex-1 p-4 sm:p-6 lg:p-8">
-        <div class="mx-auto max-w-3xl rounded-2xl bg-white p-6 shadow-sm">
-          <header class="flex items-center justify-between border-b border-slate-200 pb-4">
-            <div class="flex items-center gap-3">
-              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-200 text-slate-700">
-                <i class="fa-solid fa-user-doctor"></i>
-              </div>
-              <div>
-                <h1 class="text-xl font-bold text-slate-900">Edit profile</h1>
-                <p class="text-xs text-slate-500">Update your clinic personnel details.</p>
-              </div>
-            </div>
-            <a
-              href="{{ url_for('staff_dashboard') }}"
-              class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Back to dashboard
-            </a>
-          </header>
-
-          <form method="post" class="mt-6 space-y-6">
-            <section class="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Username</label>
-                <input
-                  type="text"
-                  name="username"
-                  value="{{ staff.username }}"
-                  class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring"
-                  required
-                />
-              </div>
-              <div>
-                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value="{{ staff.email }}"
-                  class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring"
-                  required
-                />
-              </div>
-              <div>
-                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">First name</label>
-                <input
-                  type="text"
-                  name="first_name"
-                  value="{{ staff.first_name or '' }}"
-                  class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring"
-                />
-              </div>
-              <div>
-                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Last name</label>
-                <input
-                  type="text"
-                  name="last_name"
-                  value="{{ staff.last_name or '' }}"
-                  class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring"
-                />
-              </div>
-              <div>
-                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Title</label>
-                <input
-                  type="text"
-                  name="title"
-                  value="{{ staff.title or '' }}"
-                  class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring"
-                  placeholder="Doctor or Nurse"
-                />
-              </div>
-              <div>
-                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Phone number</label>
-                <input
-                  type="text"
-                  name="phone_number"
-                  value="{{ staff.phone_number or '' }}"
-                  class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring"
-                />
-              </div>
-              <div class="md:col-span-2">
-                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Specialty</label>
-                <input
-                  type="text"
-                  name="specialty"
-                  value="{{ staff.specialty or '' }}"
-                  class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring"
-                  placeholder="e.g. Small animals, Rabies clinic lead"
-                />
-              </div>
-            </section>
-
-            <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
-              <a
-                href="{{ url_for('staff_dashboard') }}"
-                class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </a>
-              <button
-                type="submit"
-                class="inline-flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
-              >
-                Save changes
-              </button>
-            </div>
-          </form>
-        </div>
-      </main>
+{% block main_content %}
+  <form method="post" class="space-y-6">
+    <div class="sticky top-0 z-40 mb-6 flex items-center justify-between border-b border-slate-200 bg-white py-2">
+      <h1 class="text-2xl font-bold text-slate-900">Profile Management</h1>
+      <div class="flex items-center gap-3">
+        <a href="{{ url_for('staff_dashboard') }}" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+          Cancel
+        </a>
+        <button type="submit" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
+          Save Changes
+        </button>
+      </div>
     </div>
-  </body>
-</html>
 
+    <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
+      <div class="mb-4">
+        <h2 class="text-lg font-bold text-slate-900">Personal Information</h2>
+      </div>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">First Name</label>
+          <input type="text" name="first_name" value="{{ staff.first_name or '' }}" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">Last Name</label>
+          <input type="text" name="last_name" value="{{ staff.last_name or '' }}" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">Title</label>
+          <input type="text" value="{{ staff.title or '' }}" disabled class="w-full cursor-not-allowed rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-slate-500" />
+          <p class="mt-1 text-xs text-slate-500">Only system admin can update title.</p>
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">Phone Number</label>
+          <input type="text" name="phone_number" value="{{ staff.phone_number or '' }}" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        </div>
+        <div class="md:col-span-2">
+          <label class="mb-1 block text-sm font-medium text-slate-700">Specialty</label>
+          <input type="text" name="specialty" value="{{ staff.specialty or '' }}" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g. Rabies clinic lead" />
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
+      <div class="mb-4">
+        <h2 class="text-lg font-bold text-slate-900">Account Security</h2>
+      </div>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">Username</label>
+          <input type="text" name="username" value="{{ staff.username }}" required class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">Email</label>
+          <input type="email" name="email" value="{{ staff.email }}" required class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        </div>
+      </div>
+    </div>
+  </form>
+{% endblock %}

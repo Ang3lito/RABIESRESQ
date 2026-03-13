@@ -1,117 +1,24 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Edit Information - RabiesResQ</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-      integrity="sha512-SnH5WK+bZxgPHs44uWix+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkR4j8tBT9q4o6r7gYxAjgQ8K3X0M3fN9lWQ=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    />
-  </head>
-  <body class="min-h-screen bg-slate-100 text-slate-900">
-    <div class="flex min-h-screen flex-col lg:flex-row">
-      <aside class="w-full border-r border-slate-200 bg-white lg:w-64">
-        <div class="flex h-full flex-col p-6">
-          <a href="{{ url_for('staff_dashboard') }}" class="text-2xl font-bold text-blue-800">RabiesResQ</a>
+{% extends "staff_base.html" %}
 
-          <nav class="mt-8 space-y-2 text-sm">
-            <a href="{{ url_for('staff_dashboard') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-100">
-              <i class="fa-solid fa-table-columns"></i>
-              Dashboard
-            </a>
-            <a
-              href="{{ url_for('staff_patients') }}"
-              class="flex items-center gap-3 rounded-xl bg-emerald-100 px-4 py-3 font-medium text-emerald-700"
-            >
-              <i class="fa-solid fa-user-group"></i>
-              Patients
-            </a>
-            <a href="{{ url_for('staff_appointments') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-100">
-              <i class="fa-regular fa-calendar"></i>
-              Appointments
-            </a>
-            <a href="#" class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-100">
-              <i class="fa-solid fa-syringe"></i>
-              Vaccinations
-            </a>
-            <a href="#" class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-100">
-              <i class="fa-solid fa-chart-simple"></i>
-              Reports
-            </a>
-          </nav>
+{% block title %}Edit Information - RabiesResQ{% endblock %}
 
-          <div class="mt-auto pt-8">
-            <a
-              href="#"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 font-semibold text-white transition hover:bg-emerald-600"
-            >
-              <i class="fa-solid fa-plus"></i>
-              New Patient
-            </a>
-            <div class="mt-4 space-y-2 text-sm">
-              <a href="#" class="flex items-center gap-3 rounded-xl px-4 py-2 text-slate-600 hover:bg-slate-100">
-                <i class="fa-solid fa-gear"></i>
-                Settings
-              </a>
-              <a href="{{ url_for('auth.logout') }}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 font-semibold text-white transition hover:bg-red-600">
-                <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                Logout
-              </a>
-            </div>
-          </div>
-        </div>
-      </aside>
+{% block header_left %}
+  <nav class="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+    {% for crumb in breadcrumbs %}
+      {% if crumb.href %}
+        <a href="{{ crumb.href }}" class="hover:text-slate-700">{{ crumb.label }}</a>
+      {% else %}
+        <span class="font-bold text-blue-600">{{ crumb.label }}</span>
+      {% endif %}
+      {% if not loop.last %}
+        <span>/</span>
+      {% endif %}
+    {% endfor %}
+  </nav>
+{% endblock %}
 
-      <main class="flex-1 p-4 sm:p-6 lg:p-8">
-        <div class="rounded-2xl bg-white p-4 shadow-sm sm:p-6">
-          <header class="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
-            {% if request.endpoint == "staff_dashboard" %}
-              <div class="relative w-full lg:max-w-md">
-                <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input
-                  type="text"
-                  placeholder="Search patients, cases..."
-                  class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none ring-emerald-300 transition focus:ring"
-                />
-              </div>
-            {% else %}
-              <nav class="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-                {% for crumb in breadcrumbs %}
-                  {% if crumb.href %}
-                    <a href="{{ crumb.href }}" class="hover:text-slate-700">{{ crumb.label }}</a>
-                  {% else %}
-                    <span class="font-bold text-blue-600">{{ crumb.label }}</span>
-                  {% endif %}
-                  {% if not loop.last %}
-                    <span>/</span>
-                  {% endif %}
-                {% endfor %}
-              </nav>
-            {% endif %}
-
-            <div class="flex items-center justify-between gap-4 sm:justify-end">
-              <button class="relative rounded-full p-2 text-slate-600 hover:bg-slate-100" type="button" aria-label="Notifications">
-                <i class="fa-regular fa-bell text-lg"></i>
-                <span class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500"></span>
-              </button>
-              <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-slate-700">
-                  <i class="fa-solid fa-user"></i>
-                </div>
-                <div class="leading-tight">
-                  <p class="text-sm font-semibold">{{ staff_display_name }}</p>
-                  <p class="text-xs text-slate-500">Veterinarian</p>
-                </div>
-              </div>
-            </div>
-          </header>
-
-          <section class="mt-6">
+{% block main_content %}
+  <section class="mt-6">
             <h1 class="text-5xl font-bold text-blue-900">Edit Information</h1>
             <p class="mt-1 text-slate-500">Update pre-screening forms for RRQ-{{ case.case_id }}.</p>
           </section>
@@ -216,8 +123,217 @@
                     class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
                   />
                 </div>
+                <div class="md:col-span-2">
+                  <label class="mb-1 block text-sm text-slate-600" for="wound_description">Wound Description</label>
+                  <textarea id="wound_description" name="wound_description" rows="2" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring">{{ case.wound_description or '' }}</textarea>
+                </div>
+                <div>
+                  <label class="mb-1 block text-sm text-slate-600" for="bleeding_type">Bleeding Type</label>
+                  <input
+                    id="bleeding_type"
+                    name="bleeding_type"
+                    type="text"
+                    value="{{ case.bleeding_type or '' }}"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                  />
+                </div>
+                <div>
+                  <label class="mb-1 block text-sm text-slate-600" for="local_treatment">Local Treatment</label>
+                  <input
+                    id="local_treatment"
+                    name="local_treatment"
+                    type="text"
+                    value="{{ case.local_treatment or '' }}"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                  />
+                </div>
+                <div>
+                  <label class="mb-1 block text-sm text-slate-600" for="patient_prev_immunization">Previous Rabies Vaccination</label>
+                  <input
+                    id="patient_prev_immunization"
+                    name="patient_prev_immunization"
+                    type="text"
+                    value="{{ case.patient_prev_immunization or '' }}"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                  />
+                </div>
+                <div>
+                  <label class="mb-1 block text-sm text-slate-600" for="prev_vaccine_date">Previous Vaccine Date</label>
+                  <input
+                    id="prev_vaccine_date"
+                    name="prev_vaccine_date"
+                    type="date"
+                    value="{{ case.prev_vaccine_date or '' }}"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                  />
+                </div>
+                <div>
+                  <label class="mb-1 block text-sm text-slate-600" for="tetanus_date">Tetanus Vaccine Date</label>
+                  <input
+                    id="tetanus_date"
+                    name="tetanus_date"
+                    type="date"
+                    value="{{ case.tetanus_date or '' }}"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                  />
+                </div>
+                <div>
+                  <label class="mb-1 block text-sm text-slate-600" for="hrtig_immunization">HRIG / Immunoglobulin</label>
+                  <select
+                    id="hrtig_immunization"
+                    name="hrtig_immunization"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                  >
+                    <option value="" {{ "selected" if case.hrtig_immunization is none else "" }}>N/A</option>
+                    <option value="1" {{ "selected" if case.hrtig_immunization in [1, "1", true] else "" }}>Yes</option>
+                    <option value="0" {{ "selected" if case.hrtig_immunization in [0, "0", false] else "" }}>No</option>
+                  </select>
+                </div>
               </div>
             </article>
+
+            <article class="rounded-2xl border border-slate-200 bg-white p-5">
+              <h2 class="text-3xl font-semibold text-blue-900">Vaccination Record Card</h2>
+              <div class="mt-4 space-y-5">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                    <h3 class="mb-3 text-sm font-semibold uppercase text-slate-600">Anti-Rabies Details</h3>
+                    <div class="space-y-3">
+                      <div>
+                        <label class="mb-1 block text-xs text-slate-500" for="vc_anti_rabies">ANTI-RABIES</label>
+                        <input id="vc_anti_rabies" name="vc_anti_rabies" type="text" value="{{ vaccination_card.anti_rabies or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                      </div>
+                      <div>
+                        <label class="mb-1 block text-xs text-slate-500" for="vc_pvrv">PVRV</label>
+                        <input id="vc_pvrv" name="vc_pvrv" type="text" value="{{ vaccination_card.pvrv or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                      </div>
+                      <div class="grid grid-cols-3 gap-2">
+                        <div>
+                          <label class="mb-1 block text-xs text-slate-500" for="vc_pcec_batch">PCEC Batch</label>
+                          <input id="vc_pcec_batch" name="vc_pcec_batch" type="text" value="{{ vaccination_card.pcec_batch or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                        </div>
+                        <div>
+                          <label class="mb-1 block text-xs text-slate-500" for="vc_pcec_mfg_date">Mfg Date</label>
+                          <input id="vc_pcec_mfg_date" name="vc_pcec_mfg_date" type="text" placeholder="e.g. JUN25" value="{{ vaccination_card.pcec_mfg_date or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                        </div>
+                        <div>
+                          <label class="mb-1 block text-xs text-slate-500" for="vc_pcec_expiry">Expiry</label>
+                          <input id="vc_pcec_expiry" name="vc_pcec_expiry" type="text" placeholder="e.g. MAY28" value="{{ vaccination_card.pcec_expiry or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                        </div>
+                      </div>
+                      <div>
+                        <label class="mb-1 block text-xs text-slate-500" for="vc_erig_hrig">ERIG/HRIG</label>
+                        <input id="vc_erig_hrig" name="vc_erig_hrig" type="text" value="{{ vaccination_card.erig_hrig or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                    <h3 class="mb-3 text-sm font-semibold uppercase text-slate-600">Other Prophylaxis Given</h3>
+                    <div class="space-y-3">
+                      <div>
+                        <label class="mb-1 block text-xs text-slate-500" for="vc_tetanus_prophylaxis">Tetanus Prophylaxis</label>
+                        <input id="vc_tetanus_prophylaxis" name="vc_tetanus_prophylaxis" type="text" value="{{ vaccination_card.tetanus_prophylaxis or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                      </div>
+                      <div>
+                        <label class="mb-1 block text-xs text-slate-500" for="vc_tetanus_toxoid">Tetanus Toxoid</label>
+                        <input id="vc_tetanus_toxoid" name="vc_tetanus_toxoid" type="text" value="{{ vaccination_card.tetanus_toxoid or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                      </div>
+                      <div>
+                        <label class="mb-1 block text-xs text-slate-500" for="vc_ats">ATS</label>
+                        <input id="vc_ats" name="vc_ats" type="text" value="{{ vaccination_card.ats or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                      </div>
+                      <div>
+                        <label class="mb-1 block text-xs text-slate-500" for="vc_htig">HTIG</label>
+                        <input id="vc_htig" name="vc_htig" type="text" value="{{ vaccination_card.htig or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 class="text-sm font-semibold text-slate-700">Pre-Exposure Vaccination Record</h3>
+                  <div class="mt-2 overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="min-w-full divide-y divide-slate-200 text-sm">
+                      <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
+                        <tr><th class="px-2 py-2">Day</th><th class="px-2 py-2">Date</th><th class="px-2 py-2">Type of Vaccine</th><th class="px-2 py-2">Dose</th><th class="px-2 py-2">Route &amp; Site</th><th class="px-2 py-2">Given By</th></tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100 bg-white">
+                        {% for day in [0, 7, 28] %}
+                          {% set row = card_doses_by_type.pre_exposure[day] %}
+                          <tr>
+                            <td class="px-2 py-1.5 font-medium">DAY {{ day }}</td>
+                            <td class="px-2 py-1"><input name="vc_pre_{{ day }}_date" type="date" value="{{ row.dose_date if row and row.dose_date else suggested_dates_by_type.pre_exposure.get(day, '') }}" class="w-full min-w-[7rem] cursor-pointer rounded border border-slate-300 px-2 py-1 text-sm outline-none ring-emerald-300 focus:ring" /></td>
+                            <td class="px-2 py-1"><input name="vc_pre_{{ day }}_type" type="text" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" class="w-full min-w-[6rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
+                            <td class="px-2 py-1"><input name="vc_pre_{{ day }}_dose" type="text" value="{{ row.dose if row and row.dose else '' }}" class="w-full min-w-[4rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
+                            <td class="px-2 py-1"><input name="vc_pre_{{ day }}_route_site" type="text" value="{{ row.route_site if row and row.route_site else '' }}" class="w-full min-w-[5rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
+                            <td class="px-2 py-1"><input name="vc_pre_{{ day }}_given_by" type="text" list="clinic-personnel-options" value="{{ row.given_by if row and row.given_by else '' }}" class="w-full min-w-[8rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 class="text-sm font-semibold text-slate-700">Post-Exposure Vaccination Record</h3>
+                  <div class="mt-2 overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="min-w-full divide-y divide-slate-200 text-sm">
+                      <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
+                        <tr><th class="px-2 py-2">Day</th><th class="px-2 py-2">Date</th><th class="px-2 py-2">Type of Vaccine</th><th class="px-2 py-2">Dose</th><th class="px-2 py-2">Route &amp; Site</th><th class="px-2 py-2">Given By</th></tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100 bg-white">
+                        {% for day in [0, 3, 7, 14, 28] %}
+                          {% set row = card_doses_by_type.post_exposure[day] %}
+                          <tr>
+                            <td class="px-2 py-1.5 font-medium">DAY {{ day }}</td>
+                            <td class="px-2 py-1"><input name="vc_post_{{ day }}_date" type="date" value="{{ row.dose_date if row and row.dose_date else suggested_dates_by_type.post_exposure.get(day, '') }}" class="w-full min-w-[7rem] cursor-pointer rounded border border-slate-300 px-2 py-1 text-sm outline-none ring-emerald-300 focus:ring" /></td>
+                            <td class="px-2 py-1"><input name="vc_post_{{ day }}_type" type="text" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" class="w-full min-w-[6rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
+                            <td class="px-2 py-1"><input name="vc_post_{{ day }}_dose" type="text" value="{{ row.dose if row and row.dose else '' }}" class="w-full min-w-[4rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
+                            <td class="px-2 py-1"><input name="vc_post_{{ day }}_route_site" type="text" value="{{ row.route_site if row and row.route_site else '' }}" class="w-full min-w-[5rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
+                            <td class="px-2 py-1"><input name="vc_post_{{ day }}_given_by" type="text" list="clinic-personnel-options" value="{{ row.given_by if row and row.given_by else '' }}" class="w-full min-w-[8rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 class="text-sm font-semibold text-slate-700">Booster Vaccination Record</h3>
+                  <div class="mt-2 overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="min-w-full divide-y divide-slate-200 text-sm">
+                      <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
+                        <tr><th class="px-2 py-2">Day</th><th class="px-2 py-2">Date</th><th class="px-2 py-2">Type of Vaccine</th><th class="px-2 py-2">Dose</th><th class="px-2 py-2">Route &amp; Site</th><th class="px-2 py-2">Given By</th></tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100 bg-white">
+                        {% for day in [0, 3] %}
+                          {% set row = card_doses_by_type.booster[day] %}
+                          <tr>
+                            <td class="px-2 py-1.5 font-medium">DAY {{ day }}</td>
+                            <td class="px-2 py-1"><input name="vc_booster_{{ day }}_date" type="date" value="{{ row.dose_date if row and row.dose_date else suggested_dates_by_type.booster.get(day, '') }}" class="w-full min-w-[7rem] cursor-pointer rounded border border-slate-300 px-2 py-1 text-sm outline-none ring-emerald-300 focus:ring" /></td>
+                            <td class="px-2 py-1"><input name="vc_booster_{{ day }}_type" type="text" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" class="w-full min-w-[6rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
+                            <td class="px-2 py-1"><input name="vc_booster_{{ day }}_dose" type="text" value="{{ row.dose if row and row.dose else '' }}" class="w-full min-w-[4rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
+                            <td class="px-2 py-1"><input name="vc_booster_{{ day }}_route_site" type="text" value="{{ row.route_site if row and row.route_site else '' }}" class="w-full min-w-[5rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
+                            <td class="px-2 py-1"><input name="vc_booster_{{ day }}_given_by" type="text" list="clinic-personnel-options" value="{{ row.given_by if row and row.given_by else '' }}" class="w-full min-w-[8rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="mb-1 block text-sm font-semibold text-slate-700" for="vc_remarks">Remarks</label>
+                  <textarea id="vc_remarks" name="vc_remarks" rows="3" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none ring-emerald-300 focus:ring">{{ vaccination_card.remarks or '' }}</textarea>
+                </div>
+              </div>
+            </article>
+
+            <datalist id="clinic-personnel-options">
+              {% for option in personnel_options %}
+                <option value="{{ option }}"></option>
+              {% endfor %}
+            </datalist>
 
             <div class="flex items-center gap-3">
               <button type="submit" class="rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600">
@@ -228,8 +344,49 @@
               </a>
             </div>
           </form>
-        </div>
-      </main>
-    </div>
-  </body>
-</html>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    function formatLocalYMD(dateObj) {
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const d = String(dateObj.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function applyDoseDateSuggestions(prefix, dayOffsets) {
+      const day0Input = document.querySelector(`input[name="${prefix}_0_date"]`);
+      if (!day0Input) return;
+      const day0Value = (day0Input.value || "").trim();
+      if (!day0Value) return;
+      const baseDate = new Date(day0Value + "T00:00:00");
+      if (Number.isNaN(baseDate.getTime())) return;
+
+      dayOffsets.forEach(function(day) {
+        if (day === 0) return;
+        const target = document.querySelector(`input[name="${prefix}_${day}_date"]`);
+        if (!target || (target.value || "").trim()) return;
+        const d = new Date(baseDate);
+        d.setDate(baseDate.getDate() + day);
+        target.value = formatLocalYMD(d);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      const schedules = [
+        { prefix: "vc_pre", days: [0, 7, 28] },
+        { prefix: "vc_post", days: [0, 3, 7, 14, 28] },
+        { prefix: "vc_booster", days: [0, 3] }
+      ];
+      schedules.forEach(function(schedule) {
+        applyDoseDateSuggestions(schedule.prefix, schedule.days);
+        const day0 = document.querySelector(`input[name="${schedule.prefix}_0_date"]`);
+        if (!day0) return;
+        day0.addEventListener("change", function() {
+          applyDoseDateSuggestions(schedule.prefix, schedule.days);
+        });
+      });
+    });
+  </script>
+{% endblock %}

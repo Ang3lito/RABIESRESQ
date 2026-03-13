@@ -188,6 +188,38 @@ CREATE TABLE IF NOT EXISTS vaccination_records (
   FOREIGN KEY (administered_by_personnel_id) REFERENCES clinic_personnel(id) ON DELETE RESTRICT
 );
 
+-- Vaccination card (per case): anti-rabies details, prophylaxis, remarks
+CREATE TABLE IF NOT EXISTS vaccination_card (
+  case_id INTEGER PRIMARY KEY,
+  anti_rabies TEXT,
+  pvrv TEXT,
+  pcec_batch TEXT,
+  pcec_mfg_date TEXT,
+  pcec_expiry TEXT,
+  erig_hrig TEXT,
+  tetanus_prophylaxis TEXT,
+  tetanus_toxoid TEXT,
+  ats TEXT,
+  htig TEXT,
+  remarks TEXT,
+  FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE
+);
+
+-- Vaccination card dose rows: pre-exposure, post-exposure, booster (day, date, type, dose, route_site, given_by)
+CREATE TABLE IF NOT EXISTS vaccination_card_doses (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  case_id INTEGER NOT NULL,
+  record_type TEXT NOT NULL CHECK(record_type IN ('pre_exposure','post_exposure','booster')),
+  day_number INTEGER NOT NULL,
+  dose_date TEXT,
+  type_of_vaccine TEXT,
+  dose TEXT,
+  route_site TEXT,
+  given_by TEXT,
+  FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_vaccination_card_doses_case_type ON vaccination_card_doses(case_id, record_type);
+
 CREATE TABLE IF NOT EXISTS case_notes (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   case_id INTEGER NOT NULL,
