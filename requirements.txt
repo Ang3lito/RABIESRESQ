@@ -1,0 +1,6 @@
+flask>=2.0
+python-dotenv>=0.19
+click>=8.0
+werkzeug>=2.0
+itsdangerous>=2.0
+xhtml2pdf>=0.2.13

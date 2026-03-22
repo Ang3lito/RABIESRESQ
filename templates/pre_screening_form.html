@@ -5,7 +5,7 @@
   
   <!-- Modal Content -->
   <div class="flex min-h-full items-center justify-center p-4">
-    <div class="relative w-full max-w-4xl transform overflow-hidden rounded-xl bg-white shadow-xl transition-all">
+    <div class="relative w-full max-w-4xl transform overflow-visible rounded-xl bg-white shadow-xl transition-all">
       <!-- Header -->
       <div class="sticky top-0 z-10 border-b border-slate-200 bg-white px-6 py-4">
         <div class="flex items-center justify-between">
@@ -45,26 +45,36 @@
           <!-- Type of Exposure -->
           <div class="mb-6">
             <label class="mb-2 block text-sm font-semibold text-slate-900">TYPE OF EXPOSURE</label>
-            <div class="grid grid-cols-2 gap-3 md:grid-cols-5">
-              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Bite">
-                <input type="radio" name="type_of_exposure" value="Bite" class="sr-only" required>
+            <div class="grid grid-cols-2 gap-3 overflow-visible pt-1 md:grid-cols-5">
+              <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Bite">
+                <input type="radio" name="type_of_exposure" value="Bite" class="peer sr-only" required aria-describedby="exposure-desc-bite">
+                <span id="exposure-desc-bite" class="sr-only">Animal teeth broke the skin; saliva may enter the wound.</span>
                 <span class="text-sm font-medium">Bite</span>
+                <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Animal teeth broke the skin; saliva may enter the wound.</span>
               </label>
-              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Scratch">
-                <input type="radio" name="type_of_exposure" value="Scratch" class="sr-only">
+              <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Scratch">
+                <input type="radio" name="type_of_exposure" value="Scratch" class="peer sr-only" aria-describedby="exposure-desc-scratch">
+                <span id="exposure-desc-scratch" class="sr-only">Claws or teeth scratched the skin (with or without bleeding).</span>
                 <span class="text-sm font-medium">Scratch</span>
+                <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Claws or teeth scratched the skin (with or without bleeding).</span>
               </label>
-              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Contamination of Mucous Membrane">
-                <input type="radio" name="type_of_exposure" value="Contamination of Mucous Membrane" class="sr-only">
+              <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Contamination of Mucous Membrane">
+                <input type="radio" name="type_of_exposure" value="Contamination of Mucous Membrane" class="peer sr-only" aria-describedby="exposure-desc-mucous">
+                <span id="exposure-desc-mucous" class="sr-only">Saliva or infectious material contacted eyes, nose, or mouth.</span>
                 <span class="text-sm font-medium text-center">Contamination of Mucous Membrane</span>
+                <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Saliva or infectious material contacted eyes, nose, or mouth.</span>
               </label>
-              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Non-Bite">
-                <input type="radio" name="type_of_exposure" value="Non-Bite" class="sr-only">
+              <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Non-Bite">
+                <input type="radio" name="type_of_exposure" value="Non-Bite" class="peer sr-only" aria-describedby="exposure-desc-nonbite">
+                <span id="exposure-desc-nonbite" class="sr-only">Exposure without a classic bite (e.g., lick on broken skin, contamination).</span>
                 <span class="text-sm font-medium">Non-Bite</span>
+                <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Exposure without a classic bite (e.g., lick on broken skin, contamination).</span>
               </label>
-              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Touch only">
-                <input type="radio" name="type_of_exposure" value="Touch only" class="sr-only">
+              <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Touch only">
+                <input type="radio" name="type_of_exposure" value="Touch only" class="peer sr-only" aria-describedby="exposure-desc-touch">
+                <span id="exposure-desc-touch" class="sr-only">Contact with unbroken skin only; no wound or mucosa involved.</span>
                 <span class="text-sm font-medium text-center">Touch only / Lick on intact skin</span>
+                <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Contact with unbroken skin only; no wound or mucosa involved.</span>
               </label>
             </div>
           </div>
@@ -105,22 +115,44 @@
               </div>
             </div>
             <div>
-              <label for="affected_area" class="mb-2 block text-sm font-semibold text-slate-900">AFFECTED AREA</label>
-              <select id="affected_area" name="affected_area" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                <option value="">Select...</option>
-                <option value="Head/Face">Head/Face</option>
-                <option value="Neck">Neck</option>
-                <option value="Trunk">Trunk</option>
-                <option value="Right arm">Right arm</option>
-                <option value="Left arm">Left arm</option>
-                <option value="Right hand">Right hand</option>
-                <option value="Left hand">Left hand</option>
-                <option value="Right leg">Right leg</option>
-                <option value="Left leg">Left leg</option>
-                <option value="Right foot">Right foot</option>
-                <option value="Left foot">Left foot</option>
-                <option value="Other">Other</option>
-              </select>
+              <label id="affected-area-label" for="affected-area-trigger" class="mb-2 block text-sm font-semibold text-slate-900">AFFECTED AREA</label>
+              <div id="affected-area-group" class="relative rounded-lg border border-slate-200 bg-slate-50/50 p-3">
+                <button
+                  type="button"
+                  id="affected-area-trigger"
+                  class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-left text-sm text-slate-900 hover:border-emerald-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                  aria-controls="affected-area-panel"
+                >
+                  <span id="affected-area-trigger-text" class="min-w-0 flex-1 truncate">Select affected areas…</span>
+                  <svg id="affected-area-chevron" class="h-5 w-5 shrink-0 text-slate-500 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </button>
+                <div
+                  id="affected-area-panel"
+                  role="group"
+                  aria-labelledby="affected-area-label"
+                  class="absolute left-0 right-0 top-full z-20 mt-1 hidden max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white p-3 shadow-lg"
+                >
+                  <p class="mb-2 text-xs text-slate-500">Select all that apply</p>
+                  <div class="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Head/Face" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Head/Face</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Neck" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Neck</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Trunk" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Trunk</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Right arm" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Right arm</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Left arm" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Left arm</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Right hand" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Right hand</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Left hand" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Left hand</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Right leg" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Right leg</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Left leg" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Left leg</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Right foot" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Right foot</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Left foot" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Left foot</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50 sm:col-span-2"><input type="checkbox" name="affected_area" value="Other" id="affected_area_cb_other" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Other</label>
+                  </div>
+                </div>
+              </div>
               <div id="affected-area-other-container" class="mt-3 hidden">
                 <label for="affected_area_other" class="mb-2 block text-sm font-medium text-slate-700">Specify other affected area</label>
                 <input type="text" id="affected_area_other" name="affected_area_other" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Specify...">
@@ -135,26 +167,36 @@
             <!-- Description of Wound -->
             <div class="mb-4">
               <label class="mb-2 block text-sm font-medium text-slate-700">Description of Wound</label>
-              <div class="grid grid-cols-2 gap-3 md:grid-cols-5">
-                <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="Punctured">
-                  <input type="radio" name="wound_description" value="Punctured" class="sr-only" required>
+              <div class="grid grid-cols-2 gap-3 overflow-visible pt-1 md:grid-cols-5">
+                <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="Punctured">
+                  <input type="radio" name="wound_description" value="Punctured" class="peer sr-only" required aria-describedby="wound-desc-punctured">
+                  <span id="wound-desc-punctured" class="sr-only">Small, deep hole—often from teeth; may close quickly on the surface.</span>
                   <span class="text-xs font-medium">Punctured</span>
+                  <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Small, deep hole—often from teeth; may close quickly on the surface.</span>
                 </label>
-                <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="Abrasion">
-                  <input type="radio" name="wound_description" value="Abrasion" class="sr-only">
+                <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="Abrasion">
+                  <input type="radio" name="wound_description" value="Abrasion" class="peer sr-only" aria-describedby="wound-desc-abrasion">
+                  <span id="wound-desc-abrasion" class="sr-only">Superficial scrape; top layers of skin rubbed off.</span>
                   <span class="text-xs font-medium">Abrasion</span>
+                  <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Superficial scrape; top layers of skin rubbed off.</span>
                 </label>
-                <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="Lacerated">
-                  <input type="radio" name="wound_description" value="Lacerated" class="sr-only">
+                <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="Lacerated">
+                  <input type="radio" name="wound_description" value="Lacerated" class="peer sr-only" aria-describedby="wound-desc-lacerated">
+                  <span id="wound-desc-lacerated" class="sr-only">Jagged or torn cut with irregular edges.</span>
                   <span class="text-xs font-medium">Lacerated</span>
+                  <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Jagged or torn cut with irregular edges.</span>
                 </label>
-                <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="Avulsed">
-                  <input type="radio" name="wound_description" value="Avulsed" class="sr-only">
+                <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="Avulsed">
+                  <input type="radio" name="wound_description" value="Avulsed" class="peer sr-only" aria-describedby="wound-desc-avulsed">
+                  <span id="wound-desc-avulsed" class="sr-only">Skin or tissue partly torn away or hanging as a flap.</span>
                   <span class="text-xs font-medium">Avulsed</span>
+                  <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Skin or tissue partly torn away or hanging as a flap.</span>
                 </label>
-                <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="None">
-                  <input type="radio" name="wound_description" value="None" class="sr-only">
+                <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="None">
+                  <input type="radio" name="wound_description" value="None" class="peer sr-only" aria-describedby="wound-desc-none">
+                  <span id="wound-desc-none" class="sr-only">No break in the skin or no wound visible.</span>
                   <span class="text-xs font-medium">None</span>
+                  <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">No break in the skin or no wound visible.</span>
                 </label>
               </div>
             </div>
@@ -386,9 +428,24 @@
               </div>
             </div>
 
-            <div>
-              <label for="age" class="mb-2 block text-sm font-semibold text-slate-900">Age</label>
-              <input type="number" id="age" name="age" value="{{ patient.age or '' }}" required class="w-full max-w-xs rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Enter age">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div>
+                <label for="date_of_birth" class="mb-2 block text-sm font-semibold text-slate-900">Birthday</label>
+                <input type="date" id="date_of_birth" name="date_of_birth" value="{{ patient.date_of_birth or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              </div>
+              <div>
+                <label for="gender" class="mb-2 block text-sm font-semibold text-slate-900">Gender</label>
+                <select id="gender" name="gender" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <option value="">Select gender...</option>
+                  <option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
+                  <option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
+                  <option value="Other" {% if patient.gender == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+              </div>
+              <div>
+                <label for="age" class="mb-2 block text-sm font-semibold text-slate-900">Age</label>
+                <input type="number" id="age" name="age" value="{{ patient.age or '' }}" required readonly inputmode="none" tabindex="-1" title="Computed from birthday" class="w-full cursor-default rounded-lg border border-slate-300 bg-slate-100 px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="—">
+              </div>
             </div>
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -527,6 +584,116 @@ let isAppointmentFlow = false;
 const AVAILABILITY_URL = "{{ url_for('patient_availability') }}";
 let calendarMonthStart = null;
 
+function collectAffectedAreaArray() {
+  const form = document.getElementById('pre-screening-form');
+  if (!form) return [];
+  const areas = [];
+  form.querySelectorAll('input[name="affected_area"]:checked').forEach(function(cb) {
+    areas.push(cb.value);
+  });
+  return areas;
+}
+
+function updateAgeFromDob() {
+  var dob = document.getElementById('date_of_birth');
+  var ageEl = document.getElementById('age');
+  if (!dob || !ageEl || !dob.value) return;
+  var parts = dob.value.split('-');
+  if (parts.length !== 3) return;
+  var y = parseInt(parts[0], 10), m = parseInt(parts[1], 10) - 1, d = parseInt(parts[2], 10);
+  var birth = new Date(y, m, d);
+  var today = new Date();
+  var age = today.getFullYear() - birth.getFullYear();
+  var monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  if (age < 0) age = 0;
+  ageEl.value = age;
+}
+
+function setExposureDateMax() {
+  var el = document.getElementById('exposure_date');
+  if (!el) return;
+  var t = new Date();
+  var iso = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+  el.max = iso;
+}
+
+function formatAffectedAreaSummary(fd) {
+  var raw = fd.affected_area;
+  var parts = [];
+  if (Array.isArray(raw)) {
+    parts = raw.slice();
+  } else if (typeof raw === 'string' && raw) {
+    raw.split(/[,;]/).forEach(function(s) {
+      s = s.trim();
+      if (s) parts.push(s);
+    });
+  }
+  var otherText = (fd.affected_area_other || '').trim();
+  var hasOther = parts.indexOf('Other') !== -1;
+  parts = parts.filter(function(p) { return p !== 'Other'; });
+  if (hasOther && otherText) {
+    parts.push('Other: ' + otherText);
+  } else if (hasOther) {
+    parts.push('Other');
+  }
+  return parts.length ? parts.join(', ') : 'N/A';
+}
+
+function closeAffectedAreaPanel() {
+  var panel = document.getElementById('affected-area-panel');
+  var trigger = document.getElementById('affected-area-trigger');
+  var chevron = document.getElementById('affected-area-chevron');
+  if (panel) panel.classList.add('hidden');
+  if (trigger) trigger.setAttribute('aria-expanded', 'false');
+  if (chevron) chevron.style.transform = '';
+}
+
+function openAffectedAreaPanel() {
+  var panel = document.getElementById('affected-area-panel');
+  var trigger = document.getElementById('affected-area-trigger');
+  var chevron = document.getElementById('affected-area-chevron');
+  if (panel) panel.classList.remove('hidden');
+  if (trigger) trigger.setAttribute('aria-expanded', 'true');
+  if (chevron) chevron.style.transform = 'rotate(180deg)';
+}
+
+function toggleAffectedAreaPanel() {
+  var panel = document.getElementById('affected-area-panel');
+  if (!panel) return;
+  if (panel.classList.contains('hidden')) {
+    openAffectedAreaPanel();
+  } else {
+    closeAffectedAreaPanel();
+  }
+}
+
+function updateAffectedAreaTriggerText() {
+  var span = document.getElementById('affected-area-trigger-text');
+  if (!span) return;
+  var arr = collectAffectedAreaArray();
+  if (arr.length === 0) {
+    span.textContent = 'Select affected areas…';
+    span.removeAttribute('title');
+    return;
+  }
+  var otherInput = document.getElementById('affected_area_other');
+  var parts = [];
+  arr.forEach(function(v) {
+    if (v === 'Other') {
+      var t = otherInput && otherInput.value ? otherInput.value.trim() : '';
+      parts.push(t ? 'Other: ' + t : 'Other');
+    } else {
+      parts.push(v);
+    }
+  });
+  var full = parts.join(', ');
+  span.textContent = full.length > 60 ? full.slice(0, 57) + '…' : full;
+  span.setAttribute('title', full);
+}
+
 function openPreScreeningModal(formType = 'case') {
   document.getElementById('pre-screening-modal').classList.remove('hidden');
   document.getElementById('form-type').value = formType;
@@ -543,6 +710,10 @@ function openPreScreeningModal(formType = 'case') {
   showStep(1);
   document.body.style.overflow = 'hidden';
   initializeRadioButtons();
+  setExposureDateMax();
+  updateAgeFromDob();
+  closeAffectedAreaPanel();
+  updateAffectedAreaTriggerText();
   if (isAppointmentFlow) {
     buildCalendar();
   }
@@ -583,6 +754,10 @@ function closePreScreeningModal() {
     document.querySelectorAll('.' + cls).forEach(l => l.classList.remove('border-red-500'));
   });
   document.querySelectorAll('#pre-screening-form input, #pre-screening-form select').forEach(f => f.classList.remove('border-red-500'));
+  var ag = document.getElementById('affected-area-group');
+  if (ag) ag.classList.remove('border-red-500');
+  closeAffectedAreaPanel();
+  updateAffectedAreaTriggerText();
 }
 
 function getStepDivId(step) {
@@ -614,6 +789,9 @@ function showStep(step) {
   document.getElementById('submit-btn').classList.toggle('hidden', step !== totalSteps);
 
   initializeRadioButtons();
+  if (step === 2) {
+    updateAgeFromDob();
+  }
   if (isAppointmentFlow && step === 3) {
     var sel = document.getElementById('clinic_select');
     if (sel) document.getElementById('clinic_id_slot').value = sel.value;
@@ -666,12 +844,33 @@ function validateStep(step) {
     return true;
   }
 
+  if (step === 1) {
+    const areaChecked = stepElement.querySelectorAll('input[name="affected_area"]:checked');
+    if (areaChecked.length === 0) {
+      showAlert('Please select at least one affected area.');
+      var ag0 = document.getElementById('affected-area-group');
+      if (ag0) ag0.classList.add('border-red-500');
+      return false;
+    }
+    var otherCb = stepElement.querySelector('input[name="affected_area"][value="Other"]:checked');
+    if (otherCb) {
+      var oi = document.getElementById('affected_area_other');
+      if (!oi || !oi.value.trim()) {
+        showAlert('Please specify the other affected area.');
+        if (oi) oi.classList.add('border-red-500');
+        return false;
+      }
+    }
+  }
+
   // Clear all validation highlights first
   const optionGroups = ['exposure-type', 'wound-type', 'bleeding-spontaneous', 'bleeding-induced', 'prev-immunization', 'animal-type', 'animal-status', 'animal-vaccination', 'local-treatment', 'tetanus-immunization', 'hrtig-immunization'];
   optionGroups.forEach(cls => {
     stepElement.querySelectorAll('.' + cls).forEach(l => l.classList.remove('border-red-500'));
   });
   stepElement.querySelectorAll('input, select').forEach(f => f.classList.remove('border-red-500'));
+  var agClear = document.getElementById('affected-area-group');
+  if (agClear) agClear.classList.remove('border-red-500');
 
   const requiredFields = stepElement.querySelectorAll('[required]');
   let isValid = true;
@@ -707,6 +906,9 @@ function collectStepData(step) {
   const stepElement = document.getElementById(`step-${step}`);
   const inputs = stepElement.querySelectorAll('input, select, textarea');
   inputs.forEach(input => {
+    if (input.type === 'checkbox' && input.name === 'affected_area') {
+      return;
+    }
     if (input.type === 'radio') {
       if (input.checked) {
         formData[input.name] = input.value;
@@ -715,6 +917,9 @@ function collectStepData(step) {
       formData[input.name] = input.value;
     }
   });
+  if (step === 1) {
+    formData.affected_area = collectAffectedAreaArray();
+  }
 }
 
 function collectAllFormData() {
@@ -727,6 +932,9 @@ function collectAllFormData() {
   const form = document.getElementById('pre-screening-form');
   const allInputs = form.querySelectorAll('input, select, textarea');
   allInputs.forEach(input => {
+    if (input.type === 'checkbox' && input.name === 'affected_area') {
+      return;
+    }
     if (input.type === 'radio') {
       if (input.checked && formData[input.name] !== input.value) {
         formData[input.name] = input.value;
@@ -737,12 +945,26 @@ function collectAllFormData() {
       }
     }
   });
+  formData.affected_area = collectAffectedAreaArray();
+  updateAgeFromDob();
   return true;
 }
 
 function computeRiskCategoryFromForm(data) {
   const typeOfExposure = (data.type_of_exposure || '').trim();
-  const affectedArea = (data.affected_area || '').trim();
+  const affectedTokens = [];
+  const rawA = data.affected_area;
+  if (Array.isArray(rawA)) {
+    rawA.forEach(function(t) {
+      if (t && String(t).trim()) affectedTokens.push(String(t).trim());
+    });
+  } else if (typeof rawA === 'string' && rawA.trim()) {
+    rawA.split(/[,;]/).forEach(function(s) {
+      s = s.trim();
+      if (s) affectedTokens.push(s);
+    });
+  }
+  const hasHighRiskArea = affectedTokens.some(function(t) { return t === 'Head/Face' || t === 'Neck'; });
   const woundDescription = (data.wound_description || '').trim();
   const animalStatus = (data.animal_status || '').trim();
   const animalVaccination = (data.animal_vaccination || '').trim();
@@ -764,13 +986,12 @@ function computeRiskCategoryFromForm(data) {
   data.bleeding_type = bleedingType;
 
   const highRiskExposures = ['Bite', 'Contamination of Mucous Membrane'];
-  const highRiskAreas = ['Head/Face', 'Neck'];
   const severeWounds = ['Punctured', 'Lacerated', 'Avulsed'];
   const highRiskAnimalStatus = ['Sick', 'Died', 'Lost'];
 
   if (
     highRiskExposures.includes(typeOfExposure) ||
-    highRiskAreas.includes(affectedArea) ||
+    hasHighRiskArea ||
     bleedingType === 'Spontaneous' ||
     bleedingType === 'Both spontaneous and induced' ||
     severeWounds.includes(woundDescription) ||
@@ -845,6 +1066,14 @@ function populateSummary() {
           <p class="font-semibold text-slate-900">${[formData.victim_first_name, formData.victim_middle_initial, formData.victim_last_name].filter(Boolean).join(' ') || 'N/A'}</p>
         </div>
         <div>
+          <p class="text-xs text-slate-500">Birthday</p>
+          <p class="font-semibold text-slate-900">${formData.date_of_birth ? new Date(formData.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Gender</p>
+          <p class="font-semibold text-slate-900">${formData.gender || 'N/A'}</p>
+        </div>
+        <div>
           <p class="text-xs text-slate-500">Age</p>
           <p class="font-semibold text-slate-900">${formData.age || 'N/A'}</p>
         </div>
@@ -903,7 +1132,7 @@ function populateSummary() {
         </div>
         <div>
           <p class="text-xs text-slate-500">Affected Area</p>
-          <p class="font-semibold text-slate-900">${formData.affected_area || 'N/A'}${formData.affected_area_other ? ' (' + formData.affected_area_other + ')' : ''}</p>
+          <p class="font-semibold text-slate-900">${formatAffectedAreaSummary(formData)}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Prev Anti-Rabies Immunization</p>
@@ -1237,20 +1466,78 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  var affectedSelect = document.getElementById('affected_area');
-  var affectedOtherContainer = document.getElementById('affected-area-other-container');
-  var affectedOtherInput = document.getElementById('affected_area_other');
-  if (affectedSelect && affectedOtherContainer && affectedOtherInput) {
-    affectedSelect.addEventListener('change', function() {
-      if (this.value === 'Other') {
-        affectedOtherContainer.classList.remove('hidden');
-        affectedOtherInput.required = true;
-      } else {
-        affectedOtherContainer.classList.add('hidden');
-        affectedOtherInput.required = false;
-        affectedOtherInput.value = '';
+  function syncAffectedOther() {
+    var affectedOtherContainer = document.getElementById('affected-area-other-container');
+    var affectedOtherInput = document.getElementById('affected_area_other');
+    var otherCb = document.getElementById('affected_area_cb_other');
+    if (!affectedOtherContainer || !affectedOtherInput || !otherCb) return;
+    if (otherCb.checked) {
+      affectedOtherContainer.classList.remove('hidden');
+      affectedOtherInput.required = true;
+    } else {
+      affectedOtherContainer.classList.add('hidden');
+      affectedOtherInput.required = false;
+      affectedOtherInput.value = '';
+    }
+  }
+
+  var affectedTrigger = document.getElementById('affected-area-trigger');
+  if (affectedTrigger) {
+    affectedTrigger.addEventListener('click', function(e) {
+      e.stopPropagation();
+      toggleAffectedAreaPanel();
+    });
+  }
+  document.addEventListener('click', function(ev) {
+    var wrap = document.getElementById('affected-area-group');
+    var panel = document.getElementById('affected-area-panel');
+    if (!wrap || !panel || panel.classList.contains('hidden')) return;
+    if (!wrap.contains(ev.target)) {
+      closeAffectedAreaPanel();
+    }
+  });
+  document.addEventListener('keydown', function(ev) {
+    if (ev.key !== 'Escape') return;
+    var modal = document.getElementById('pre-screening-modal');
+    if (!modal || modal.classList.contains('hidden')) return;
+    var panel = document.getElementById('affected-area-panel');
+    if (panel && !panel.classList.contains('hidden')) {
+      closeAffectedAreaPanel();
+    }
+  });
+
+  document.querySelectorAll('input[name="affected_area"]').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      syncAffectedOther();
+      updateAffectedAreaTriggerText();
+      var ag = document.getElementById('affected-area-group');
+      if (ag) ag.classList.remove('border-red-500');
+      if (this.value === 'Other' && this.checked) {
+        closeAffectedAreaPanel();
+        var oi = document.getElementById('affected_area_other');
+        if (oi) {
+          setTimeout(function() { oi.focus(); }, 0);
+        }
       }
     });
+  });
+  var otherAffectedField = document.getElementById('affected_area_other');
+  if (otherAffectedField) {
+    otherAffectedField.addEventListener('input', function() {
+      var otherCb = document.getElementById('affected_area_cb_other');
+      if (otherCb && otherCb.checked) {
+        updateAffectedAreaTriggerText();
+      }
+    });
+  }
+  syncAffectedOther();
+  updateAffectedAreaTriggerText();
+
+  setExposureDateMax();
+  var dobEl = document.getElementById('date_of_birth');
+  if (dobEl) {
+    dobEl.addEventListener('change', function() { updateAgeFromDob(); });
+    updateAgeFromDob();
   }
 });
 </script>

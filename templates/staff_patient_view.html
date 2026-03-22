@@ -32,9 +32,9 @@
                   <i class="fa-solid fa-check mr-2"></i>Mark Completed
                 </button>
               </form>
-              <button class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" type="button">
+              <a href="{{ url_for('staff_case_record_pdf', case_id=case.id) }}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                 <i class="fa-solid fa-print mr-2"></i>Print Record
-              </button>
+              </a>
               <form
                 action="{{ url_for('delete_patient_case', case_id=case.id) }}"
                 method="post"

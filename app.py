@@ -1,10 +1,12 @@
 import os
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+import io
+import json
 
 import click
 from dotenv import load_dotenv
-from flask import Flask, flash, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, flash, jsonify, redirect, render_template, request, session, url_for, make_response
 from werkzeug.security import generate_password_hash
 
 from auth import login_required, role_required
@@ -33,6 +35,31 @@ class SimplePagination:
         return range(1, self.pages + 1)
 
 
+def _affected_area_tokens(affected_area: str | None) -> list[str]:
+    """Split stored affected_area (comma/semicolon-separated) into trimmed tokens."""
+    if not affected_area:
+        return []
+    parts: list[str] = []
+    for chunk in affected_area.replace(";", ",").split(","):
+        c = chunk.strip()
+        if c:
+            parts.append(c)
+    return parts
+
+
+def _age_from_iso_date(dob_str: str | None) -> int | None:
+    """Full years from ISO date string (YYYY-MM-DD) to today, or None if invalid."""
+    if not dob_str:
+        return None
+    try:
+        d = date.fromisoformat(dob_str.strip()[:10])
+    except ValueError:
+        return None
+    today = date.today()
+    age = today.year - d.year - ((today.month, today.day) < (d.month, d.day))
+    return max(0, age)
+
+
 def classify_pre_screening_risk(
     type_of_exposure: str | None,
     affected_area: str | None,
@@ -59,10 +86,13 @@ def classify_pre_screening_risk(
     severe_wounds = {"Punctured", "Lacerated", "Avulsed"}
     high_risk_animal_status = {"Sick", "Died", "Lost"}
 
+    area_tokens = _affected_area_tokens(affected_area)
+    has_high_risk_area = any(t in high_risk_areas for t in area_tokens)
+
     # Category III – clearly severe / high‑risk situations
     if (
         type_of_exposure in high_risk_exposures
-        or affected_area in high_risk_areas
+        or has_high_risk_area
         or bleeding_type in {"Spontaneous", "Both spontaneous and induced"}
         or wound_description in severe_wounds
         or animal_status in high_risk_animal_status
@@ -79,6 +109,136 @@ def classify_pre_screening_risk(
 
     # Fallback – minimal or uncertain exposure
     return "Category I"
+
+
+def _count_completed_doses_in_course(course_rows: dict[int, dict]) -> int:
+    """Count dose rows considered complete (date, vaccine type, given_by all set)."""
+    n = 0
+    for row in course_rows.values():
+        dose_date = (row.get("dose_date") or "").strip()
+        type_of_vaccine = (row.get("type_of_vaccine") or "").strip()
+        given_by = (row.get("given_by") or "").strip()
+        if dose_date and type_of_vaccine and given_by:
+            n += 1
+    return n
+
+
+def _compute_vaccination_status_for_case(
+    card_doses_by_type: dict[str, dict[int, dict]],
+    risk_category_str: str | None,
+) -> dict[str, object]:
+    """
+    Align Vaccination Status card with display course rules used by
+    _build_vaccination_card_context_for_patient: booster rows first, else
+    Category I -> pre-exposure, else post-exposure. If the protocol course has
+    zero completed doses but another course has completions, use the course
+    with the highest completed count (tie-break: booster > pre > post).
+    """
+    booster_rows = card_doses_by_type.get("booster") or {}
+    category_lower = (risk_category_str or "").strip().lower()
+    protocol_course: str
+    if booster_rows:
+        protocol_course = "booster"
+    elif category_lower == "category i":
+        protocol_course = "pre_exposure"
+    else:
+        protocol_course = "post_exposure"
+
+    protocol_completed = _count_completed_doses_in_course(
+        card_doses_by_type.get(protocol_course) or {}
+    )
+
+    course_order = ("booster", "pre_exposure", "post_exposure")
+    counts = {c: _count_completed_doses_in_course(card_doses_by_type.get(c) or {}) for c in course_order}
+    max_count = max(counts.values())
+
+    display_course = protocol_course
+    if protocol_completed == 0 and max_count > 0:
+        for c in course_order:
+            if counts[c] == max_count:
+                display_course = c
+                break
+
+    if display_course == "booster":
+        schedule_days = [0, 3]
+        dose_type_label = "Booster Dose"
+    elif display_course == "pre_exposure":
+        schedule_days = [0, 7, 28]
+        dose_type_label = "Pre-Exposure Dose"
+    else:
+        schedule_days = [0, 3, 7, 14, 28]
+        dose_type_label = "Post-Exposure Dose"
+
+    expected_doses = len(schedule_days)
+    active_rows = card_doses_by_type.get(display_course) or {}
+    doses_completed = _count_completed_doses_in_course(active_rows)
+    progress_pct = (
+        min(round((doses_completed / expected_doses) * 100), 100) if expected_doses else 0
+    )
+
+    day0_row = active_rows.get(0)
+    day0_raw = ((day0_row or {}).get("dose_date") or "").strip() if day0_row else ""
+    day0_date = None
+    if day0_raw:
+        try:
+            day0_date = datetime.fromisoformat(day0_raw).date()
+        except ValueError:
+            day0_date = None
+
+    next_appointment_display = None
+    next_due_date = None
+    for day in schedule_days:
+        row = active_rows.get(day)
+        dose_date_raw = ((row or {}).get("dose_date") or "").strip() if row else ""
+        type_of_vaccine = ((row or {}).get("type_of_vaccine") or "").strip() if row else ""
+        given_by = ((row or {}).get("given_by") or "").strip() if row else ""
+
+        if dose_date_raw and type_of_vaccine and given_by:
+            continue
+
+        if dose_date_raw:
+            try:
+                next_due_date = datetime.fromisoformat(dose_date_raw).date()
+            except ValueError:
+                next_due_date = None
+        elif day0_date and day > 0:
+            next_due_date = day0_date + timedelta(days=day)
+
+        if next_due_date:
+            break
+
+    if next_due_date:
+        next_appointment_display = next_due_date.strftime("%B %d, %Y")
+
+    return {
+        "display_course": display_course,
+        "dose_type_label": dose_type_label,
+        "doses_completed": doses_completed,
+        "expected_doses": expected_doses,
+        "progress_pct": progress_pct,
+        "next_appointment_display": next_appointment_display,
+        "next_due_date": next_due_date,
+    }
+
+
+def _total_completed_doses_all_courses(
+    card_doses_by_type: dict[str, dict[int, dict]],
+) -> int:
+    """Total completed doses across booster, pre-exposure, and post-exposure."""
+    return sum(
+        _count_completed_doses_in_course(card_doses_by_type.get(c) or {})
+        for c in ("booster", "pre_exposure", "post_exposure")
+    )
+
+
+def _next_vaccination_due_date(
+    card_doses_by_type: dict[str, dict[int, dict]],
+    risk_category_str: str | None,
+) -> date | None:
+    """Next incomplete schedule due date for the resolved display course, if any."""
+    return _compute_vaccination_status_for_case(
+        card_doses_by_type, risk_category_str
+    ).get("next_due_date")  # type: ignore[return-value]
 
 
 def create_app():
@@ -237,11 +397,54 @@ def create_app():
         )
         db.commit()
 
+    def _ensure_patient_notifications_table():
+        db = get_db()
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS patient_notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                patient_id INTEGER NOT NULL,
+                type TEXT NOT NULL,
+                source_id INTEGER,
+                message TEXT,
+                created_at TEXT NOT NULL,
+                is_read INTEGER NOT NULL DEFAULT 0 CHECK(is_read IN (0,1)),
+                FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+            )
+            """
+        )
+        db.execute(
+            "CREATE INDEX IF NOT EXISTS idx_patient_notifications_patient_type_read ON patient_notifications(patient_id, type, is_read)"
+        )
+        db.commit()
+
     with app.app_context():
         _ensure_patient_onboarding_column()
         _migrate_patients_for_dependents()
         _ensure_appointments_patient_hidden_column()
         _ensure_vaccination_card_tables()
+        _ensure_patient_notifications_table()
+
+    # #region agent log helper
+    def _debug_log(run_id: str, hypothesis_id: str, location: str, message: str, data: dict | None = None):
+        try:
+            payload = {
+                "sessionId": "dd574b",
+                "runId": run_id,
+                "hypothesisId": hypothesis_id,
+                "location": location,
+                "message": message,
+                "data": data or {},
+                "timestamp": int(datetime.now().timestamp() * 1000),
+            }
+            # Use explicit absolute path so debug file is created reliably
+            log_path = r"c:\Users\angelo02\OneDrive\Desktop\RABIESRESQ\debug-dd574b.log"
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(payload) + "\n")
+        except Exception:
+            # Logging must never break app behavior
+            pass
+    # #endregion agent log helper
 
     def _get_primary_patient(user_id: int):
         db = get_db()
@@ -260,18 +463,309 @@ def create_app():
             (user_id,),
         ).fetchone()
 
+    def _insert_patient_notification(
+        patient_id: int, notif_type: str, source_id: int | None, message: str
+    ) -> None:
+        db = get_db()
+        created_at = datetime.now().isoformat(timespec="seconds")
+        db.execute(
+            """
+            INSERT INTO patient_notifications (patient_id, type, source_id, message, created_at, is_read)
+            VALUES (?, ?, ?, ?, ?, 0)
+            """,
+            (patient_id, notif_type, source_id, message, created_at),
+        )
+
+    NO_SHOW_APPOINTMENT_NOTIFICATION_MSG = (
+        "You missed a scheduled appointment. It was marked as no show because no vaccination record was updated."
+    )
+
+    def _insert_no_show_patient_notification_if_absent(
+        patient_id: int, appointment_id: int
+    ) -> None:
+        db = get_db()
+        exists = db.execute(
+            """
+            SELECT 1 FROM patient_notifications
+            WHERE patient_id = ?
+              AND type = 'appointment'
+              AND source_id = ?
+              AND COALESCE(message, '') = ?
+            LIMIT 1
+            """,
+            (patient_id, appointment_id, NO_SHOW_APPOINTMENT_NOTIFICATION_MSG),
+        ).fetchone()
+        if exists:
+            return
+        _insert_patient_notification(
+            patient_id=patient_id,
+            notif_type="appointment",
+            source_id=appointment_id,
+            message=NO_SHOW_APPOINTMENT_NOTIFICATION_MSG,
+        )
+
+    def _get_patient_unread_counts(patient_user_id: int) -> dict[str, int]:
+        """
+        Return unread notification counts for the given user across ALL of their patients
+        (self + dependents), grouped by type.
+        """
+        db = get_db()
+        patient_rows = db.execute(
+            """
+            SELECT id
+            FROM patients
+            WHERE user_id = ?
+            """,
+            (patient_user_id,),
+        ).fetchall()
+        patient_ids = [row["id"] for row in patient_rows]
+        if not patient_ids:
+            return {"appointment": 0, "vaccination": 0}
+
+        placeholders = ",".join(["?"] * len(patient_ids))
+        rows = db.execute(
+            f"""
+            SELECT type, COUNT(*) AS n
+            FROM patient_notifications
+            WHERE patient_id IN ({placeholders})
+              AND is_read = 0
+            GROUP BY type
+            """,
+            patient_ids,
+        ).fetchall()
+
+        counts: dict[str, int] = {"appointment": 0, "vaccination": 0}
+        for row in rows:
+            notif_type = (row["type"] or "").strip()
+            if notif_type in counts:
+                counts[notif_type] = row["n"]
+        return counts
+
+    def _mark_patient_notifications_read(patient_user_id: int, notif_type: str) -> None:
+        """
+        Mark notifications of a given type as read for ALL patients under this user.
+        """
+        db = get_db()
+        patient_rows = db.execute(
+            """
+            SELECT id
+            FROM patients
+            WHERE user_id = ?
+            """,
+            (patient_user_id,),
+        ).fetchall()
+        patient_ids = [row["id"] for row in patient_rows]
+        if not patient_ids:
+            return
+
+        placeholders = ",".join(["?"] * len(patient_ids))
+        params: list[object] = list(patient_ids) + [notif_type]
+
+        db.execute(
+            f"""
+            UPDATE patient_notifications
+            SET is_read = 1
+            WHERE patient_id IN ({placeholders})
+              AND type = ?
+              AND is_read = 0
+            """,
+            params,
+        )
+        db.commit()
+
+    def _notification_recipient_label(
+        relationship: str | None, first_name: str | None, last_name: str | None
+    ) -> str:
+        rel = (relationship or "Self").strip()
+        if rel.lower() == "self":
+            return "For you"
+        name = " ".join(
+            p for p in [(first_name or "").strip(), (last_name or "").strip()] if p
+        )
+        return f"For {rel}: {name}" if name else f"For {rel}"
+
+    def _get_unread_patient_notifications_for_user(
+        patient_user_id: int, limit: int = 50
+    ) -> tuple[list[dict], set[int], set[int]]:
+        """
+        Return unread notifications for all patients under this user, plus sets of
+        appointment ids and case ids to highlight on the dashboard.
+        """
+        db = get_db()
+        rows = db.execute(
+            """
+            SELECT
+                pn.id,
+                pn.type,
+                pn.source_id,
+                pn.message,
+                pn.created_at,
+                pn.is_read,
+                pn.patient_id,
+                p.relationship_to_user,
+                p.first_name,
+                p.last_name
+            FROM patient_notifications pn
+            JOIN patients p ON p.id = pn.patient_id
+            WHERE p.user_id = ?
+              AND pn.is_read = 0
+            ORDER BY pn.created_at DESC
+            LIMIT ?
+            """,
+            (patient_user_id, limit),
+        ).fetchall()
+
+        highlight_appointment_ids: set[int] = set()
+        highlight_case_ids: set[int] = set()
+        out: list[dict] = []
+        for row in rows:
+            r = dict(row)
+            ntype = (r.get("type") or "").strip()
+            sid = r.get("source_id")
+            if ntype == "appointment" and sid is not None:
+                highlight_appointment_ids.add(int(sid))
+            elif ntype == "vaccination" and sid is not None:
+                highlight_case_ids.add(int(sid))
+
+            recipient_label = _notification_recipient_label(
+                r.get("relationship_to_user"),
+                r.get("first_name"),
+                r.get("last_name"),
+            )
+            link_href = None
+            if ntype == "appointment" and sid is not None:
+                link_href = url_for("patient_appointment_view", appointment_id=int(sid))
+            elif ntype == "vaccination" and sid is not None:
+                ap_row = db.execute(
+                    """
+                    SELECT a.id
+                    FROM appointments a
+                    JOIN patients p ON p.id = a.patient_id
+                    WHERE a.case_id = ? AND p.user_id = ?
+                      AND COALESCE(a.patient_hidden, 0) = 0
+                    ORDER BY datetime(a.appointment_datetime) DESC
+                    LIMIT 1
+                    """,
+                    (int(sid), patient_user_id),
+                ).fetchone()
+                if ap_row:
+                    link_href = url_for(
+                        "patient_vaccination_card_view", appointment_id=ap_row["id"]
+                    )
+                else:
+                    link_href = url_for("patient_vaccinations")
+
+            out.append(
+                {
+                    "id": r["id"],
+                    "type": ntype,
+                    "source_id": sid,
+                    "message": r.get("message") or "",
+                    "created_at": r.get("created_at") or "",
+                    "recipient_label": recipient_label,
+                    "link_href": link_href,
+                }
+            )
+
+        return out, highlight_appointment_ids, highlight_case_ids
+
+    def _mark_appointment_notifications_read_for_appointment(
+        patient_user_id: int, appointment_id: int
+    ) -> None:
+        """Mark unread appointment-type notifications for this appointment as read."""
+        db = get_db()
+        patient_rows = db.execute(
+            "SELECT id FROM patients WHERE user_id = ?",
+            (patient_user_id,),
+        ).fetchall()
+        patient_ids = [row["id"] for row in patient_rows]
+        if not patient_ids:
+            return
+        placeholders = ",".join(["?"] * len(patient_ids))
+        params: list[object] = list(patient_ids) + ["appointment", appointment_id]
+        db.execute(
+            f"""
+            UPDATE patient_notifications
+            SET is_read = 1
+            WHERE patient_id IN ({placeholders})
+              AND type = ?
+              AND source_id = ?
+              AND is_read = 0
+            """,
+            params,
+        )
+        db.commit()
+
+    def _mark_vaccination_notifications_read_for_case(
+        patient_user_id: int, case_id: int
+    ) -> None:
+        """Mark unread vaccination-type notifications for this case as read."""
+        db = get_db()
+        patient_rows = db.execute(
+            "SELECT id FROM patients WHERE user_id = ?",
+            (patient_user_id,),
+        ).fetchall()
+        patient_ids = [row["id"] for row in patient_rows]
+        if not patient_ids:
+            return
+        placeholders = ",".join(["?"] * len(patient_ids))
+        params: list[object] = list(patient_ids) + ["vaccination", case_id]
+        db.execute(
+            f"""
+            UPDATE patient_notifications
+            SET is_read = 1
+            WHERE patient_id IN ({placeholders})
+              AND type = ?
+              AND source_id = ?
+              AND is_read = 0
+            """,
+            params,
+        )
+        db.commit()
+
+    def _get_staff_scheduled_appointments_count(clinic_id: int) -> int:
+        """
+        Count appointments that are visible in the staff Appointments page list.
+        Currently, that list shows only pending/queued appointment requests.
+        """
+        db = get_db()
+        row = db.execute(
+            """
+            SELECT COUNT(*) AS n
+            FROM appointments a
+            WHERE a.clinic_id = ?
+              AND LOWER(COALESCE(a.status, '')) IN ('pending', 'queued')
+            """,
+            (clinic_id,),
+        ).fetchone()
+        return int(row["n"] or 0)
+
+    @app.context_processor
+    def _inject_staff_scheduled_appointments_count():
+        try:
+            if session.get("role") != "clinic_personnel":
+                return {}
+            user_id = session.get("user_id")
+            if not user_id:
+                return {}
+            db = get_db()
+            staff = db.execute(
+                "SELECT clinic_id FROM clinic_personnel WHERE user_id = ?",
+                (user_id,),
+            ).fetchone()
+            if staff is None:
+                return {}
+            return {
+                "scheduled_appointments_count": _get_staff_scheduled_appointments_count(
+                    staff["clinic_id"]
+                )
+            }
+        except Exception:
+            # Never break rendering due to badge computation
+            return {}
+
     def _run_case_status_maintenance(clinic_id: int):
         db = get_db()
-
-        def _normalize_risk(value: str | None) -> str:
-            normalized = (value or "").strip().lower()
-            if normalized in {"category i", "category 1", "i", "1"}:
-                return "category i"
-            if normalized in {"category ii", "category 2", "ii", "2"}:
-                return "category ii"
-            if normalized in {"category iii", "category 3", "iii", "3"}:
-                return "category iii"
-            return normalized
 
         case_rows = db.execute(
             """
@@ -289,22 +783,37 @@ def create_app():
 
         for case_row in case_rows:
             case_id = case_row["id"]
-            category_value = _normalize_risk(case_row["risk_level"] or case_row["category"])
-            active_record_type = "pre_exposure" if category_value == "category i" else "post_exposure"
-            expected_doses = 3 if active_record_type == "pre_exposure" else 5
+            risk_str = case_row["risk_level"] or case_row["category"] or ""
 
-            completed_doses = db.execute(
+            doses_rows = db.execute(
                 """
-                SELECT COUNT(*) AS completed
+                SELECT id, case_id, record_type, day_number, dose_date, type_of_vaccine, dose, route_site, given_by
                 FROM vaccination_card_doses
                 WHERE case_id = ?
-                  AND record_type = ?
-                  AND TRIM(COALESCE(dose_date, '')) <> ''
-                  AND TRIM(COALESCE(type_of_vaccine, '')) <> ''
-                  AND TRIM(COALESCE(given_by, '')) <> ''
+                ORDER BY record_type, day_number
                 """,
-                (case_id, active_record_type),
-            ).fetchone()["completed"]
+                (case_id,),
+            ).fetchall()
+            card_doses_by_type: dict[str, dict[int, dict]] = {
+                "pre_exposure": {},
+                "post_exposure": {},
+                "booster": {},
+            }
+            for row in doses_rows:
+                r = row["record_type"]
+                d = row["day_number"]
+                if r in card_doses_by_type:
+                    card_doses_by_type[r][d] = dict(row)
+
+            total_completed = _total_completed_doses_all_courses(card_doses_by_type)
+            has_vaccination_update = total_completed > 0
+
+            status_metrics = _compute_vaccination_status_for_case(card_doses_by_type, risk_str)
+            vc_exp = int(status_metrics["expected_doses"] or 0)
+            vc_done = int(status_metrics["doses_completed"] or 0)
+            next_due = status_metrics.get("next_due_date")
+            if next_due is not None and not isinstance(next_due, date):
+                next_due = None
 
             has_overdue_active_appointment = db.execute(
                 """
@@ -320,14 +829,22 @@ def create_app():
                 (case_id, clinic_id),
             ).fetchone() is not None
 
+            today = date.today()
+            vacc_schedule_overdue = next_due is not None and next_due < today
+            no_show_eligible = (
+                not has_vaccination_update
+                and has_overdue_active_appointment
+                and (next_due is None or vacc_schedule_overdue)
+            )
+
             current_status = (case_row["case_status"] or "Pending").strip().lower()
 
             # Keep explicit/manual completion sticky.
             if current_status == "completed":
                 desired_status = "Completed"
-            elif expected_doses and completed_doses >= expected_doses:
+            elif vc_exp and vc_done >= vc_exp:
                 desired_status = "Completed"
-            elif completed_doses == 0 and has_overdue_active_appointment:
+            elif no_show_eligible:
                 desired_status = "No Show"
             else:
                 # If progress exists but next schedule is missing, keep Pending so staff can schedule.
@@ -361,17 +878,36 @@ def create_app():
                 )
             elif desired_status == "No Show":
                 to_no_show += 1
+                no_show_rows = db.execute(
+                    """
+                    SELECT a.id, a.patient_id
+                    FROM appointments a
+                    WHERE a.case_id = ?
+                      AND a.clinic_id = ?
+                      AND LOWER(COALESCE(a.status, '')) NOT IN (
+                          'removed', 'cancelled', 'canceled', 'no show', 'missed'
+                      )
+                      AND datetime(a.appointment_datetime) < datetime('now', 'localtime', '-2 hours')
+                    """,
+                    (case_id, clinic_id),
+                ).fetchall()
                 db.execute(
                     """
                     UPDATE appointments
                     SET status = 'No Show'
                     WHERE case_id = ?
                       AND clinic_id = ?
-                      AND LOWER(COALESCE(status, '')) NOT IN ('removed', 'cancelled', 'canceled')
+                      AND LOWER(COALESCE(status, '')) NOT IN (
+                          'removed', 'cancelled', 'canceled', 'no show', 'missed'
+                      )
                       AND datetime(appointment_datetime) < datetime('now', 'localtime', '-2 hours')
                     """,
                     (case_id, clinic_id),
                 )
+                for ap_row in no_show_rows:
+                    _insert_no_show_patient_notification_if_absent(
+                        int(ap_row["patient_id"]), int(ap_row["id"])
+                    )
             else:
                 to_pending += 1
 
@@ -437,6 +973,25 @@ def create_app():
         if not session.get("patient_onboarding_done"):
             return redirect(url_for("patient_onboarding"))
         db = get_db()
+        clinic_rows = db.execute(
+            """
+            SELECT DISTINCT a.clinic_id
+            FROM appointments a
+            JOIN patients p ON p.id = a.patient_id
+            WHERE p.user_id = ?
+              AND COALESCE(a.patient_hidden, 0) = 0
+            """,
+            (session["user_id"],),
+        ).fetchall()
+        for cr in clinic_rows:
+            _run_case_status_maintenance(int(cr["clinic_id"]))
+
+        unread_counts = _get_patient_unread_counts(session["user_id"])
+        (
+            dashboard_notifications,
+            highlight_appointment_ids,
+            highlight_case_ids,
+        ) = _get_unread_patient_notifications_for_user(session["user_id"])
         patient = _get_primary_patient(session["user_id"])
 
         if patient is None:
@@ -459,13 +1014,14 @@ def create_app():
         ).fetchall()
 
         # Fetch appointments for all patients under this user (self + dependents)
-        all_appointments = db.execute(
+        all_appointments_rows = db.execute(
             """
             SELECT
                 a.*,
                 c.type_of_exposure,
                 c.exposure_date,
                 c.risk_level,
+                c.category AS case_category,
                 p.first_name AS victim_first_name,
                 p.last_name AS victim_last_name,
                 p.relationship_to_user AS victim_relationship
@@ -496,23 +1052,211 @@ def create_app():
             return "scheduled"
 
         if status_filter in ("pending", "completed", "canceled", "scheduled", "missed"):
-            appointments = [row for row in all_appointments if _bucket_status(row) == status_filter]
+            filtered_rows = [
+                row for row in all_appointments_rows if _bucket_status(row) == status_filter
+            ]
         else:
-            appointments = all_appointments
+            filtered_rows = list(all_appointments_rows)
+
+        # Build per-account appointment sequence numbers (all patients, all statuses, non-hidden)
+        sorted_for_sequence = sorted(
+            all_appointments_rows,
+            key=lambda r: (r["appointment_datetime"] or ""),
+        )
+        appointment_number_map: dict[int, int] = {}
+        seq = 0
+        for row in sorted_for_sequence:
+            seq += 1
+            appointment_number_map[row["id"]] = seq
+
+        # Enrich appointments with display_time, display_date, display_type, display_dosage_label, appointment_number
+        vaccination_cache: dict[int, dict] = {}
+
+        def _compute_vaccination_summary(
+            case_id: int, risk_level: str | None, case_category: str | None
+        ) -> dict:
+            if case_id in vaccination_cache:
+                return vaccination_cache[case_id]
+
+            vc_row = db.execute(
+                "SELECT * FROM vaccination_card WHERE case_id = ?", (case_id,)
+            ).fetchone()
+            vaccination_card = dict(vc_row) if vc_row else {}
+
+            doses_rows = db.execute(
+                """
+                SELECT id, case_id, record_type, day_number, dose_date, type_of_vaccine, dose, route_site, given_by
+                FROM vaccination_card_doses
+                WHERE case_id = ?
+                ORDER BY record_type, day_number
+                """,
+                (case_id,),
+            ).fetchall()
+
+            card_doses_by_type: dict[str, dict[int, dict]] = {
+                "pre_exposure": {},
+                "post_exposure": {},
+                "booster": {},
+            }
+            for row in doses_rows:
+                r = row["record_type"]
+                d = row["day_number"]
+                if r in card_doses_by_type:
+                    card_doses_by_type[r][d] = dict(row)
+
+            category_value = (risk_level or case_category or "").strip().lower()
+            active_record_type = "pre_exposure" if category_value == "category i" else "post_exposure"
+
+            booster_rows = card_doses_by_type.get("booster", {})
+            # For dashboard display, prefer booster label when booster data exists
+            if booster_rows:
+                display_course = "booster"
+                display_type = "Booster Vaccination"
+            elif active_record_type == "pre_exposure":
+                display_course = "pre_exposure"
+                display_type = "Pre-Exposure Vaccination"
+            else:
+                display_course = "post_exposure"
+                display_type = "Post-Exposure Vaccination"
+
+            if display_course == "pre_exposure":
+                schedule_days = [0, 7, 28]
+            elif display_course == "post_exposure":
+                schedule_days = [0, 3, 7, 14, 28]
+            else:  # booster
+                schedule_days = [0, 3]
+
+            active_rows = card_doses_by_type.get(display_course, {})
+
+            # Count completed doses in the chosen course
+            doses_completed = 0
+            for row in active_rows.values():
+                dose_date = (row.get("dose_date") or "").strip()
+                type_of_vaccine = (row.get("type_of_vaccine") or "").strip()
+                given_by = (row.get("given_by") or "").strip()
+                if dose_date and type_of_vaccine and given_by:
+                    doses_completed += 1
+
+            # Compute next due date from schedule (similar to staff view logic)
+            day0_row = active_rows.get(0)
+            day0_raw = ((day0_row or {}).get("dose_date") or "").strip() if day0_row else ""
+            day0_date = None
+            if day0_raw:
+                try:
+                    day0_date = datetime.fromisoformat(day0_raw).date()
+                except ValueError:
+                    day0_date = None
+
+            next_due_date = None
+            for day in schedule_days:
+                row = active_rows.get(day)
+                dose_date_raw = ((row or {}).get("dose_date") or "").strip() if row else ""
+                type_of_vaccine = ((row or {}).get("type_of_vaccine") or "").strip() if row else ""
+                given_by = ((row or {}).get("given_by") or "").strip() if row else ""
+
+                # Completed dose rows do not count as next due.
+                if dose_date_raw and type_of_vaccine and given_by:
+                    continue
+
+                if dose_date_raw:
+                    try:
+                        next_due_date = datetime.fromisoformat(dose_date_raw).date()
+                    except ValueError:
+                        next_due_date = None
+                elif day0_date and day > 0:
+                    next_due_date = day0_date + timedelta(days=day)
+
+                if next_due_date:
+                    break
+
+            vaccination_cache[case_id] = {
+                "vaccination_card": vaccination_card,
+                "display_type": display_type,
+                "doses_completed": doses_completed,
+                "next_due_date": next_due_date,
+                "has_vaccination_data": bool(doses_rows),
+            }
+            return vaccination_cache[case_id]
+
+        def _ordinal(n: int) -> str:
+            if n <= 0:
+                return ""
+            if 10 <= (n % 100) <= 20:
+                suffix = "th"
+            else:
+                suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+            return f"{n}{suffix}"
+
+        enriched_appointments: list[dict] = []
+        for row in filtered_rows:
+            appt = dict(row)
+
+            # Human-friendly appointment number (per-patient count across all statuses)
+            appt["appointment_number"] = appointment_number_map.get(appt["id"], appt["id"])
+
+            # Time from the slot / appointment datetime
+            raw_dt = (appt.get("appointment_datetime") or "").strip()
+            display_time = ""
+            fallback_date = ""
+            if raw_dt:
+                try:
+                    dt_val = datetime.fromisoformat(raw_dt)
+                    display_time = dt_val.strftime("%I:%M %p")
+                    fallback_date = dt_val.strftime("%b %d, %Y")
+                except ValueError:
+                    display_time = raw_dt
+                    fallback_date = raw_dt
+
+            # Vaccination-derived type, dosage, and date
+            vacc_summary = _compute_vaccination_summary(
+                appt["case_id"], appt.get("risk_level"), appt.get("case_category")
+            )
+            display_type = vacc_summary["display_type"]
+            doses_completed = vacc_summary["doses_completed"]
+            next_due_date = vacc_summary["next_due_date"]
+
+            display_dosage_label = ""
+            if doses_completed > 0:
+                display_dosage_label = f"{_ordinal(doses_completed)} dosage"
+
+            # For 2nd vaccination dose and higher, show clinic hours instead of a specific slot time.
+            if doses_completed >= 2:
+                display_time = "8:00 AM-5:00 PM"
+
+            if next_due_date:
+                display_date = next_due_date.strftime("%b %d, %Y")
+            else:
+                display_date = fallback_date or raw_dt or "N/A"
+
+            appt["display_time"] = display_time
+            appt["display_date"] = display_date
+            appt["display_type"] = display_type
+            appt["display_dosage_label"] = display_dosage_label
+
+            cid = appt.get("case_id")
+            appt["notification_highlight"] = (
+                appt["id"] in highlight_appointment_ids
+                or (cid is not None and cid in highlight_case_ids)
+            )
+
+            enriched_appointments.append(appt)
 
         clinics = db.execute("SELECT id, name FROM clinics ORDER BY name").fetchall()
 
-        has_any_appointments = len(all_appointments) > 0
+        has_any_appointments = len(all_appointments_rows) > 0
 
         return render_template(
             "patient_dashboard.html",
             patient=patient,
             cases=cases,
-            appointments=appointments,
+            appointments=enriched_appointments,
             clinics=clinics,
             has_any_appointments=has_any_appointments,
             selected_status=status_filter if status_filter in ("pending", "completed", "canceled", "scheduled", "missed") else "",
             active_page="dashboard",
+            unread_appointments_count=unread_counts.get("appointment", 0),
+            unread_vaccinations_count=unread_counts.get("vaccination", 0),
+            dashboard_notifications=dashboard_notifications,
         )
 
     @app.get("/patient/profile")
@@ -535,6 +1279,207 @@ def create_app():
         if not session.get("patient_onboarding_done"):
             return redirect(url_for("patient_onboarding"))
         return render_template("patient_help.html", active_page="help")
+
+    @app.get("/patient/vaccinations")
+    @role_required("patient")
+    def patient_vaccinations():
+        if not session.get("patient_onboarding_done"):
+            return redirect(url_for("patient_onboarding"))
+
+        db = get_db()
+        _, _, vaccination_highlight_case_ids = _get_unread_patient_notifications_for_user(
+            session["user_id"]
+        )
+        unread_counts = _get_patient_unread_counts(session["user_id"])
+        patient = _get_primary_patient(session["user_id"])
+
+        if patient is None:
+            session.clear()
+            flash("Account profile missing, contact admin.", "error")
+            return redirect(url_for("auth.login"))
+
+        all_appointments_rows = db.execute(
+            """
+            SELECT
+                a.*,
+                c.type_of_exposure,
+                c.affected_area,
+                COALESCE(c.risk_level, c.category, 'N/A') AS risk_level,
+                psd.wound_description,
+                psd.bleeding_type,
+                p.first_name AS victim_first_name,
+                p.last_name AS victim_last_name,
+                p.relationship_to_user AS victim_relationship
+            FROM appointments a
+            JOIN cases c ON c.id = a.case_id
+            LEFT JOIN pre_screening_details psd ON psd.case_id = c.id
+            JOIN patients p ON p.id = a.patient_id
+            WHERE p.user_id = ?
+              AND COALESCE(a.patient_hidden, 0) = 0
+            ORDER BY a.appointment_datetime DESC
+            """,
+            (session["user_id"],),
+        ).fetchall()
+
+        _debug_log(
+            run_id="initial",
+            hypothesis_id="H1",
+            location="app.py:patient_vaccinations",
+            message="Loaded appointments for vaccinations view",
+            data={"count": len(all_appointments_rows)},
+        )
+
+        # Build appointment numbers per account (same logic as dashboard)
+        sorted_for_sequence = sorted(
+            all_appointments_rows,
+            key=lambda r: (r["appointment_datetime"] or ""),
+        )
+        appointment_number_map: dict[int, int] = {}
+        seq = 0
+        for row in sorted_for_sequence:
+            seq += 1
+            appointment_number_map[row["id"]] = seq
+
+        vaccination_items: list[dict] = []
+        for row in all_appointments_rows:
+            appt = dict(row)
+
+            _debug_log(
+                run_id="initial",
+                hypothesis_id="H2",
+                location="app.py:patient_vaccinations",
+                message="Processing appointment row for vaccination card",
+                data={
+                    "appointment_id": appt.get("id"),
+                    "case_id": appt.get("case_id"),
+                    "status": appt.get("status"),
+                    "risk_level": appt.get("risk_level"),
+                },
+            )
+
+            # Vaccination card + doses for this case
+            case_id = appt["case_id"]
+            vc_row = db.execute(
+                "SELECT * FROM vaccination_card WHERE case_id = ?", (case_id,)
+            ).fetchone()
+            vaccination_card = dict(vc_row) if vc_row else {}
+
+            doses_rows = db.execute(
+                """
+                SELECT id, case_id, record_type, day_number, dose_date, type_of_vaccine, dose, route_site, given_by
+                FROM vaccination_card_doses
+                WHERE case_id = ?
+                ORDER BY record_type, day_number
+                """,
+                (case_id,),
+            ).fetchall()
+
+            _debug_log(
+                run_id="initial",
+                hypothesis_id="H3",
+                location="app.py:patient_vaccinations",
+                message="Loaded vaccination card and doses for case",
+                data={
+                    "case_id": case_id,
+                    "has_card": bool(vaccination_card),
+                    "dose_count": len(doses_rows),
+                },
+            )
+
+            if not doses_rows and not vaccination_card:
+                continue
+
+            card_doses_by_type: dict[str, dict[int, dict]] = {
+                "pre_exposure": {},
+                "post_exposure": {},
+                "booster": {},
+            }
+            for drow in doses_rows:
+                rtype = drow["record_type"]
+                dnum = drow["day_number"]
+                if rtype in card_doses_by_type:
+                    card_doses_by_type[rtype][dnum] = dict(drow)
+
+            category_value = (appt.get("risk_level") or appt.get("case_category") or "").strip()
+            category_lower = category_value.lower()
+            active_record_type = "pre_exposure" if category_lower == "category i" else "post_exposure"
+
+            booster_rows = card_doses_by_type.get("booster", {})
+            if booster_rows:
+                display_course = "booster"
+                course_label = "Booster Vaccination"
+            elif active_record_type == "pre_exposure":
+                display_course = "pre_exposure"
+                course_label = "Pre-Exposure Vaccination"
+            else:
+                display_course = "post_exposure"
+                course_label = "Post-Exposure Vaccination"
+
+            if display_course == "pre_exposure":
+                schedule_days = [0, 7, 28]
+            elif display_course == "post_exposure":
+                schedule_days = [0, 3, 7, 14, 28]
+            else:
+                schedule_days = [0, 3]
+
+            active_rows = card_doses_by_type.get(display_course, {})
+            course_rows = []
+            for day in schedule_days:
+                row_data = active_rows.get(day, {}) or {}
+                row_copy = {
+                    "day_number": day,
+                    "dose_date": (row_data.get("dose_date") or "").strip() or None,
+                    "type_of_vaccine": (row_data.get("type_of_vaccine") or "").strip() or None,
+                    "dose": (row_data.get("dose") or "").strip() or None,
+                    "route_site": (row_data.get("route_site") or "").strip() or None,
+                    "given_by": (row_data.get("given_by") or "").strip() or None,
+                }
+                course_rows.append(row_copy)
+
+            expected_doses = len(schedule_days)
+            doses_completed = 0
+            for row_data in active_rows.values():
+                dose_date = (row_data.get("dose_date") or "").strip()
+                type_of_vaccine = (row_data.get("type_of_vaccine") or "").strip()
+                given_by = (row_data.get("given_by") or "").strip()
+                if dose_date and type_of_vaccine and given_by:
+                    doses_completed += 1
+
+            victim_relationship = (appt.get("victim_relationship") or "Self").strip()
+            if victim_relationship.lower() == "self":
+                victim_label = "Self"
+            else:
+                victim_label = f"{victim_relationship} - {(appt.get('victim_first_name') or '').strip()} {(appt.get('victim_last_name') or '').strip()}".strip()
+
+            vaccination_items.append(
+                {
+                    "appointment_id": appt["id"],
+                    "appointment_number": appointment_number_map.get(appt["id"], appt["id"]),
+                    "case_id": case_id,
+                    "patient_name": (appt.get("victim_first_name") or patient["first_name"] or patient["username"]),
+                    "victim_label": victim_label,
+                    "appt_date_display": appt.get("appointment_datetime") or "",
+                    "category_value": category_value,
+                    "type_of_exposure": appt.get("type_of_exposure"),
+                    "affected_area": appt.get("affected_area"),
+                    "bleeding_type": appt.get("bleeding_type"),
+                    "vaccination_card": vaccination_card,
+                    "course_label": course_label,
+                    "course_rows": course_rows,
+                    "dose_type_label": course_label,
+                    "expected_doses": expected_doses,
+                    "doses_completed": doses_completed,
+                }
+            )
+
+        return render_template(
+            "patient_vaccinations.html",
+            vaccination_items=vaccination_items,
+            vaccination_highlight_case_ids=vaccination_highlight_case_ids,
+            active_page="vaccinations",
+            unread_appointments_count=unread_counts.get("appointment", 0),
+            unread_vaccinations_count=unread_counts.get("vaccination", 0),
+        )
 
     @app.post("/patient/appointments/<int:appointment_id>/cancel")
     @role_required("patient")
@@ -630,6 +1575,7 @@ def create_app():
               c.id AS case_id,
               c.type_of_exposure,
               c.exposure_date,
+              c.affected_area,
               COALESCE(c.risk_level, c.category, 'N/A') AS risk_level,
               psd.wound_description,
               psd.bleeding_type,
@@ -646,6 +1592,24 @@ def create_app():
         if appt is None:
             flash("Appointment not found.", "error")
             return redirect(url_for("patient_dashboard"))
+
+        _mark_appointment_notifications_read_for_appointment(
+            session["user_id"], appointment_id
+        )
+
+        # Compute human-friendly appointment number for this patient (all non-hidden appointments up to this one)
+        count_row = db.execute(
+            """
+            SELECT COUNT(*) AS n
+            FROM appointments a
+            JOIN patients p ON p.id = a.patient_id
+            WHERE p.user_id = ?
+              AND COALESCE(a.patient_hidden, 0) = 0
+              AND datetime(a.appointment_datetime) <= datetime(?)
+            """,
+            (session["user_id"], appt["appointment_datetime"]),
+        ).fetchone()
+        appointment_number = count_row["n"] if count_row else 1
 
         victim_name = " ".join(
             part
@@ -672,16 +1636,327 @@ def create_app():
         status_lower = status_value.lower()
         can_edit = status_lower in ("pending", "queued", "no show")
 
+        # Vaccination card data (shared with staff case view, read-only for patients)
+        case_id = appt["case_id"]
+        vc_row = db.execute(
+            "SELECT * FROM vaccination_card WHERE case_id = ?", (case_id,)
+        ).fetchone()
+        vaccination_card = dict(vc_row) if vc_row else {}
+
+        vaccination_card_doses_rows = db.execute(
+            """
+            SELECT id, case_id, record_type, day_number, dose_date, type_of_vaccine, dose, route_site, given_by
+            FROM vaccination_card_doses
+            WHERE case_id = ?
+            ORDER BY record_type, day_number
+            """,
+            (case_id,),
+        ).fetchall()
+        has_vaccination_card_data = vc_row is not None or len(vaccination_card_doses_rows) > 0
+        card_doses_by_type = {"pre_exposure": {}, "post_exposure": {}, "booster": {}}
+        for row in vaccination_card_doses_rows:
+            r = row["record_type"]
+            d = row["day_number"]
+            if r in card_doses_by_type:
+                card_doses_by_type[r][d] = dict(row)
+
+        status_metrics = _compute_vaccination_status_for_case(
+            card_doses_by_type, appt["risk_level"]
+        )
+        active_record_type = status_metrics["display_course"]
+        dose_type_label = status_metrics["dose_type_label"]
+        doses_completed = status_metrics["doses_completed"]
+        expected_doses = status_metrics["expected_doses"]
+        progress_pct = status_metrics["progress_pct"]
+        next_appointment_display = status_metrics["next_appointment_display"]
+
         return render_template(
             "patient_appointment_view.html",
             appointment=appt,
+            appointment_number=appointment_number,
             victim_name=victim_name,
             appt_datetime_display=appt_datetime_display,
             appt_date_display=appt_date_display,
             appt_time_display=appt_time_display,
             can_edit=can_edit,
+            vaccination_card=vaccination_card,
+            card_doses_by_type=card_doses_by_type,
+            active_record_type=active_record_type,
+            dose_type_label=dose_type_label,
+            doses_completed=doses_completed,
+            expected_doses=expected_doses,
+            progress_pct=progress_pct,
+            next_appointment_display=next_appointment_display,
+            has_vaccination_card_data=has_vaccination_card_data,
             active_page="dashboard",
         )
+
+    def _build_vaccination_card_context_for_patient(appointment_id: int, user_id: int) -> dict | None:
+        """
+        Shared helper to build vaccination card context for patient-facing
+        vaccination views (HTML and PDF). Ensures the appointment belongs
+        to the current user.
+        """
+        db = get_db()
+        appt = db.execute(
+            """
+            SELECT
+                a.*,
+                c.type_of_exposure,
+                c.affected_area,
+                COALESCE(c.risk_level, c.category, 'N/A') AS risk_level,
+                psd.wound_description,
+                psd.bleeding_type,
+                p.first_name AS victim_first_name,
+                p.last_name AS victim_last_name,
+                p.relationship_to_user AS victim_relationship,
+                p.phone_number AS victim_phone_number,
+                p.address AS victim_address,
+                p.date_of_birth AS victim_date_of_birth,
+                p.age AS victim_age,
+                p.gender AS victim_gender
+            FROM appointments a
+            JOIN cases c ON c.id = a.case_id
+            LEFT JOIN pre_screening_details psd ON psd.case_id = c.id
+            JOIN patients p ON p.id = a.patient_id
+            WHERE a.id = ? AND p.user_id = ?
+            """,
+            (appointment_id, user_id),
+        ).fetchone()
+
+        if appt is None:
+            return None
+
+        appt = dict(appt)
+
+        appointment_number = appt.get("id")
+
+        appt_datetime_display = None
+        raw_dt = (appt.get("appointment_datetime") or "").strip()
+        if raw_dt:
+            try:
+                dt = datetime.fromisoformat(raw_dt)
+                appt_datetime_display = dt.strftime("%b %d, %Y @ %I:%M %p")
+            except ValueError:
+                appt_datetime_display = raw_dt
+
+        case_id = appt["case_id"]
+        db = get_db()
+        vc_row = db.execute(
+            "SELECT * FROM vaccination_card WHERE case_id = ?", (case_id,)
+        ).fetchone()
+        vaccination_card = dict(vc_row) if vc_row else {}
+
+        vaccination_card_doses_rows = db.execute(
+            """
+            SELECT id, case_id, record_type, day_number, dose_date, type_of_vaccine, dose, route_site, given_by
+            FROM vaccination_card_doses
+            WHERE case_id = ?
+            ORDER BY record_type, day_number
+            """,
+            (case_id,),
+        ).fetchall()
+        card_doses_by_type: dict[str, dict[int, dict]] = {
+            "pre_exposure": {},
+            "post_exposure": {},
+            "booster": {},
+        }
+        for row in vaccination_card_doses_rows:
+            r = row["record_type"]
+            d = row["day_number"]
+            if r in card_doses_by_type:
+                card_doses_by_type[r][d] = dict(row)
+
+        category_value = (appt.get("risk_level") or appt.get("case_category") or "").strip()
+        category_lower = category_value.lower()
+        active_record_type = "pre_exposure" if category_lower == "category i" else "post_exposure"
+
+        booster_rows = card_doses_by_type.get("booster", {})
+        if booster_rows:
+            display_course = "booster"
+            course_label = "Booster Vaccination"
+        elif active_record_type == "pre_exposure":
+            display_course = "pre_exposure"
+            course_label = "Pre-Exposure Vaccination"
+        else:
+            display_course = "post_exposure"
+            course_label = "Post-Exposure Vaccination"
+
+        if display_course == "pre_exposure":
+            schedule_days = [0, 7, 28]
+        elif display_course == "post_exposure":
+            schedule_days = [0, 3, 7, 14, 28]
+        else:
+            schedule_days = [0, 3]
+
+        active_rows = card_doses_by_type.get(display_course, {})
+        course_rows = []
+        for day in schedule_days:
+            row_data = active_rows.get(day, {}) or {}
+            row_copy = {
+                "day_number": day,
+                "dose_date": (row_data.get("dose_date") or "").strip() or None,
+                "type_of_vaccine": (row_data.get("type_of_vaccine") or "").strip() or None,
+                "dose": (row_data.get("dose") or "").strip() or None,
+                "route_site": (row_data.get("route_site") or "").strip() or None,
+                "given_by": (row_data.get("given_by") or "").strip() or None,
+            }
+            course_rows.append(row_copy)
+
+        expected_doses = len(schedule_days)
+        doses_completed = 0
+        for row_data in active_rows.values():
+            dose_date = (row_data.get("dose_date") or "").strip()
+            type_of_vaccine = (row_data.get("type_of_vaccine") or "").strip()
+            given_by = (row_data.get("given_by") or "").strip()
+            if dose_date and type_of_vaccine and given_by:
+                doses_completed += 1
+
+        victim_relationship = (appt.get("victim_relationship") or "Self").strip()
+        if victim_relationship.lower() == "self":
+            victim_label = "Self"
+        else:
+            victim_label = victim_relationship
+
+        victim_full_name = " ".join(
+            p for p in [
+                (appt.get("victim_first_name") or "").strip(),
+                (appt.get("victim_last_name") or "").strip(),
+            ] if p
+        ) or "—"
+        victim_birthday_raw = (appt.get("victim_date_of_birth") or "").strip()
+        victim_birthday = victim_birthday_raw
+        if victim_birthday_raw:
+            try:
+                d = datetime.fromisoformat(victim_birthday_raw)
+                victim_birthday = d.strftime("%b %d, %Y")
+            except ValueError:
+                pass
+
+        return {
+            "appointment_id": appointment_id,
+            "appointment_number": appointment_number,
+            "case_id": case_id,
+            "patient_name": victim_full_name,
+            "victim_label": victim_label,
+            "victim_full_name": victim_full_name,
+            "victim_age": appt.get("victim_age"),
+            "victim_gender": (appt.get("victim_gender") or "").strip() or "—",
+            "victim_birthday": victim_birthday or "—",
+            "victim_contact_number": (appt.get("victim_phone_number") or "").strip() or "—",
+            "victim_address": (appt.get("victim_address") or "").strip() or "—",
+            "appt_datetime_display": appt_datetime_display,
+            "category_value": category_value,
+            "type_of_exposure": appt.get("type_of_exposure"),
+            "affected_area": appt.get("affected_area"),
+            "bleeding_type": appt.get("bleeding_type"),
+            "wound_description": appt.get("wound_description"),
+            "vaccination_card": vaccination_card,
+            "course_label": course_label,
+            "course_rows": course_rows,
+            "expected_doses": expected_doses,
+            "doses_completed": doses_completed,
+        }
+
+    @app.get("/patient/vaccination-card/<int:appointment_id>")
+    @role_required("patient")
+    def patient_vaccination_card_view(appointment_id: int):
+        if not session.get("patient_onboarding_done"):
+            return redirect(url_for("patient_onboarding"))
+
+        context = _build_vaccination_card_context_for_patient(
+            appointment_id=appointment_id, user_id=session["user_id"]
+        )
+        if context is None:
+            flash("Vaccination card not found for this appointment.", "error")
+            return redirect(url_for("patient_vaccinations"))
+
+        _mark_vaccination_notifications_read_for_case(
+            session["user_id"], int(context["case_id"])
+        )
+
+        return render_template(
+            "patient_vaccination_card_view.html",
+            active_page="vaccinations",
+            **context,
+        )
+
+    @app.get("/patient/vaccination-card/<int:appointment_id>/download")
+    @role_required("patient")
+    def patient_vaccination_card_pdf(appointment_id: int):
+        if not session.get("patient_onboarding_done"):
+            return redirect(url_for("patient_onboarding"))
+
+        try:
+            from xhtml2pdf import pisa  # type: ignore[import]
+        except Exception:
+            flash("PDF generation is temporarily unavailable. Please contact the clinic.", "error")
+            return redirect(url_for("patient_vaccination_card_view", appointment_id=appointment_id))
+
+        context = _build_vaccination_card_context_for_patient(
+            appointment_id=appointment_id, user_id=session["user_id"]
+        )
+        if context is None:
+            flash("Vaccination card not found for this appointment.", "error")
+            return redirect(url_for("patient_vaccinations"))
+
+        html = render_template("vaccination_card_pdf.html", **context)
+        pdf_io = io.BytesIO()
+        err = pisa.CreatePDF(html, dest=pdf_io, encoding="utf-8")
+        if err.err:
+            flash("PDF generation failed. Please try again or contact the clinic.", "error")
+            return redirect(url_for("patient_vaccination_card_view", appointment_id=appointment_id))
+
+        pdf_data = pdf_io.getvalue()
+        if not pdf_data:
+            flash("PDF generation produced an empty file. Please contact the clinic.", "error")
+            return redirect(url_for("patient_vaccination_card_view", appointment_id=appointment_id))
+
+        response = make_response(pdf_data)
+        response.headers["Content-Type"] = "application/pdf"
+        filename = f"vaccination_card_appt_{appointment_id}.pdf"
+        response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+    @app.get("/staff/cases/<int:case_id>/record.pdf")
+    @role_required("clinic_personnel", "system_admin")
+    def staff_case_record_pdf(case_id: int):
+        if session.get("role") == "system_admin":
+            return redirect(url_for("admin_dashboard"))
+
+        try:
+            from xhtml2pdf import pisa  # type: ignore[import]
+        except Exception:
+            flash("PDF generation is temporarily unavailable. Please contact the clinic.", "error")
+            return redirect(url_for("view_patient_case", case_id=case_id))
+
+        context = _build_staff_case_context(case_id=case_id, staff_user_id=session["user_id"])
+        if context is None:
+            session.clear()
+            flash("Account profile missing, contact admin.", "error")
+            return redirect(url_for("auth.login"))
+
+        if context["case"] is None:
+            flash("Case not found.", "error")
+            return redirect(url_for("staff_patients"))
+
+        html = render_template("staff_case_record_pdf.html", **{k: v for k, v in context.items() if k != "db"})
+        pdf_io = io.BytesIO()
+        err = pisa.CreatePDF(html, dest=pdf_io, encoding="utf-8")
+        if err.err:
+            flash("PDF generation failed. Please try again or contact the clinic.", "error")
+            return redirect(url_for("view_patient_case", case_id=case_id))
+
+        pdf_data = pdf_io.getvalue()
+        if not pdf_data:
+            flash("PDF generation produced an empty file. Please contact the clinic.", "error")
+            return redirect(url_for("view_patient_case", case_id=case_id))
+
+        response = make_response(pdf_data)
+        response.headers["Content-Type"] = "application/pdf"
+        filename = f"case_{case_id}_record.pdf"
+        response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
 
     @app.get("/patient/appointments/<int:appointment_id>/edit")
     @role_required("patient")
@@ -988,7 +2263,9 @@ def create_app():
         other_treatment = request.form.get("other_treatment", "").strip()
         place_of_exposure = request.form.get("place_of_exposure", "").strip()
         place_of_exposure_other = request.form.get("place_of_exposure_other", "").strip()
-        affected_area = request.form.get("affected_area", "").strip()
+        affected_area_values = [
+            a.strip() for a in request.form.getlist("affected_area") if a.strip()
+        ]
         affected_area_other = request.form.get("affected_area_other", "").strip()
         tetanus_immunization = request.form.get("tetanus_immunization", "").strip()
         tetanus_date = request.form.get("tetanus_date", "").strip() or None
@@ -999,6 +2276,8 @@ def create_app():
         victim_first_name = request.form.get("victim_first_name", "").strip()
         victim_last_name = request.form.get("victim_last_name", "").strip()
         victim_middle_initial = request.form.get("victim_middle_initial", "").strip()
+        date_of_birth = request.form.get("date_of_birth", "").strip() or None
+        gender = request.form.get("gender", "").strip() or None
         age = request.form.get("age", "").strip()
         barangay = request.form.get("barangay", "").strip()
         victim_address = request.form.get("victim_address", "").strip()
@@ -1024,6 +2303,14 @@ def create_app():
             errors.append("Type of exposure is required.")
         if not exposure_date:
             errors.append("Exposure date is required.")
+        else:
+            try:
+                exp_d = date.fromisoformat(exposure_date.strip()[:10])
+            except ValueError:
+                errors.append("Exposure date is invalid.")
+            else:
+                if exp_d > date.today():
+                    errors.append("Exposure date cannot be in the future.")
         if not animal_type:
             errors.append("Type of animal is required.")
         if not animal_status:
@@ -1034,9 +2321,10 @@ def create_app():
             errors.append("Place of exposure is required.")
         if place_of_exposure == "Other" and not place_of_exposure_other:
             errors.append("Please specify the other place of exposure.")
-        if not affected_area:
-            errors.append("Affected area is required.")
-        if affected_area == "Other" and not affected_area_other:
+        if not affected_area_values:
+            errors.append("Select at least one affected area.")
+        has_other_area = "Other" in affected_area_values
+        if has_other_area and not affected_area_other:
             errors.append("Please specify the other affected area.")
         if not tetanus_immunization:
             errors.append("Tetanus immunization status is required.")
@@ -1044,6 +2332,10 @@ def create_app():
             errors.append("Human tetanus immunoglobulin status is required.")
         if hrtig_immunization == "Yes" and not hrtig_date:
             errors.append("HRIG date is required when Human Tetanus Immunoglobulin is Yes.")
+        if not date_of_birth:
+            errors.append("Birthday is required.")
+        if not gender:
+            errors.append("Gender is required.")
 
         if errors:
             for error in errors:
@@ -1051,20 +2343,26 @@ def create_app():
             return redirect(url_for("patient_dashboard"))
 
         target_patient_id = patient["id"]
-        has_victim_info = bool(first_name or last_name or age or barangay or combined_address or contact_number or email_address)
+        has_victim_info = bool(first_name or last_name or date_of_birth or gender or age or barangay or combined_address or contact_number or email_address)
         if has_victim_info:
-            parsed_age = patient["age"]
-            if age:
-                try:
-                    parsed_age = int(age)
-                except ValueError:
-                    flash("Age must be a number.", "error")
-                    return redirect(url_for("patient_dashboard"))
+            computed_age = _age_from_iso_date(date_of_birth)
+            if computed_age is not None:
+                parsed_age = computed_age
+            else:
+                parsed_age = patient["age"]
+                if age:
+                    try:
+                        parsed_age = int(age)
+                    except ValueError:
+                        flash("Age must be a number.", "error")
+                        return redirect(url_for("patient_dashboard"))
 
             if relationship_to_user.lower() == "self":
                 # Update only the primary self record, never dependent rows.
                 new_first_name = first_name if first_name else patient["first_name"]
                 new_last_name = last_name if last_name else patient["last_name"]
+                new_date_of_birth = date_of_birth if date_of_birth else patient.get("date_of_birth")
+                new_gender = gender if gender else patient.get("gender")
                 new_address = combined_address if combined_address else patient["address"]
                 new_phone = contact_number if contact_number else patient["phone_number"]
 
@@ -1073,13 +2371,15 @@ def create_app():
                     UPDATE patients
                     SET first_name = ?,
                         last_name = ?,
+                        date_of_birth = ?,
+                        gender = ?,
                         age = ?,
                         address = ?,
                         phone_number = ?,
                         relationship_to_user = ?
                     WHERE id = ?
                     """,
-                    (new_first_name, new_last_name, parsed_age, new_address, new_phone, "Self", patient["id"]),
+                    (new_first_name, new_last_name, new_date_of_birth, new_gender, parsed_age, new_address, new_phone, "Self", patient["id"]),
                 )
 
                 if email_address:
@@ -1088,9 +2388,9 @@ def create_app():
                 db.execute(
                     """
                     INSERT INTO patients (
-                        user_id, first_name, last_name, phone_number, address, age,
+                        user_id, first_name, last_name, phone_number, address, date_of_birth, gender, age,
                         relationship_to_user, onboarding_completed
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         session["user_id"],
@@ -1098,6 +2398,8 @@ def create_app():
                         last_name,
                         contact_number or None,
                         combined_address or None,
+                        date_of_birth,
+                        gender,
                         parsed_age,
                         relationship_to_user,
                         1,
@@ -1116,10 +2418,15 @@ def create_app():
         if place_of_exposure == "Other" and place_of_exposure_other:
             final_place_of_exposure = f"Other: {place_of_exposure_other}"
 
-        # Build affected_area (combine with other text if applicable)
-        final_affected_area = affected_area
-        if affected_area == "Other" and affected_area_other:
-            final_affected_area = f"Other: {affected_area_other}"
+        # Build affected_area: comma-separated canonical areas; Other becomes "Other: …"
+        canonical_area_parts: list[str] = []
+        for av in affected_area_values:
+            if av == "Other":
+                continue
+            canonical_area_parts.append(av)
+        if has_other_area and affected_area_other:
+            canonical_area_parts.append(f"Other: {affected_area_other}")
+        final_affected_area = ", ".join(canonical_area_parts)
 
         # Build local_treatment (combine with other_treatment if applicable)
         final_local_treatment = local_treatment
@@ -1139,7 +2446,7 @@ def create_app():
         # Determine risk_level using rule-based helper
         risk_level = classify_pre_screening_risk(
             type_of_exposure=type_of_exposure,
-            affected_area=affected_area,
+            affected_area=final_affected_area,
             wound_description=wound_description,
             bleeding_type=bleeding_type,
             animal_status=animal_status,
@@ -1251,7 +2558,7 @@ def create_app():
                     flash("This time slot is no longer available. Please choose another.", "error")
                     return redirect(url_for("patient_dashboard"))
 
-                db.execute(
+                cursor = db.execute(
                     """
                     INSERT INTO appointments (
                         patient_id, clinic_id, appointment_datetime,
@@ -1268,6 +2575,13 @@ def create_app():
                     ),
                 )
 
+                appointment_id = cursor.lastrowid
+                _insert_patient_notification(
+                    patient_id=target_patient_id,
+                    notif_type="appointment",
+                    source_id=appointment_id,
+                    message="New pre-screening appointment requested.",
+                )
 
             db.commit()
             flash("Pre-screening form submitted successfully.", "success")
@@ -2429,7 +3743,7 @@ def create_app():
             return redirect(url_for("auth.login"))
 
         appt = db.execute(
-            "SELECT id, case_id FROM appointments WHERE id = ? AND clinic_id = ?",
+            "SELECT id, case_id, patient_id FROM appointments WHERE id = ? AND clinic_id = ?",
             (appointment_id, staff["clinic_id"]),
         ).fetchone()
         if appt is None:
@@ -2449,6 +3763,14 @@ def create_app():
               AND LOWER(COALESCE(case_status, 'pending')) IN ('pending', 'queued', 'scheduled')
             """,
             ("Pending", appt["case_id"], staff["clinic_id"]),
+        )
+
+        # Notify the patient (self or dependent) that the appointment was approved.
+        _insert_patient_notification(
+            patient_id=appt["patient_id"],
+            notif_type="appointment",
+            source_id=appointment_id,
+            message="Your appointment has been approved by the clinic.",
         )
         db.commit()
 
@@ -2574,12 +3896,7 @@ def create_app():
         flash("Appointment updated.", "success")
         return redirect(url_for("view_appointment", appointment_id=appointment_id))
 
-    @app.get("/staff/patients/<int:case_id>")
-    @role_required("clinic_personnel", "system_admin")
-    def view_patient_case(case_id: int):
-        if session.get("role") == "system_admin":
-            return redirect(url_for("admin_dashboard"))
-
+    def _build_staff_case_context(case_id: int, staff_user_id: int) -> dict | None:
         db = get_db()
         staff = db.execute(
             """
@@ -2588,13 +3905,11 @@ def create_app():
             JOIN users u ON u.id = cp.user_id
             WHERE cp.user_id = ?
             """,
-            (session["user_id"],),
+            (staff_user_id,),
         ).fetchone()
 
         if staff is None:
-            session.clear()
-            flash("Account profile missing, contact admin.", "error")
-            return redirect(url_for("auth.login"))
+            return None
 
         staff_display_name = staff["username"]
         if staff["first_name"] or staff["last_name"]:
@@ -2634,8 +3949,7 @@ def create_app():
         ).fetchone()
 
         if case_row is None:
-            flash("Case not found.", "error")
-            return redirect(url_for("staff_patients"))
+            return None
 
         dose_rows = db.execute(
             """
@@ -2657,7 +3971,7 @@ def create_app():
             """,
             (case_id,),
         ).fetchall()
-        dose_records = []
+        dose_records: list[dict] = []
         for row in dose_rows:
             date_administered_display = row["date_administered"] or "N/A"
             if row["date_administered"]:
@@ -2712,7 +4026,7 @@ def create_app():
             """,
             (case_id,),
         ).fetchall()
-        notes = []
+        notes: list[dict] = []
         for row in notes_rows:
             created_at_display = row["created_at"] or ""
             if row["created_at"]:
@@ -2741,7 +4055,7 @@ def create_app():
             """,
             (case_id,),
         ).fetchall()
-        card_doses_by_type = {"pre_exposure": {}, "post_exposure": {}, "booster": {}}
+        card_doses_by_type: dict[str, dict[int, dict]] = {"pre_exposure": {}, "post_exposure": {}, "booster": {}}
         for row in vaccination_card_doses_rows:
             r = row["record_type"]
             d = row["day_number"]
@@ -2765,8 +4079,6 @@ def create_app():
                 doses_completed += 1
         progress_pct = min(round((doses_completed / expected_doses) * 100), 100) if expected_doses else 0
 
-        # Compute next due dose from vaccination schedule and prioritize it
-        # over appointment table values for the Vaccination Status card.
         schedule_days = [0, 7, 28] if active_record_type == "pre_exposure" else [0, 3, 7, 14, 28]
         active_rows = card_doses_by_type.get(active_record_type, {})
         day0_row = active_rows.get(0)
@@ -2785,7 +4097,6 @@ def create_app():
             type_of_vaccine = ((row or {}).get("type_of_vaccine") or "").strip() if row else ""
             given_by = ((row or {}).get("given_by") or "").strip() if row else ""
 
-            # Completed dose rows do not count as next due.
             if dose_date_raw and type_of_vaccine and given_by:
                 continue
 
@@ -2803,11 +4114,10 @@ def create_app():
         if next_due_date:
             next_appointment_display = next_due_date.strftime("%B %d, %Y")
 
-        # Backward-compatible display: if legacy vaccination_records is empty,
-        # populate Dose Records from completed rows in vaccination_card_doses.
         if not dose_records:
             active_rows = card_doses_by_type.get(active_record_type, {})
-            derived_dose_records = []
+            derived_dose_records: list[dict] = []
+
             def _ordinal(n: int) -> str:
                 if 10 <= (n % 100) <= 20:
                     suffix = "th"
@@ -2844,24 +4154,45 @@ def create_app():
             {"label": case_row["patient_name"], "href": None},
         ]
 
+        return {
+            "db": db,
+            "staff": staff,
+            "staff_display_name": staff_display_name,
+            "case": case_row,
+            "dose_records": dose_records,
+            "doses_completed": doses_completed,
+            "expected_doses": expected_doses,
+            "progress_pct": progress_pct,
+            "next_appointment": next_appointment,
+            "next_appointment_display": next_appointment_display,
+            "notes": notes,
+            "vaccination_card": vaccination_card,
+            "card_doses_by_type": card_doses_by_type,
+            "active_record_type": active_record_type,
+            "dose_type_label": dose_type_label,
+            "breadcrumbs": breadcrumbs,
+        }
+
+    @app.get("/staff/patients/<int:case_id>")
+    @role_required("clinic_personnel", "system_admin")
+    def view_patient_case(case_id: int):
+        if session.get("role") == "system_admin":
+            return redirect(url_for("admin_dashboard"))
+
+        context = _build_staff_case_context(case_id=case_id, staff_user_id=session["user_id"])
+        if context is None:
+            session.clear()
+            flash("Account profile missing, contact admin.", "error")
+            return redirect(url_for("auth.login"))
+
+        if context["case"] is None:
+            flash("Case not found.", "error")
+            return redirect(url_for("staff_patients"))
+
         return render_template(
             "staff_patient_view.html",
-            staff=staff,
-            staff_display_name=staff_display_name,
-            case=case_row,
-            dose_records=dose_records,
-            doses_completed=doses_completed,
-            expected_doses=expected_doses,
-            progress_pct=progress_pct,
-            next_appointment=next_appointment,
-            next_appointment_display=next_appointment_display,
-            notes=notes,
-            vaccination_card=vaccination_card,
-            card_doses_by_type=card_doses_by_type,
-            active_record_type=active_record_type,
-            dose_type_label=dose_type_label,
-            breadcrumbs=breadcrumbs,
             active_page="cases",
+            **{k: v for k, v in context.items() if k != "db"},
         )
 
     @app.post("/staff/cases/<int:case_id>/notes")
@@ -3258,6 +4589,14 @@ def create_app():
                             """,
                             (case_id, record_type, day, dose_date or None, type_of_vaccine or None, dose or None, route_site or None, given_by or None),
                         )
+
+            # Notify the patient that the vaccination record for this case was updated.
+            _insert_patient_notification(
+                patient_id=case_patient["patient_id"],
+                notif_type="vaccination",
+                source_id=case_id,
+                message="Your vaccination record has been updated by the clinic.",
+            )
 
             db.commit()
 

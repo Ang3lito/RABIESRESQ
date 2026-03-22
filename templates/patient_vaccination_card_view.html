@@ -1,0 +1,197 @@
+{% extends "base_patient.html" %}
+
+{% block title %}Vaccination Card - RabiesResQ{% endblock %}
+
+{% block content %}
+  <div class="flex h-full min-h-0 flex-col space-y-4">
+    <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900">Vaccination Card</h1>
+        <p class="mt-1 text-sm text-slate-600">
+          {{ victim_label }}
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <a
+          href="{{ url_for('patient_vaccinations') }}"
+          class="inline-flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
+        >
+          Back to Vaccinations
+        </a>
+        <a
+          href="{{ url_for('patient_vaccination_card_pdf', appointment_id=appointment_id) }}"
+          class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          <i class="fa-solid fa-download mr-2 text-[11px]"></i>
+          Download Vaccination Card (PDF)
+        </a>
+      </div>
+    </div>
+
+    <div class="flex-1">
+      <div class="mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:p-6">
+        <div class="mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:p-6">
+          <div class="flex items-start justify-between border-b border-emerald-600 pb-3">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                Animal Bite Center
+              </p>
+              <h2 class="mt-1 text-xl font-bold text-slate-900">Rabies Vaccination Card</h2>
+              <p class="mt-1 text-sm text-slate-700">
+                {{ victim_label }}
+              </p>
+            </div>
+            <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-xs max-w-md">
+              <div>
+                <p class="text-slate-500">Name</p>
+                <p class="font-semibold text-slate-900">{{ victim_full_name }}</p>
+              </div>
+              <div>
+                <p class="text-slate-500">Gender</p>
+                <p class="font-semibold text-slate-900">{{ victim_gender }}</p>
+              </div>
+              <div>
+                <p class="text-slate-500">Birthday</p>
+                <p class="font-semibold text-slate-900">{{ victim_birthday }}</p>
+              </div>
+              <div>
+                <p class="text-slate-500">Contact No.</p>
+                <p class="font-semibold text-slate-900">{{ victim_contact_number }}</p>
+              </div>
+              <div>
+                <p class="text-slate-500">Age</p>
+                <p class="font-semibold text-slate-900">{{ victim_age or '—' }}</p>
+              </div>
+              <div>
+                <p class="text-slate-500">Address</p>
+                <p class="font-semibold text-slate-900 break-words">{{ victim_address }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 grid gap-4 md:grid-cols-2">
+            <section>
+              <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Appointment Details
+              </h3>
+              <dl class="mt-2 space-y-1 text-xs sm:text-sm">
+                <div class="flex justify-between gap-2">
+                  <dt class="text-slate-500">Date &amp; Time</dt>
+                  <dd class="font-semibold text-slate-900">{{ appt_datetime_display or 'N/A' }}</dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                  <dt class="text-slate-500">Risk Category</dt>
+                  <dd class="font-semibold text-slate-900">{{ category_value or 'N/A' }}</dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                  <dt class="text-slate-500">Type of Exposure</dt>
+                  <dd class="font-semibold text-slate-900">{{ type_of_exposure or 'N/A' }}</dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                  <dt class="text-slate-500">Affected Area</dt>
+                  <dd class="font-semibold text-slate-900">{{ affected_area or 'N/A' }}</dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                  <dt class="text-slate-500">Bleeding Type</dt>
+                  <dd class="font-semibold text-slate-900">{{ bleeding_type or 'N/A' }}</dd>
+                </div>
+                <div>
+                  <dt class="text-slate-500">Wound / Local Treatment</dt>
+                  <dd class="mt-0.5 rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700">
+                    {{ wound_description or 'No wound description recorded.' }}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+
+            <section>
+              <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Vaccine &amp; Prophylaxis
+              </h3>
+              <dl class="mt-2 space-y-1 text-xs sm:text-sm">
+                <div class="flex justify-between gap-2">
+                  <dt class="text-slate-500">Anti-Rabies</dt>
+                  <dd class="font-semibold text-slate-900">{{ vaccination_card.anti_rabies or '—' }}</dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                  <dt class="text-slate-500">PVRV</dt>
+                  <dd class="font-semibold text-slate-900">{{ vaccination_card.pvrv or '—' }}</dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                  <dt class="text-slate-500">PCEC Batch</dt>
+                  <dd class="font-semibold text-slate-900">{{ vaccination_card.pcec_batch or '—' }}</dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                  <dt class="text-slate-500">PCEC Mfg / Expiry</dt>
+                  <dd class="font-semibold text-slate-900">
+                    {{ vaccination_card.pcec_mfg_date or '—' }} / {{ vaccination_card.pcec_expiry or '—' }}
+                  </dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                  <dt class="text-slate-500">ERIG / HRIG</dt>
+                  <dd class="font-semibold text-slate-900">{{ vaccination_card.erig_hrig or '—' }}</dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                  <dt class="text-slate-500">Tetanus Prophylaxis</dt>
+                  <dd class="font-semibold text-slate-900">{{ vaccination_card.tetanus_prophylaxis or '—' }}</dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                  <dt class="text-slate-500">Tetanus Toxoid / ATS / HTIG</dt>
+                  <dd class="font-semibold text-slate-900">
+                    {{ vaccination_card.tetanus_toxoid or '—' }} / {{ vaccination_card.ats or '—' }} / {{ vaccination_card.htig or '—' }}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+          </div>
+
+          <section class="mt-6">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Dose Record ({{ course_label }})
+              </h3>
+              <p class="text-xs text-slate-600">
+                Completed doses: <span class="font-semibold text-slate-900">{{ doses_completed }}</span> of
+                <span class="font-semibold text-slate-900">{{ expected_doses }}</span>
+              </p>
+            </div>
+            <div class="mt-2 overflow-x-auto rounded-xl border border-slate-200">
+              <table class="min-w-full divide-y divide-slate-200 text-xs sm:text-sm">
+                <thead class="bg-slate-50 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th class="px-3 py-2">Day</th>
+                    <th class="px-3 py-2">Date</th>
+                    <th class="px-3 py-2">Type of Vaccine</th>
+                    <th class="px-3 py-2">Dose</th>
+                    <th class="px-3 py-2">Route &amp; Site</th>
+                    <th class="px-3 py-2">Given By</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                  {% for row in course_rows %}
+                  <tr>
+                    <td class="px-3 py-2 font-semibold">DAY {{ row.day_number }}</td>
+                    <td class="px-3 py-2">{{ row.dose_date or '—' }}</td>
+                    <td class="px-3 py-2">{{ row.type_of_vaccine or '—' }}</td>
+                    <td class="px-3 py-2">{{ row.dose or '—' }}</td>
+                    <td class="px-3 py-2">{{ row.route_site or '—' }}</td>
+                    <td class="px-3 py-2">{{ row.given_by or '—' }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="mt-4">
+            <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500">Remarks</h3>
+            <p class="mt-1 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
+              {{ vaccination_card.remarks or '—' }}
+            </p>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

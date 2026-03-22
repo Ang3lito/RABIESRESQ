@@ -4,7 +4,8 @@
 
 {% block content %}
   <div class="flex h-full min-h-0 flex-col space-y-6">
-    <div class="sticky top-0 z-50 mb-6 flex items-center justify-between bg-white py-2 border-b border-slate-200">
+    <!-- Sticky header -->
+    <div class="sticky top-0 z-50 mb-4 flex items-center justify-between bg-white py-2 border-b border-slate-200">
       <h1 class="text-2xl font-bold text-slate-900">Patient Guidance</h1>
       <div class="flex items-center gap-3">
         <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Notifications" title="Notifications">
@@ -13,12 +14,127 @@
       </div>
     </div>
 
-    <!-- Risk category buttons -->
-    <div class="flex flex-wrap justify-center gap-3">
-      <button type="button" data-category="1" class="category-btn rounded-full bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-200">Category I</button>
-      <button type="button" data-category="2" class="category-btn rounded-full bg-orange-100 px-4 py-2 text-sm font-medium text-orange-700 hover:bg-orange-200">Category II</button>
-      <button type="button" data-category="3" class="category-btn rounded-full bg-red-100 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-200">Category III</button>
-    </div>
+    <!-- Hero / intro -->
+    <section class="rounded-2xl border border-slate-200 bg-gradient-to-r from-emerald-50 to-blue-50 p-5 sm:p-6">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 sm:text-2xl">Rabies Guidance Center</h2>
+          <p class="mt-1 text-sm text-slate-600">
+            Quickly see what to do based on your exposure level and where you are in your vaccination journey.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 text-xs text-slate-500">
+          <span class="inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+          Always follow your doctor&#39;s advice.
+        </div>
+      </div>
+    </section>
+
+    <!-- Risk category cards -->
+    <section class="space-y-3">
+      <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Risk categories</h3>
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <!-- Category I -->
+        <button
+          type="button"
+          data-category="1"
+          class="category-btn flex flex-col items-start gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-md"
+        >
+          <div class="flex items-center gap-2">
+            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+              <span class="text-sm font-bold">I</span>
+            </div>
+            <p class="text-sm font-semibold text-slate-900">Category I</p>
+          </div>
+          <p class="text-xs text-slate-600">
+            Touching or feeding animals, intact skin contact. Usually no vaccine needed, but still review the details.
+          </p>
+          <span class="mt-1 text-xs font-medium text-emerald-600">View details →</span>
+        </button>
+
+        <!-- Category II -->
+        <button
+          type="button"
+          data-category="2"
+          class="category-btn flex flex-col items-start gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-amber-400 hover:shadow-md"
+        >
+          <div class="flex items-center gap-2">
+            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+              <span class="text-sm font-bold">II</span>
+            </div>
+            <p class="text-sm font-semibold text-slate-900">Category II</p>
+          </div>
+          <p class="text-xs text-slate-600">
+            Minor scratches or nibbling without bleeding. Vaccine is usually recommended.
+          </p>
+          <span class="mt-1 text-xs font-medium text-amber-600">View details →</span>
+        </button>
+
+        <!-- Category III -->
+        <button
+          type="button"
+          data-category="3"
+          class="category-btn flex flex-col items-start gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-red-400 hover:shadow-md"
+        >
+          <div class="flex items-center gap-2">
+            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-700">
+              <span class="text-sm font-bold">III</span>
+            </div>
+            <p class="text-sm font-semibold text-slate-900">Category III</p>
+          </div>
+          <p class="text-xs text-slate-600">
+            Bites with bleeding, mucous exposure, or severe wounds. Immediate vaccine and HRIG may be needed.
+          </p>
+          <span class="mt-1 text-xs font-medium text-red-600">View details →</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Guidance buttons -->
+    <section class="space-y-3">
+      <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Practical guidance</h3>
+      <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <!-- Guidance After a Bite -->
+        <button
+          type="button"
+          onclick="openGuidanceModal('bite')"
+          class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-md"
+        >
+          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4l2 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-slate-900">Guidance After a Bite</p>
+            <p class="text-xs text-slate-600">
+              Immediate steps after exposure, from washing the wound to seeking medical care.
+            </p>
+          </div>
+        </button>
+
+        <!-- Guidance After Vaccination -->
+        <button
+          type="button"
+          onclick="openGuidanceModal('vaccination')"
+          class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-md"
+        >
+          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-slate-900">Guidance After Vaccination</p>
+            <p class="text-xs text-slate-600">
+              How to take care of yourself after doses and when to return for your next shot.
+            </p>
+          </div>
+        </button>
+      </div>
+    </section>
 
     <!-- Category description modal -->
     <div id="category-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
@@ -45,11 +161,11 @@
       </div>
     </div>
 
-    <div class="grid min-h-0 grid-cols-1 gap-6 lg:grid-cols-2">
-      <!-- Guidance After a Bite Card -->
-      <div class="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-lg">
-        <h2 class="mb-4 text-lg font-bold text-slate-900">Guidance After a Bite</h2>
-        <div class="flex flex-1 flex-col space-y-4">
+    {% block extra_scripts %}
+    {{ super() }}
+    <script>
+      const biteContentHtml = `
+        <div class="space-y-4">
           <div class="flex gap-3">
             <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500">
               <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,7 +174,9 @@
             </div>
             <div class="flex-1">
               <h3 class="font-semibold text-slate-900">Wash the Wound Immediately</h3>
-              <p class="mt-1 text-sm text-slate-600">Vigorously wash and flush the wound with soap and water for at least 15 minutes. This is the most effective first-aid measure.</p>
+              <p class="mt-1 text-sm text-slate-600">
+                Vigorously wash and flush the wound with soap and water for at least 15 minutes. This is the most effective first-aid measure.
+              </p>
             </div>
           </div>
 
@@ -70,7 +188,9 @@
             </div>
             <div class="flex-1">
               <h3 class="font-semibold text-slate-900">Apply an Antiseptic</h3>
-              <p class="mt-1 text-sm text-slate-600">After washing, apply an antiseptic such as povidone-iodine or alcohol to the wound to help kill the virus.</p>
+              <p class="mt-1 text-sm text-slate-600">
+                After washing, apply an antiseptic such as povidone-iodine or alcohol to the wound to help kill the virus.
+              </p>
             </div>
           </div>
 
@@ -82,7 +202,9 @@
             </div>
             <div class="flex-1">
               <h3 class="font-semibold text-slate-900">Seek Medical Attention Promptly</h3>
-              <p class="mt-1 text-sm text-slate-600">Go to the nearest hospital or animal bite treatment center immediately, regardless of how minor the wound appears. A healthcare professional will assess the bite and determine the necessary treatment.</p>
+              <p class="mt-1 text-sm text-slate-600">
+                Go to the nearest hospital or animal bite treatment center immediately, regardless of how minor the wound appears.
+              </p>
             </div>
           </div>
 
@@ -94,7 +216,9 @@
             </div>
             <div class="flex-1">
               <h3 class="font-semibold text-slate-900">Do Not Suture the Wound</h3>
-              <p class="mt-1 text-sm text-slate-600">Bite wounds should ideally be left open. If suturing is necessary, it should be done after infiltration with rabies immunoglobulin.</p>
+              <p class="mt-1 text-sm text-slate-600">
+                Bite wounds should ideally be left open. If suturing is necessary, it should be done after infiltration with rabies immunoglobulin.
+              </p>
             </div>
           </div>
 
@@ -106,16 +230,16 @@
             </div>
             <div class="flex-1">
               <h3 class="font-semibold text-slate-900">Get Post-Exposure Prophylaxis (PEP)</h3>
-              <p class="mt-1 text-sm text-slate-600">This includes a series of rabies vaccine shots and, in some cases, Rabies Immunoglobulin (RIG). It's crucial to start this treatment as soon as possible.</p>
+              <p class="mt-1 text-sm text-slate-600">
+                This includes a series of rabies vaccine shots and, in some cases, Rabies Immunoglobulin (RIG). It's crucial to start this treatment as soon as possible.
+              </p>
             </div>
           </div>
         </div>
-      </div>
+      `;
 
-      <!-- Guidance After Vaccination Card -->
-      <div class="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-lg">
-        <h2 class="mb-4 text-lg font-bold text-slate-900">Guidance After Vaccination</h2>
-        <div class="flex flex-1 flex-col space-y-4">
+      const vaccinationContentHtml = `
+        <div class="space-y-4">
           <div class="flex gap-3">
             <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500">
               <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,7 +248,9 @@
             </div>
             <div class="flex-1">
               <h3 class="font-semibold text-slate-900">Complete the Full Course</h3>
-              <p class="mt-1 text-sm text-slate-600">It is essential to complete the entire vaccination schedule as prescribed by your doctor. Missing a dose can compromise the vaccine's effectiveness.</p>
+              <p class="mt-1 text-sm text-slate-600">
+                It is essential to complete the entire vaccination schedule as prescribed by your doctor. Missing a dose can compromise the vaccine's effectiveness.
+              </p>
             </div>
           </div>
 
@@ -136,7 +262,9 @@
             </div>
             <div class="flex-1">
               <h3 class="font-semibold text-slate-900">Monitor for Side Effects</h3>
-              <p class="mt-1 text-sm text-slate-600">Common side effects include pain, redness, or swelling at the injection site, headache, and muscle aches. These are usually mild and temporary.</p>
+              <p class="mt-1 text-sm text-slate-600">
+                Common side effects include pain, redness, or swelling at the injection site, headache, and muscle aches. These are usually mild and temporary.
+              </p>
             </div>
           </div>
 
@@ -148,7 +276,9 @@
             </div>
             <div class="flex-1">
               <h3 class="font-semibold text-slate-900">Report Severe Reactions</h3>
-              <p class="mt-1 text-sm text-slate-600">Inform your doctor immediately if you experience severe reactions like high fever, hives, difficulty breathing, or dizziness.</p>
+              <p class="mt-1 text-sm text-slate-600">
+                Inform your doctor immediately if you experience severe reactions like high fever, hives, difficulty breathing, or dizziness.
+              </p>
             </div>
           </div>
 
@@ -160,7 +290,9 @@
             </div>
             <div class="flex-1">
               <h3 class="font-semibold text-slate-900">Keep the Vaccination Card Safe</h3>
-              <p class="mt-1 text-sm text-slate-600">Your vaccination record is an important medical document. Keep it in a safe place and bring it to every follow-up appointment.</p>
+              <p class="mt-1 text-sm text-slate-600">
+                Your vaccination record is an important medical document. Keep it in a safe place and bring it to every follow-up appointment.
+              </p>
             </div>
           </div>
 
@@ -172,12 +304,70 @@
             </div>
             <div class="flex-1">
               <h3 class="font-semibold text-slate-900">Avoid Immunosuppressants</h3>
-              <p class="mt-1 text-sm text-slate-600">If possible, avoid taking immunosuppressive drugs during the vaccination course as they may interfere with the development of immunity.</p>
+              <p class="mt-1 text-sm text-slate-600">
+                If possible, avoid taking immunosuppressive drugs during the vaccination course as they may interfere with the development of immunity.
+              </p>
             </div>
+          </div>
+        </div>
+      `;
+
+      function openGuidanceModal(type) {
+        const modal = document.getElementById('guidance-modal');
+        const titleEl = document.getElementById('guidance-modal-title');
+        const bodyEl = document.getElementById('guidance-modal-body');
+        if (!modal || !titleEl || !bodyEl) return;
+
+        if (type === 'bite') {
+          titleEl.textContent = 'Guidance After a Bite';
+          bodyEl.innerHTML = biteContentHtml;
+        } else if (type === 'vaccination') {
+          titleEl.textContent = 'Guidance After Vaccination';
+          bodyEl.innerHTML = vaccinationContentHtml;
+        } else {
+          titleEl.textContent = 'Guidance';
+          bodyEl.innerHTML = '';
+        }
+
+        modal.classList.remove('hidden');
+      }
+
+      function closeGuidanceModal() {
+        const modal = document.getElementById('guidance-modal');
+        if (modal) {
+          modal.classList.add('hidden');
+        }
+      }
+    </script>
+    {% endblock %}
+
+    <!-- Guidance modal -->
+    <div id="guidance-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+      <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onclick="closeGuidanceModal()"></div>
+      <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative w-full max-w-2xl overflow-hidden rounded-xl bg-white shadow-xl">
+          <div class="border-b border-slate-200 bg-white px-6 py-4">
+            <div class="flex items-center justify-between">
+              <h2 id="guidance-modal-title" class="text-xl font-bold text-slate-900">
+                Guidance
+              </h2>
+              <button type="button" onclick="closeGuidanceModal()" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Close">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div id="guidance-modal-body" class="px-6 pb-6 pt-4 space-y-4 text-sm text-slate-700">
+            <!-- Content injected by JS -->
           </div>
         </div>
       </div>
     </div>
+
+    <!-- The detailed cards below are now represented inside the guidance modal.
+         They can be removed or left as static reference if you want both. -->
   </div>
   <script>
     function closeCategoryModal() {
