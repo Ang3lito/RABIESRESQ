@@ -1,5 +1,7 @@
 import os
+import secrets
 import sqlite3
+import string
 from datetime import date, datetime, timedelta
 import io
 import json
@@ -11,6 +13,7 @@ from werkzeug.security import generate_password_hash
 
 from auth import login_required, role_required
 from db import get_db, init_app as init_db_app
+from email_service import send_email
 
 
 class SimplePagination:
@@ -418,12 +421,50 @@ def create_app():
         )
         db.commit()
 
+    def _ensure_user_security_columns():
+        db = get_db()
+        cols = {row["name"] for row in db.execute("PRAGMA table_info(users)").fetchall()}
+        if "must_change_password" not in cols:
+            db.execute(
+                """
+                ALTER TABLE users
+                ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0
+                CHECK(must_change_password IN (0,1))
+                """
+            )
+            db.commit()
+
+    def _ensure_pending_emails_table():
+        db = get_db()
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS pending_emails (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                to_email TEXT NOT NULL,
+                subject TEXT NOT NULL,
+                body TEXT NOT NULL,
+                retry_count INTEGER NOT NULL DEFAULT 0,
+                status TEXT NOT NULL DEFAULT 'pending'
+                    CHECK(status IN ('pending', 'sent', 'failed')),
+                last_error TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        db.execute(
+            "CREATE INDEX IF NOT EXISTS idx_pending_emails_status_created ON pending_emails(status, created_at)"
+        )
+        db.commit()
+
     with app.app_context():
         _ensure_patient_onboarding_column()
         _migrate_patients_for_dependents()
         _ensure_appointments_patient_hidden_column()
         _ensure_vaccination_card_tables()
         _ensure_patient_notifications_table()
+        _ensure_user_security_columns()
+        _ensure_pending_emails_table()
 
     # #region agent log helper
     def _debug_log(run_id: str, hypothesis_id: str, location: str, message: str, data: dict | None = None):
@@ -474,6 +515,51 @@ def create_app():
             VALUES (?, ?, ?, ?, ?, 0)
             """,
             (patient_id, notif_type, source_id, message, created_at),
+        )
+
+    def _build_unique_username(base_value: str) -> str:
+        db = get_db()
+        seed = "".join(ch for ch in (base_value or "").strip().lower() if ch.isalnum() or ch in {"_", "."})
+        if not seed:
+            seed = "patient"
+        candidate = seed[:24]
+        if not candidate:
+            candidate = "patient"
+        suffix = 0
+        while True:
+            username = candidate if suffix == 0 else f"{candidate[:18]}{suffix:04d}"
+            exists = db.execute("SELECT 1 FROM users WHERE username = ? LIMIT 1", (username,)).fetchone()
+            if not exists:
+                return username
+            suffix += 1
+
+    def _generate_strong_password(length: int = 14) -> str:
+        # Ensure password includes upper/lower/digit/symbol and is randomly shuffled.
+        alphabet_lower = string.ascii_lowercase
+        alphabet_upper = string.ascii_uppercase
+        alphabet_digits = string.digits
+        alphabet_symbols = "!@#$%^&*()-_=+"
+        if length < 12:
+            length = 12
+        required = [
+            secrets.choice(alphabet_lower),
+            secrets.choice(alphabet_upper),
+            secrets.choice(alphabet_digits),
+            secrets.choice(alphabet_symbols),
+        ]
+        all_chars = alphabet_lower + alphabet_upper + alphabet_digits + alphabet_symbols
+        required.extend(secrets.choice(all_chars) for _ in range(length - 4))
+        secrets.SystemRandom().shuffle(required)
+        return "".join(required)
+
+    def _queue_pending_email(to_email: str, subject: str, body: str, last_error: str | None = None) -> None:
+        db = get_db()
+        db.execute(
+            """
+            INSERT INTO pending_emails (to_email, subject, body, retry_count, status, last_error, updated_at)
+            VALUES (?, ?, ?, 0, 'pending', ?, CURRENT_TIMESTAMP)
+            """,
+            (to_email, subject, body, (last_error or "").strip()[:500] or None),
         )
 
     NO_SHOW_APPOINTMENT_NOTIFICATION_MSG = (
@@ -3033,6 +3119,641 @@ def create_app():
         flash("Profile updated successfully.", "success")
         return redirect(url_for("staff_profile"))
 
+    @app.route("/staff/patients/new-account", methods=["GET", "POST"])
+    @role_required("clinic_personnel", "system_admin")
+    def staff_new_patient_account():
+        if session.get("role") == "system_admin":
+            return redirect(url_for("admin_dashboard"))
+
+        db = get_db()
+        staff = db.execute(
+            """
+            SELECT cp.*, u.username, u.email
+            FROM clinic_personnel cp
+            JOIN users u ON u.id = cp.user_id
+            WHERE cp.user_id = ?
+            """,
+            (session["user_id"],),
+        ).fetchone()
+        if staff is None:
+            session.clear()
+            flash("Account profile missing, contact admin.", "error")
+            return redirect(url_for("auth.login"))
+
+        staff_display_name = staff["username"]
+        if staff["first_name"] or staff["last_name"]:
+            title = (staff["title"] or "").strip()
+            first_name = (staff["first_name"] or "").strip()
+            last_name = (staff["last_name"] or "").strip()
+            staff_display_name = " ".join(part for part in [title, first_name, last_name] if part)
+
+        form_data = {
+            "first_name": "",
+            "last_name": "",
+            "email": "",
+            "date_of_birth": "",
+            "gender": "",
+            "age": "",
+            "phone_number": "",
+            "address": "",
+            "exposure_date": "",
+            "type_of_exposure": "",
+            "animal_detail": "",
+            "risk_level": "",
+            "wound_description": "",
+            "bleeding_type": "",
+            "local_treatment": "",
+            "patient_prev_immunization": "",
+            "prev_vaccine_date": "",
+            "tetanus_date": "",
+            "hrtig_immunization": "",
+        }
+        vaccination_card = {}
+        card_doses_by_type = {"pre_exposure": {}, "post_exposure": {}, "booster": {}}
+
+        if request.method == "POST":
+            for key in form_data:
+                form_data[key] = (request.form.get(key) or "").strip()
+
+            def _v(name: str) -> str:
+                return (request.form.get(name) or "").strip()
+
+            vaccination_card = {
+                "anti_rabies": _v("vc_anti_rabies"),
+                "pvrv": _v("vc_pvrv"),
+                "pcec_batch": _v("vc_pcec_batch"),
+                "pcec_mfg_date": _v("vc_pcec_mfg_date"),
+                "pcec_expiry": _v("vc_pcec_expiry"),
+                "erig_hrig": _v("vc_erig_hrig"),
+                "tetanus_prophylaxis": _v("vc_tetanus_prophylaxis"),
+                "tetanus_toxoid": _v("vc_tetanus_toxoid"),
+                "ats": _v("vc_ats"),
+                "htig": _v("vc_htig"),
+                "remarks": _v("vc_remarks"),
+            }
+            for record_type, prefix, days in [
+                ("pre_exposure", "vc_pre", [0, 7, 28]),
+                ("post_exposure", "vc_post", [0, 3, 7, 14, 28]),
+                ("booster", "vc_booster", [0, 3]),
+            ]:
+                for day in days:
+                    card_doses_by_type[record_type][day] = {
+                        "dose_date": _v(f"{prefix}_{day}_date"),
+                        "type_of_vaccine": _v(f"{prefix}_{day}_type"),
+                        "dose": _v(f"{prefix}_{day}_dose"),
+                        "route_site": _v(f"{prefix}_{day}_route_site"),
+                        "given_by": _v(f"{prefix}_{day}_given_by"),
+                    }
+
+            email = (form_data["email"] or "").lower()
+            errors = []
+            if not email or "@" not in email or "." not in email.split("@")[-1]:
+                errors.append("A valid patient email is required.")
+            else:
+                existing_email = db.execute("SELECT 1 FROM users WHERE email = ? LIMIT 1", (email,)).fetchone()
+                if existing_email:
+                    errors.append("That email is already used by another account.")
+            if not form_data["first_name"] and not form_data["last_name"]:
+                errors.append("Patient first name or last name is required.")
+            if not form_data["exposure_date"]:
+                errors.append("Exposure date is required.")
+            if not form_data["type_of_exposure"]:
+                errors.append("Type of exposure is required.")
+            if not form_data["animal_detail"]:
+                errors.append("Animal detail is required.")
+            if not form_data["risk_level"]:
+                errors.append("Category / risk level is required.")
+            if errors:
+                for err in errors:
+                    flash(err, "error")
+            else:
+                risk_level = form_data["risk_level"]
+                if risk_level.lower() in {"category 1", "category i", "1", "i"}:
+                    risk_level = "Category I"
+                elif risk_level.lower() in {"category 2", "category ii", "2", "ii"}:
+                    risk_level = "Category II"
+                elif risk_level.lower() in {"category 3", "category iii", "3", "iii"}:
+                    risk_level = "Category III"
+
+                first_name = form_data["first_name"] or None
+                last_name = form_data["last_name"] or None
+                dob = form_data["date_of_birth"] or None
+                gender = form_data["gender"] or None
+                phone_number = form_data["phone_number"] or None
+                address = form_data["address"] or None
+                age_value = None
+                if dob:
+                    age_value = _age_from_iso_date(dob)
+                if age_value is None and form_data["age"]:
+                    try:
+                        age_value = int(form_data["age"])
+                    except ValueError:
+                        flash("Age must be a number.", "error")
+                        age_value = None
+
+                username_seed = email.split("@", 1)[0]
+                if first_name or last_name:
+                    username_seed = ".".join(part for part in [(first_name or "").lower(), (last_name or "").lower()] if part)
+                username = _build_unique_username(username_seed)
+                generated_password = _generate_strong_password(14)
+                password_hash = generate_password_hash(generated_password)
+                subject = "RabiesResQ Patient Account Credentials"
+                body = (
+                    "Hello,\n\n"
+                    "A clinic personnel created your RabiesResQ patient account.\n\n"
+                    f"Username: {username}\n"
+                    f"Email: {email}\n"
+                    f"Temporary password: {generated_password}\n\n"
+                    "For security, you will be required to change this password at first login.\n"
+                    "Please keep this information private."
+                )
+
+                try:
+                    cur = db.execute(
+                        """
+                        INSERT INTO users (username, email, password_hash, role, must_change_password)
+                        VALUES (?, ?, ?, 'patient', 1)
+                        """,
+                        (username, email, password_hash),
+                    )
+                    user_id = cur.lastrowid
+                    db.execute(
+                        """
+                        INSERT INTO patients (
+                          user_id, first_name, last_name, age, phone_number, address, date_of_birth,
+                          gender, relationship_to_user, onboarding_completed
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Self', 1)
+                        """,
+                        (user_id, first_name, last_name, age_value, phone_number, address, dob, gender),
+                    )
+                    patient_id = db.execute(
+                        """
+                        SELECT id FROM patients
+                        WHERE user_id = ?
+                        ORDER BY id DESC
+                        LIMIT 1
+                        """,
+                        (user_id,),
+                    ).fetchone()["id"]
+
+                    cur_case = db.execute(
+                        """
+                        INSERT INTO cases (
+                          patient_id, clinic_id, exposure_date, type_of_exposure, animal_detail,
+                          risk_level, category, case_status
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')
+                        """,
+                        (
+                            patient_id,
+                            staff["clinic_id"],
+                            form_data["exposure_date"],
+                            form_data["type_of_exposure"],
+                            form_data["animal_detail"],
+                            risk_level,
+                            risk_level,
+                        ),
+                    )
+                    case_id = cur_case.lastrowid
+
+                    hrtig_value = None
+                    if form_data["hrtig_immunization"] in {"0", "1"}:
+                        hrtig_value = int(form_data["hrtig_immunization"])
+                    db.execute(
+                        """
+                        INSERT INTO pre_screening_details (
+                          case_id, wound_description, bleeding_type, local_treatment,
+                          patient_prev_immunization, prev_vaccine_date, tetanus_date, hrtig_immunization
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            case_id,
+                            form_data["wound_description"] or None,
+                            form_data["bleeding_type"] or None,
+                            form_data["local_treatment"] or None,
+                            form_data["patient_prev_immunization"] or None,
+                            form_data["prev_vaccine_date"] or None,
+                            form_data["tetanus_date"] or None,
+                            hrtig_value,
+                        ),
+                    )
+
+                    def _normalize_iso_date_input(raw_value: str) -> str:
+                        value = (raw_value or "").strip()
+                        if not value:
+                            return ""
+                        try:
+                            return datetime.fromisoformat(value).date().isoformat()
+                        except ValueError:
+                            return ""
+
+                    vc_pcec_mfg_date = _normalize_iso_date_input(_v("vc_pcec_mfg_date"))
+                    vc_pcec_expiry = _normalize_iso_date_input(_v("vc_pcec_expiry"))
+                    today_iso = datetime.now().date().isoformat()
+                    if vc_pcec_expiry and vc_pcec_expiry < today_iso:
+                        db.rollback()
+                        flash("Expiry date cannot be earlier than today.", "error")
+                        return redirect(url_for("staff_new_patient_account"))
+
+                    db.execute(
+                        """
+                        INSERT INTO vaccination_card (
+                            case_id, anti_rabies, pvrv, pcec_batch, pcec_mfg_date, pcec_expiry,
+                            erig_hrig, tetanus_prophylaxis, tetanus_toxoid, ats, htig, remarks
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            case_id,
+                            _v("vc_anti_rabies"),
+                            _v("vc_pvrv"),
+                            _v("vc_pcec_batch"),
+                            vc_pcec_mfg_date,
+                            vc_pcec_expiry,
+                            _v("vc_erig_hrig"),
+                            _v("vc_tetanus_prophylaxis"),
+                            _v("vc_tetanus_toxoid"),
+                            _v("vc_ats"),
+                            _v("vc_htig"),
+                            _v("vc_remarks"),
+                        ),
+                    )
+
+                    for record_type, prefix, days in [
+                        ("pre_exposure", "vc_pre", [0, 7, 28]),
+                        ("post_exposure", "vc_post", [0, 3, 7, 14, 28]),
+                        ("booster", "vc_booster", [0, 3]),
+                    ]:
+                        for day in days:
+                            dose_date = _v(f"{prefix}_{day}_date")
+                            type_of_vaccine = _v(f"{prefix}_{day}_type")
+                            dose = _v(f"{prefix}_{day}_dose")
+                            route_site = _v(f"{prefix}_{day}_route_site")
+                            given_by = _v(f"{prefix}_{day}_given_by")
+                            if any([dose_date, type_of_vaccine, dose, route_site, given_by]):
+                                db.execute(
+                                    """
+                                    INSERT INTO vaccination_card_doses (
+                                        case_id, record_type, day_number, dose_date, type_of_vaccine, dose, route_site, given_by
+                                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                    """,
+                                    (
+                                        case_id,
+                                        record_type,
+                                        day,
+                                        dose_date or None,
+                                        type_of_vaccine or None,
+                                        dose or None,
+                                        route_site or None,
+                                        given_by or None,
+                                    ),
+                                )
+
+                    try:
+                        send_email(to_email=email, subject=subject, body=body)
+                    except Exception as email_err:
+                        _queue_pending_email(to_email=email, subject=subject, body=body, last_error=str(email_err))
+                        flash(
+                            "Patient and case created, but email delivery failed. Credentials were queued for retry.",
+                            "warning",
+                        )
+                    else:
+                        flash("Patient and case created. Credentials were sent to the provided email.", "success")
+
+                    db.commit()
+                    return redirect(url_for("view_patient_case", case_id=case_id))
+                except Exception:
+                    db.rollback()
+                    flash("Failed to create new patient record. Please try again.", "error")
+
+        personnel_rows = db.execute(
+            """
+            SELECT cp.title, cp.first_name, cp.last_name, u.username
+            FROM clinic_personnel cp
+            JOIN users u ON u.id = cp.user_id
+            WHERE cp.clinic_id = ?
+            ORDER BY cp.title, cp.first_name, cp.last_name, u.username
+            """,
+            (staff["clinic_id"],),
+        ).fetchall()
+        personnel_options = []
+        seen_personnel = set()
+        for row in personnel_rows:
+            title = (row["title"] or "").strip()
+            first_name = (row["first_name"] or "").strip()
+            last_name = (row["last_name"] or "").strip()
+            username = (row["username"] or "").strip()
+            display_name = " ".join(part for part in [title, first_name, last_name] if part) or username
+            if display_name and display_name not in seen_personnel:
+                seen_personnel.add(display_name)
+                personnel_options.append(display_name)
+        suggested_dates_by_type = {"pre_exposure": {}, "post_exposure": {}, "booster": {}}
+
+        breadcrumbs = [
+            {"label": "Home", "href": url_for("staff_dashboard")},
+            {"label": "Patients", "href": url_for("staff_patients")},
+            {"label": "New Patient", "href": None},
+        ]
+        return render_template(
+            "staff_new_patient.html",
+            staff=staff,
+            staff_display_name=staff_display_name,
+            form=form_data,
+            vaccination_card=vaccination_card,
+            card_doses_by_type=card_doses_by_type,
+            personnel_options=personnel_options,
+            suggested_dates_by_type=suggested_dates_by_type,
+            expiry_min_date=datetime.now().date().isoformat(),
+            breadcrumbs=breadcrumbs,
+            active_page="cases",
+        )
+
+    @app.route("/staff/cases/new", methods=["GET", "POST"])
+    @role_required("clinic_personnel", "system_admin")
+    def staff_create_case_record():
+        if session.get("role") == "system_admin":
+            return redirect(url_for("admin_dashboard"))
+
+        db = get_db()
+        staff = db.execute(
+            """
+            SELECT cp.*, u.username, u.email
+            FROM clinic_personnel cp
+            JOIN users u ON u.id = cp.user_id
+            WHERE cp.user_id = ?
+            """,
+            (session["user_id"],),
+        ).fetchone()
+        if staff is None:
+            session.clear()
+            flash("Account profile missing, contact admin.", "error")
+            return redirect(url_for("auth.login"))
+
+        staff_display_name = staff["username"]
+        if staff["first_name"] or staff["last_name"]:
+            title = (staff["title"] or "").strip()
+            first_name = (staff["first_name"] or "").strip()
+            last_name = (staff["last_name"] or "").strip()
+            staff_display_name = " ".join(part for part in [title, first_name, last_name] if part)
+
+        form_data = {
+            "first_name": "",
+            "last_name": "",
+            "age": "",
+            "phone_number": "",
+            "address": "",
+            "exposure_date": "",
+            "type_of_exposure": "",
+            "animal_detail": "",
+            "risk_level": "",
+            "wound_description": "",
+            "bleeding_type": "",
+            "local_treatment": "",
+            "patient_prev_immunization": "",
+            "prev_vaccine_date": "",
+            "tetanus_date": "",
+            "hrtig_immunization": "",
+        }
+        vaccination_card = {}
+        card_doses_by_type = {"pre_exposure": {}, "post_exposure": {}, "booster": {}}
+
+        if request.method == "POST":
+            for key in form_data:
+                form_data[key] = (request.form.get(key) or "").strip()
+            def _v(name: str) -> str:
+                return (request.form.get(name) or "").strip()
+
+            vaccination_card = {
+                "anti_rabies": _v("vc_anti_rabies"),
+                "pvrv": _v("vc_pvrv"),
+                "pcec_batch": _v("vc_pcec_batch"),
+                "pcec_mfg_date": _v("vc_pcec_mfg_date"),
+                "pcec_expiry": _v("vc_pcec_expiry"),
+                "erig_hrig": _v("vc_erig_hrig"),
+                "tetanus_prophylaxis": _v("vc_tetanus_prophylaxis"),
+                "tetanus_toxoid": _v("vc_tetanus_toxoid"),
+                "ats": _v("vc_ats"),
+                "htig": _v("vc_htig"),
+                "remarks": _v("vc_remarks"),
+            }
+            for record_type, prefix, days in [
+                ("pre_exposure", "vc_pre", [0, 7, 28]),
+                ("post_exposure", "vc_post", [0, 3, 7, 14, 28]),
+                ("booster", "vc_booster", [0, 3]),
+            ]:
+                for day in days:
+                    card_doses_by_type[record_type][day] = {
+                        "dose_date": _v(f"{prefix}_{day}_date"),
+                        "type_of_vaccine": _v(f"{prefix}_{day}_type"),
+                        "dose": _v(f"{prefix}_{day}_dose"),
+                        "route_site": _v(f"{prefix}_{day}_route_site"),
+                        "given_by": _v(f"{prefix}_{day}_given_by"),
+                    }
+
+            errors = []
+            if not form_data["first_name"] and not form_data["last_name"]:
+                errors.append("Patient first name or last name is required.")
+            if not form_data["exposure_date"]:
+                errors.append("Exposure date is required.")
+            if not form_data["type_of_exposure"]:
+                errors.append("Type of exposure is required.")
+            if not form_data["animal_detail"]:
+                errors.append("Animal detail is required.")
+            if not form_data["risk_level"]:
+                errors.append("Category / risk level is required.")
+            if errors:
+                for err in errors:
+                    flash(err, "error")
+            else:
+                risk_level = form_data["risk_level"]
+                if risk_level.lower() in {"category 1", "category i", "1", "i"}:
+                    risk_level = "Category I"
+                elif risk_level.lower() in {"category 2", "category ii", "2", "ii"}:
+                    risk_level = "Category II"
+                elif risk_level.lower() in {"category 3", "category iii", "3", "iii"}:
+                    risk_level = "Category III"
+
+                try:
+                    age_value = None
+                    if form_data["age"]:
+                        try:
+                            age_value = int(form_data["age"])
+                        except ValueError:
+                            flash("Age must be a number.", "error")
+                            return redirect(url_for("staff_create_case_record"))
+
+                    db.execute(
+                        """
+                        INSERT INTO patients (
+                          user_id, first_name, last_name, age, phone_number, address, relationship_to_user, onboarding_completed
+                        ) VALUES (?, ?, ?, ?, ?, ?, 'Walk-in', 1)
+                        """,
+                        (
+                            session["user_id"],
+                            form_data["first_name"] or None,
+                            form_data["last_name"] or None,
+                            age_value,
+                            form_data["phone_number"] or None,
+                            form_data["address"] or None,
+                        ),
+                    )
+                    patient_id = db.execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
+                    cur = db.execute(
+                        """
+                        INSERT INTO cases (
+                          patient_id, clinic_id, exposure_date, type_of_exposure, animal_detail,
+                          risk_level, category, case_status
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')
+                        """,
+                        (
+                            patient_id,
+                            staff["clinic_id"],
+                            form_data["exposure_date"],
+                            form_data["type_of_exposure"],
+                            form_data["animal_detail"],
+                            risk_level,
+                            risk_level,
+                        ),
+                    )
+                    case_id = cur.lastrowid
+                    hrtig_value = None
+                    if form_data["hrtig_immunization"] in {"0", "1"}:
+                        hrtig_value = int(form_data["hrtig_immunization"])
+                    db.execute(
+                        """
+                        INSERT INTO pre_screening_details (
+                          case_id, wound_description, bleeding_type, local_treatment,
+                          patient_prev_immunization, prev_vaccine_date, tetanus_date, hrtig_immunization
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            case_id,
+                            form_data["wound_description"] or None,
+                            form_data["bleeding_type"] or None,
+                            form_data["local_treatment"] or None,
+                            form_data["patient_prev_immunization"] or None,
+                            form_data["prev_vaccine_date"] or None,
+                            form_data["tetanus_date"] or None,
+                            hrtig_value,
+                        ),
+                    )
+
+                    def _normalize_iso_date_input(raw_value: str) -> str:
+                        value = (raw_value or "").strip()
+                        if not value:
+                            return ""
+                        try:
+                            return datetime.fromisoformat(value).date().isoformat()
+                        except ValueError:
+                            return ""
+
+                    vc_pcec_mfg_date = _normalize_iso_date_input(_v("vc_pcec_mfg_date"))
+                    vc_pcec_expiry = _normalize_iso_date_input(_v("vc_pcec_expiry"))
+                    today_iso = datetime.now().date().isoformat()
+                    if vc_pcec_expiry and vc_pcec_expiry < today_iso:
+                        flash("Expiry date cannot be earlier than today.", "error")
+                        return redirect(url_for("staff_create_case_record"))
+
+                    db.execute(
+                        """
+                        INSERT INTO vaccination_card (
+                            case_id, anti_rabies, pvrv, pcec_batch, pcec_mfg_date, pcec_expiry,
+                            erig_hrig, tetanus_prophylaxis, tetanus_toxoid, ats, htig, remarks
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            case_id,
+                            _v("vc_anti_rabies"),
+                            _v("vc_pvrv"),
+                            _v("vc_pcec_batch"),
+                            vc_pcec_mfg_date,
+                            vc_pcec_expiry,
+                            _v("vc_erig_hrig"),
+                            _v("vc_tetanus_prophylaxis"),
+                            _v("vc_tetanus_toxoid"),
+                            _v("vc_ats"),
+                            _v("vc_htig"),
+                            _v("vc_remarks"),
+                        ),
+                    )
+
+                    for record_type, prefix, days in [
+                        ("pre_exposure", "vc_pre", [0, 7, 28]),
+                        ("post_exposure", "vc_post", [0, 3, 7, 14, 28]),
+                        ("booster", "vc_booster", [0, 3]),
+                    ]:
+                        for day in days:
+                            dose_date = _v(f"{prefix}_{day}_date")
+                            type_of_vaccine = _v(f"{prefix}_{day}_type")
+                            dose = _v(f"{prefix}_{day}_dose")
+                            route_site = _v(f"{prefix}_{day}_route_site")
+                            given_by = _v(f"{prefix}_{day}_given_by")
+                            if any([dose_date, type_of_vaccine, dose, route_site, given_by]):
+                                db.execute(
+                                    """
+                                    INSERT INTO vaccination_card_doses (
+                                        case_id, record_type, day_number, dose_date, type_of_vaccine, dose, route_site, given_by
+                                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                    """,
+                                    (
+                                        case_id,
+                                        record_type,
+                                        day,
+                                        dose_date or None,
+                                        type_of_vaccine or None,
+                                        dose or None,
+                                        route_site or None,
+                                        given_by or None,
+                                    ),
+                                )
+
+                    db.commit()
+                    flash("Case record created successfully.", "success")
+                    return redirect(url_for("view_patient_case", case_id=case_id))
+                except Exception:
+                    db.rollback()
+                    flash("Failed to create case record. Please try again.", "error")
+
+        personnel_rows = db.execute(
+            """
+            SELECT cp.title, cp.first_name, cp.last_name, u.username
+            FROM clinic_personnel cp
+            JOIN users u ON u.id = cp.user_id
+            WHERE cp.clinic_id = ?
+            ORDER BY cp.title, cp.first_name, cp.last_name, u.username
+            """,
+            (staff["clinic_id"],),
+        ).fetchall()
+        personnel_options = []
+        seen_personnel = set()
+        for row in personnel_rows:
+            title = (row["title"] or "").strip()
+            first_name = (row["first_name"] or "").strip()
+            last_name = (row["last_name"] or "").strip()
+            username = (row["username"] or "").strip()
+            display_name = " ".join(part for part in [title, first_name, last_name] if part) or username
+            if display_name and display_name not in seen_personnel:
+                seen_personnel.add(display_name)
+                personnel_options.append(display_name)
+        suggested_dates_by_type = {"pre_exposure": {}, "post_exposure": {}, "booster": {}}
+
+        breadcrumbs = [
+            {"label": "Home", "href": url_for("staff_dashboard")},
+            {"label": "Patients", "href": url_for("staff_patients")},
+            {"label": "Add Record", "href": None},
+        ]
+        return render_template(
+            "staff_case_create.html",
+            staff=staff,
+            staff_display_name=staff_display_name,
+            form=form_data,
+            vaccination_card=vaccination_card,
+            card_doses_by_type=card_doses_by_type,
+            personnel_options=personnel_options,
+            suggested_dates_by_type=suggested_dates_by_type,
+            expiry_min_date=datetime.now().date().isoformat(),
+            breadcrumbs=breadcrumbs,
+            active_page="cases",
+        )
+
     @app.get("/staff/patients")
     @role_required("clinic_personnel", "system_admin")
     def staff_patients():
@@ -3399,6 +4120,305 @@ def create_app():
             search=search,
             breadcrumbs=breadcrumbs,
             active_page="appointments",
+        )
+
+    @app.get("/staff/vaccinations")
+    @role_required("clinic_personnel", "system_admin")
+    def staff_vaccinations():
+        if session.get("role") == "system_admin":
+            return redirect(url_for("admin_dashboard"))
+
+        db = get_db()
+        staff = db.execute(
+            """
+            SELECT cp.*, u.username, u.email
+            FROM clinic_personnel cp
+            JOIN users u ON u.id = cp.user_id
+            WHERE cp.user_id = ?
+            """,
+            (session["user_id"],),
+        ).fetchone()
+        if staff is None:
+            session.clear()
+            flash("Account profile missing, contact admin.", "error")
+            return redirect(url_for("auth.login"))
+
+        staff_display_name = staff["username"]
+        if staff["first_name"] or staff["last_name"]:
+            title = (staff["title"] or "").strip()
+            first_name = (staff["first_name"] or "").strip()
+            last_name = (staff["last_name"] or "").strip()
+            staff_display_name = " ".join(part for part in [title, first_name, last_name] if part)
+
+        vaccine_type = (request.args.get("vaccine_type") or "").strip()
+        dose_query = (request.args.get("dose_query") or "").strip()
+        date_from = (request.args.get("date_from") or "").strip()
+        date_to = (request.args.get("date_to") or "").strip()
+        administered_by = (request.args.get("administered_by") or "").strip()
+        sort_by = (request.args.get("sort_by") or "date").strip().lower()
+        sort_dir = (request.args.get("sort_dir") or "desc").strip().lower()
+        if sort_dir not in {"asc", "desc"}:
+            sort_dir = "desc"
+        if sort_by not in {"date", "vaccine_type", "dose", "administered_by", "patient"}:
+            sort_by = "date"
+
+        def _normalize_iso_date(raw_value: str) -> str:
+            value = (raw_value or "").strip()
+            if not value:
+                return ""
+            try:
+                return datetime.fromisoformat(value).date().isoformat()
+            except ValueError:
+                return ""
+
+        date_from = _normalize_iso_date(date_from)
+        date_to = _normalize_iso_date(date_to)
+        if date_from and date_to and date_from > date_to:
+            flash("Date range is invalid. 'From' date must be on or before 'To' date.", "error")
+            date_from = ""
+            date_to = ""
+
+        # Default view: vaccinations from the current week (latest to oldest).
+        if not date_from and not date_to:
+            today = datetime.now().date()
+            date_to = today.isoformat()
+            date_from = (today - timedelta(days=6)).isoformat()
+
+        try:
+            page = int(request.args.get("page", "1"))
+        except ValueError:
+            page = 1
+        page = 1 if page < 1 else page
+        per_page = 10
+
+        base_records_params: list[object] = [staff["clinic_id"]]
+        base_card_params: list[object] = [staff["clinic_id"]]
+        date_filters_records = ""
+        date_filters_card = ""
+        if date_from:
+            date_filters_records += " AND DATE(vr.date_administered) >= DATE(?)"
+            date_filters_card += " AND DATE(vcd.dose_date) >= DATE(?)"
+            base_records_params.append(date_from)
+            base_card_params.append(date_from)
+        if date_to:
+            date_filters_records += " AND DATE(vr.date_administered) <= DATE(?)"
+            date_filters_card += " AND DATE(vcd.dose_date) <= DATE(?)"
+            base_records_params.append(date_to)
+            base_card_params.append(date_to)
+
+        records_rows = db.execute(
+            """
+            SELECT
+              vr.id,
+              vr.case_id,
+              vr.vaccine_type,
+              vr.dose_number,
+              vr.dose_amount,
+              vr.date_administered,
+              COALESCE(
+                NULLIF(TRIM(COALESCE(cp.title, '') || ' ' || COALESCE(cp.first_name, '') || ' ' || COALESCE(cp.last_name, '')), ''),
+                au.username,
+                'Unknown Staff'
+              ) AS administered_by_name,
+              COALESCE(
+                NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''),
+                pu.username,
+                'Unknown Patient'
+              ) AS patient_name
+            FROM vaccination_records vr
+            JOIN cases c ON c.id = vr.case_id
+            JOIN patients p ON p.id = c.patient_id
+            LEFT JOIN users pu ON pu.id = p.user_id
+            LEFT JOIN clinic_personnel cp ON cp.id = vr.administered_by_personnel_id
+            LEFT JOIN users au ON au.id = cp.user_id
+            WHERE c.clinic_id = ?
+            """
+            + date_filters_records,
+            base_records_params,
+        ).fetchall()
+
+        card_rows = db.execute(
+            """
+            SELECT
+              vcd.id,
+              vcd.case_id,
+              vcd.type_of_vaccine AS vaccine_type,
+              CAST(vcd.day_number AS TEXT) AS dose_number,
+              vcd.dose AS dose_amount,
+              vcd.dose_date AS date_administered,
+              TRIM(COALESCE(vcd.given_by, '')) AS administered_by_name,
+              COALESCE(
+                NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''),
+                pu.username,
+                'Unknown Patient'
+              ) AS patient_name
+            FROM vaccination_card_doses vcd
+            JOIN cases c ON c.id = vcd.case_id
+            JOIN patients p ON p.id = c.patient_id
+            LEFT JOIN users pu ON pu.id = p.user_id
+            WHERE c.clinic_id = ?
+              AND TRIM(COALESCE(vcd.dose_date, '')) <> ''
+              AND TRIM(COALESCE(vcd.type_of_vaccine, '')) <> ''
+              AND TRIM(COALESCE(vcd.given_by, '')) <> ''
+            """
+            + date_filters_card,
+            base_card_params,
+        ).fetchall()
+
+        normalized_rows = []
+        seen_keys = set()
+
+        def _safe_date(raw_value: str) -> str:
+            try:
+                return datetime.fromisoformat((raw_value or "").strip()).date().isoformat()
+            except ValueError:
+                return ""
+
+        for source, rows in (("records", records_rows), ("card", card_rows)):
+            for row in rows:
+                date_iso = _safe_date(row["date_administered"] or "")
+                vaccine_value = (row["vaccine_type"] or "").strip()
+                dose_number = (row["dose_number"] or "").strip()
+                dose_amount = (row["dose_amount"] or "").strip()
+                administered_name = (row["administered_by_name"] or "").strip()
+                dedupe_key = (
+                    row["case_id"],
+                    date_iso,
+                    vaccine_value.lower(),
+                    dose_number.lower(),
+                    dose_amount.lower(),
+                    administered_name.lower(),
+                )
+                if dedupe_key in seen_keys:
+                    continue
+                seen_keys.add(dedupe_key)
+
+                normalized_rows.append(
+                    {
+                        "id": row["id"],
+                        "source": source,
+                        "case_id": row["case_id"],
+                        "case_code": f"C-000{row['case_id']}",
+                        "patient_name": row["patient_name"] or "Unknown Patient",
+                        "vaccine_type": vaccine_value or "N/A",
+                        "dose_number": dose_number,
+                        "dose_amount": dose_amount,
+                        "date_iso": date_iso,
+                        "administered_by_name": administered_name or "Unknown Staff",
+                    }
+                )
+
+        vaccine_type_l = vaccine_type.lower()
+        dose_query_l = dose_query.lower()
+        administered_by_l = administered_by.lower()
+        filtered_rows = []
+        for row in normalized_rows:
+            if vaccine_type_l and vaccine_type_l not in (row["vaccine_type"] or "").lower():
+                continue
+            if dose_query_l:
+                dose_haystack = f"{row['dose_number']} {row['dose_amount']}".lower()
+                if dose_query_l not in dose_haystack:
+                    continue
+            if date_from and row["date_iso"] and row["date_iso"] < date_from:
+                continue
+            if date_from and not row["date_iso"]:
+                continue
+            if date_to and row["date_iso"] and row["date_iso"] > date_to:
+                continue
+            if date_to and not row["date_iso"]:
+                continue
+            if administered_by_l and administered_by_l not in (row["administered_by_name"] or "").lower():
+                continue
+            filtered_rows.append(row)
+
+        def _sort_key(row):
+            if sort_by == "vaccine_type":
+                return (row["vaccine_type"] or "").lower()
+            if sort_by == "dose":
+                return f"{row['dose_number']} {row['dose_amount']}".lower()
+            if sort_by == "administered_by":
+                return (row["administered_by_name"] or "").lower()
+            if sort_by == "patient":
+                return (row["patient_name"] or "").lower()
+            return row["date_iso"] or ""
+
+        filtered_rows.sort(key=_sort_key, reverse=(sort_dir == "desc"))
+
+        total = len(filtered_rows)
+        pages = max((total + per_page - 1) // per_page, 1)
+        if page > pages:
+            page = pages
+        offset = (page - 1) * per_page
+        page_rows = filtered_rows[offset : offset + per_page]
+
+        items = []
+        for row in page_rows:
+            date_display = row["date_iso"] or "N/A"
+            if row["date_iso"]:
+                try:
+                    date_display = datetime.fromisoformat(row["date_iso"]).strftime("%b %d, %Y")
+                except ValueError:
+                    date_display = row["date_iso"]
+            dose_display = row["dose_number"] or ""
+            if row["dose_amount"]:
+                dose_display = f"{dose_display} ({row['dose_amount']})" if dose_display else row["dose_amount"]
+            items.append(
+                {
+                    "id": row["id"],
+                    "case_id": row["case_id"],
+                    "case_code": row["case_code"],
+                    "patient_name": row["patient_name"],
+                    "vaccine_type": row["vaccine_type"],
+                    "dose_display": dose_display or "N/A",
+                    "date_given": date_display,
+                    "administered_by_name": row["administered_by_name"],
+                }
+            )
+
+        vaccinations = SimplePagination(items, page=page, per_page=per_page, total=total)
+
+        personnel_rows = db.execute(
+            """
+            SELECT cp.title, cp.first_name, cp.last_name, u.username
+            FROM clinic_personnel cp
+            JOIN users u ON u.id = cp.user_id
+            WHERE cp.clinic_id = ?
+            ORDER BY cp.title, cp.first_name, cp.last_name, u.username
+            """,
+            (staff["clinic_id"],),
+        ).fetchall()
+        administered_by_options = []
+        seen_options = set()
+        for row in personnel_rows:
+            title = (row["title"] or "").strip()
+            first_name = (row["first_name"] or "").strip()
+            last_name = (row["last_name"] or "").strip()
+            username = (row["username"] or "").strip()
+            display_name = " ".join(part for part in [title, first_name, last_name] if part) or username
+            if display_name and display_name not in seen_options:
+                seen_options.add(display_name)
+                administered_by_options.append(display_name)
+
+        breadcrumbs = [
+            {"label": "Home", "href": url_for("staff_dashboard")},
+            {"label": "Vaccinations", "href": None},
+        ]
+
+        return render_template(
+            "staff_vaccinations.html",
+            staff=staff,
+            staff_display_name=staff_display_name,
+            vaccinations=vaccinations,
+            vaccine_type=vaccine_type,
+            dose_query=dose_query,
+            date_from=date_from,
+            date_to=date_to,
+            administered_by=administered_by,
+            administered_by_options=administered_by_options,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            breadcrumbs=breadcrumbs,
+            active_page="vaccinations",
         )
 
     def _get_staff_and_clinic():
@@ -4533,6 +5553,22 @@ def create_app():
             def _v(name):
                 return (request.form.get(name) or "").strip()
 
+            def _normalize_iso_date_input(raw_value: str) -> str:
+                value = (raw_value or "").strip()
+                if not value:
+                    return ""
+                try:
+                    return datetime.fromisoformat(value).date().isoformat()
+                except ValueError:
+                    return ""
+
+            vc_pcec_mfg_date = _normalize_iso_date_input(_v("vc_pcec_mfg_date"))
+            vc_pcec_expiry = _normalize_iso_date_input(_v("vc_pcec_expiry"))
+            today_iso = datetime.now().date().isoformat()
+            if vc_pcec_expiry and vc_pcec_expiry < today_iso:
+                flash("Expiry date cannot be earlier than today.", "error")
+                return redirect(url_for("edit_patient_case", case_id=case_id))
+
             db.execute(
                 """
                 INSERT INTO vaccination_card (
@@ -4557,8 +5593,8 @@ def create_app():
                     _v("vc_anti_rabies"),
                     _v("vc_pvrv"),
                     _v("vc_pcec_batch"),
-                    _v("vc_pcec_mfg_date"),
-                    _v("vc_pcec_expiry"),
+                    vc_pcec_mfg_date,
+                    vc_pcec_expiry,
                     _v("vc_erig_hrig"),
                     _v("vc_tetanus_prophylaxis"),
                     _v("vc_tetanus_toxoid"),
@@ -4621,6 +5657,15 @@ def create_app():
             "SELECT * FROM vaccination_card WHERE case_id = ?", (case_id,)
         ).fetchone()
         vaccination_card = dict(vc_row) if vc_row else {}
+        for _date_field in ("pcec_mfg_date", "pcec_expiry"):
+            raw_value = (vaccination_card.get(_date_field) or "").strip()
+            if not raw_value:
+                vaccination_card[_date_field] = ""
+                continue
+            try:
+                vaccination_card[_date_field] = datetime.fromisoformat(raw_value).date().isoformat()
+            except ValueError:
+                vaccination_card[_date_field] = ""
         vaccination_card_doses_rows = db.execute(
             """
             SELECT id, case_id, record_type, day_number, dose_date, type_of_vaccine, dose, route_site, given_by
@@ -4700,6 +5745,7 @@ def create_app():
             card_doses_by_type=card_doses_by_type,
             personnel_options=personnel_options,
             suggested_dates_by_type=suggested_dates_by_type,
+            expiry_min_date=datetime.now().date().isoformat(),
             breadcrumbs=breadcrumbs,
             active_page="cases",
         )
@@ -4862,6 +5908,56 @@ def create_app():
             raise click.ClickException(f"Failed to create staff: {e}")
 
         click.echo("Staff created.")
+
+    @app.cli.command("retry-pending-emails")
+    @click.option("--limit", default=50, show_default=True, type=int)
+    def retry_pending_emails_command(limit: int):
+        db = get_db()
+        rows = db.execute(
+            """
+            SELECT id, to_email, subject, body, retry_count
+            FROM pending_emails
+            WHERE status IN ('pending', 'failed')
+            ORDER BY created_at ASC, id ASC
+            LIMIT ?
+            """,
+            (max(1, limit),),
+        ).fetchall()
+        if not rows:
+            click.echo("No pending emails.")
+            return
+
+        sent = 0
+        failed = 0
+        for row in rows:
+            try:
+                send_email(to_email=row["to_email"], subject=row["subject"], body=row["body"])
+                db.execute(
+                    """
+                    UPDATE pending_emails
+                    SET status = 'sent',
+                        updated_at = CURRENT_TIMESTAMP,
+                        last_error = NULL
+                    WHERE id = ?
+                    """,
+                    (row["id"],),
+                )
+                sent += 1
+            except Exception as e:
+                db.execute(
+                    """
+                    UPDATE pending_emails
+                    SET status = 'failed',
+                        retry_count = ?,
+                        updated_at = CURRENT_TIMESTAMP,
+                        last_error = ?
+                    WHERE id = ?
+                    """,
+                    ((row["retry_count"] or 0) + 1, str(e)[:500], row["id"]),
+                )
+                failed += 1
+        db.commit()
+        click.echo(f"Pending email retry complete. Sent: {sent}, Failed: {failed}")
 
     return app
 

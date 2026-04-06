@@ -40,7 +40,7 @@
               </span>
               {% endif %}
             </a>
-            <a href="#" class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-100">
+            <a href="{{ url_for('staff_vaccinations') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 {{ 'bg-emerald-100 font-medium text-emerald-700' if (active_page|default('dashboard')) == 'vaccinations' else 'text-slate-600 hover:bg-slate-100' }}">
               <i class="fa-solid fa-syringe"></i>
               Vaccinations
             </a>
@@ -51,9 +51,9 @@
           </nav>
 
           <div class="mt-auto pt-8">
-            <a href="#" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 font-semibold text-white transition hover:bg-emerald-600">
+            <a href="{{ url_for('staff_new_patient_account') }}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 font-semibold text-white transition hover:bg-emerald-600">
               <i class="fa-solid fa-plus"></i>
-              Add Record
+              New Patient
             </a>
             <div class="mt-4 space-y-2 text-sm">
               <a href="{{ url_for('auth.logout') }}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 font-semibold text-white transition hover:bg-red-600">

@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS users (
   username TEXT NOT NULL UNIQUE,
   email TEXT UNIQUE,
   password_hash TEXT NOT NULL,
+  must_change_password INTEGER NOT NULL DEFAULT 0 CHECK(must_change_password IN (0,1)),
   role TEXT NOT NULL CHECK(role IN ('patient','clinic_personnel','system_admin')),
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -311,6 +312,18 @@ CREATE TABLE IF NOT EXISTS password_reset_codes (
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS pending_emails (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  to_email TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  body TEXT NOT NULL,
+  retry_count INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','sent','failed')),
+  last_error TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 -- =========================
 -- Required indexes
 -- =========================
@@ -364,6 +377,7 @@ CREATE INDEX IF NOT EXISTS idx_notifications_target_role ON notifications(target
 CREATE INDEX IF NOT EXISTS idx_reports_generated_by_user_id ON reports(generated_by_user_id);
 
 CREATE INDEX IF NOT EXISTS idx_password_reset_codes_email_expires ON password_reset_codes(email, expires_at);
+CREATE INDEX IF NOT EXISTS idx_pending_emails_status_created ON pending_emails(status, created_at);
 
 COMMIT;
 

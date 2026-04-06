@@ -1,0 +1,179 @@
+{% extends "staff_base.html" %}
+
+{% block title %}Vaccinations - RabiesResQ{% endblock %}
+
+{% block header_left %}
+  <nav class="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+    {% for crumb in breadcrumbs %}
+      {% if crumb.href %}
+        <a href="{{ crumb.href }}" class="hover:text-slate-700">{{ crumb.label }}</a>
+      {% else %}
+        <span class="font-bold text-blue-600">{{ crumb.label }}</span>
+      {% endif %}
+      {% if not loop.last %}
+        <span>/</span>
+      {% endif %}
+    {% endfor %}
+  </nav>
+{% endblock %}
+
+{% block main_content %}
+  <section class="mt-6">
+    <h1 class="text-4xl font-bold text-blue-900">Vaccination Record</h1>
+    <p class="mt-1 text-slate-500">Review administered vaccines and filter records by dose details.</p>
+  </section>
+
+  <section class="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
+    <form action="{{ url_for('staff_vaccinations') }}" method="get" class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div>
+        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" for="vaccine_type">Vaccine Type</label>
+        <input
+          id="vaccine_type"
+          name="vaccine_type"
+          type="text"
+          value="{{ vaccine_type }}"
+          placeholder="e.g. PVRV"
+          class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring"
+        />
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" for="dose_query">Dose</label>
+        <input
+          id="dose_query"
+          name="dose_query"
+          type="text"
+          value="{{ dose_query }}"
+          placeholder="e.g. 2nd or 0.5ml"
+          class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring"
+        />
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" for="date_from">Date From</label>
+        <input
+          id="date_from"
+          name="date_from"
+          type="date"
+          value="{{ date_from }}"
+          class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring"
+        />
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" for="date_to">Date To</label>
+        <input
+          id="date_to"
+          name="date_to"
+          type="date"
+          value="{{ date_to }}"
+          class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring"
+        />
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" for="administered_by">Administered By</label>
+        <input
+          id="administered_by"
+          name="administered_by"
+          type="text"
+          list="administered-by-options"
+          value="{{ administered_by }}"
+          placeholder="Select or type a name"
+          class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring"
+        />
+        <datalist id="administered-by-options">
+          {% for option in administered_by_options %}
+            <option value="{{ option }}"></option>
+          {% endfor %}
+        </datalist>
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" for="sort_by">Sort By</label>
+        <select
+          id="sort_by"
+          name="sort_by"
+          class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring"
+        >
+          <option value="date" {{ "selected" if sort_by == "date" else "" }}>Date Given</option>
+          <option value="vaccine_type" {{ "selected" if sort_by == "vaccine_type" else "" }}>Vaccine Type</option>
+          <option value="dose" {{ "selected" if sort_by == "dose" else "" }}>Dose</option>
+          <option value="administered_by" {{ "selected" if sort_by == "administered_by" else "" }}>Administered By</option>
+          <option value="patient" {{ "selected" if sort_by == "patient" else "" }}>Patient</option>
+        </select>
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" for="sort_dir">Order</label>
+        <select
+          id="sort_dir"
+          name="sort_dir"
+          class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring"
+        >
+          <option value="desc" {{ "selected" if sort_dir == "desc" else "" }}>Descending</option>
+          <option value="asc" {{ "selected" if sort_dir == "asc" else "" }}>Ascending</option>
+        </select>
+      </div>
+      <div class="flex items-end gap-2">
+        <button type="submit" class="rounded-xl bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Apply</button>
+        <a href="{{ url_for('staff_vaccinations') }}" class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100">Clear</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="mt-4 overflow-x-auto rounded-2xl border border-slate-200">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
+        <tr>
+          <th class="px-4 py-3">Vaccine Type</th>
+          <th class="px-4 py-3">Dose</th>
+          <th class="px-4 py-3">Date Given</th>
+          <th class="px-4 py-3">Administered By</th>
+          <th class="px-4 py-3">Patient</th>
+          <th class="px-4 py-3">Case</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 bg-white">
+        {% if vaccinations.items %}
+          {% for row in vaccinations.items %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-3 text-slate-700">{{ row.vaccine_type }}</td>
+              <td class="px-4 py-3 text-slate-700">{{ row.dose_display }}</td>
+              <td class="px-4 py-3 text-slate-700">{{ row.date_given }}</td>
+              <td class="px-4 py-3 text-slate-700">{{ row.administered_by_name }}</td>
+              <td class="px-4 py-3">
+                <a href="{{ url_for('view_patient_case', case_id=row.case_id) }}" class="font-medium text-blue-700 hover:text-blue-800">{{ row.patient_name }}</a>
+              </td>
+              <td class="px-4 py-3 text-slate-700">{{ row.case_code }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="6" class="px-4 py-8 text-center text-slate-500">No vaccination records found for the current filters.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </section>
+
+  <footer class="mt-4 flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+    <p>Showing {{ vaccinations.first }} to {{ vaccinations.last }} of {{ vaccinations.total }} results</p>
+    <div class="flex items-center gap-2">
+      <a
+        href="{{ url_for('staff_vaccinations', vaccine_type=vaccine_type, dose_query=dose_query, date_from=date_from, date_to=date_to, administered_by=administered_by, sort_by=sort_by, sort_dir=sort_dir, page=vaccinations.prev_num or 1) }}"
+        class="rounded-lg px-2 py-1 {{ 'text-slate-400 pointer-events-none' if not vaccinations.has_prev else 'hover:bg-slate-100 text-slate-700' }}"
+      >
+        <i class="fa-solid fa-chevron-left"></i>
+      </a>
+      {% for p in vaccinations.iter_pages() %}
+        <a
+          href="{{ url_for('staff_vaccinations', vaccine_type=vaccine_type, dose_query=dose_query, date_from=date_from, date_to=date_to, administered_by=administered_by, sort_by=sort_by, sort_dir=sort_dir, page=p) }}"
+          class="rounded-lg px-3 py-1 {{ 'bg-emerald-500 text-white' if p == vaccinations.page else 'text-slate-700 hover:bg-slate-100' }}"
+        >
+          {{ p }}
+        </a>
+      {% endfor %}
+      <a
+        href="{{ url_for('staff_vaccinations', vaccine_type=vaccine_type, dose_query=dose_query, date_from=date_from, date_to=date_to, administered_by=administered_by, sort_by=sort_by, sort_dir=sort_dir, page=vaccinations.next_num or vaccinations.pages) }}"
+        class="rounded-lg px-2 py-1 {{ 'text-slate-400 pointer-events-none' if not vaccinations.has_next else 'hover:bg-slate-100 text-slate-700' }}"
+      >
+        <i class="fa-solid fa-chevron-right"></i>
+      </a>
+    </div>
+  </footer>
+{% endblock %}

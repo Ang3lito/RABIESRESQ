@@ -104,6 +104,29 @@ def load_logged_in_user():
     g.user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
 
 
+@bp.before_app_request
+def enforce_patient_password_change():
+    user_id = session.get("user_id")
+    if not user_id or session.get("role") != "patient":
+        return None
+    if g.get("user") is None:
+        return None
+    must_change = g.user["must_change_password"] if "must_change_password" in g.user.keys() else 0
+    if not must_change:
+        return None
+
+    endpoint = request.endpoint or ""
+    allowed_endpoints = {
+        "auth.patient_force_password",
+        "auth.patient_force_password_post",
+        "auth.logout",
+        "static",
+    }
+    if endpoint in allowed_endpoints:
+        return None
+    return redirect(url_for("auth.patient_force_password"))
+
+
 @bp.get("/login")
 def login():
     return render_template("login.html")
@@ -388,7 +411,7 @@ def forgot_password_reset_post():
 
     try:
         db.execute(
-            "UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            "UPDATE users SET password_hash = ?, must_change_password = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
             (generate_password_hash(password), user["id"]),
         )
         db.execute("UPDATE password_reset_codes SET is_used = 1 WHERE email = ?", (email,))
@@ -400,6 +423,52 @@ def forgot_password_reset_post():
 
     flash("Password updated. You can now log in.", "success")
     return redirect(url_for("auth.login"))
+
+
+@bp.get("/patient/force-password")
+@login_required
+def patient_force_password():
+    if session.get("role") != "patient":
+        return redirect(url_for("index"))
+    return render_template("patient_force_password.html")
+
+
+@bp.post("/patient/force-password")
+@login_required
+def patient_force_password_post():
+    if session.get("role") != "patient":
+        return redirect(url_for("index"))
+
+    new_password = request.form.get("new_password", "").strip()
+    confirm_password = request.form.get("confirm_password", "").strip()
+
+    if len(new_password) < 8:
+        flash("Password must be at least 8 characters.", "error")
+        return render_template("patient_force_password.html")
+    if new_password != confirm_password:
+        flash("Passwords do not match.", "error")
+        return render_template("patient_force_password.html")
+
+    db = get_db()
+    try:
+        db.execute(
+            """
+            UPDATE users
+            SET password_hash = ?, must_change_password = 0, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            (generate_password_hash(new_password), session["user_id"]),
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+        flash("Failed to update password. Please try again.", "error")
+        return render_template("patient_force_password.html")
+
+    flash("Password updated successfully.", "success")
+    if session.get("patient_onboarding_done"):
+        return redirect(url_for("patient_dashboard"))
+    return redirect(url_for("patient_onboarding"))
 
 
 @bp.get("/logout")

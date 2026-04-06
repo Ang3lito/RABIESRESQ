@@ -23,7 +23,7 @@
             <p class="mt-1 text-slate-500">Update pre-screening forms for RRQ-{{ case.case_id }}.</p>
           </section>
 
-          <form method="post" class="mt-6 space-y-5">
+          <form method="post" class="mt-6 space-y-5 pb-24">
             <article class="rounded-2xl border border-slate-200 bg-white p-5">
               <h2 class="text-3xl font-semibold text-blue-900">Victim Info Pre-screening Form</h2>
               <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -214,11 +214,11 @@
                         </div>
                         <div>
                           <label class="mb-1 block text-xs text-slate-500" for="vc_pcec_mfg_date">Mfg Date</label>
-                          <input id="vc_pcec_mfg_date" name="vc_pcec_mfg_date" type="text" placeholder="e.g. JUN25" value="{{ vaccination_card.pcec_mfg_date or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                          <input id="vc_pcec_mfg_date" name="vc_pcec_mfg_date" type="date" value="{{ vaccination_card.pcec_mfg_date or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
                         </div>
                         <div>
                           <label class="mb-1 block text-xs text-slate-500" for="vc_pcec_expiry">Expiry</label>
-                          <input id="vc_pcec_expiry" name="vc_pcec_expiry" type="text" placeholder="e.g. MAY28" value="{{ vaccination_card.pcec_expiry or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                          <input id="vc_pcec_expiry" name="vc_pcec_expiry" type="date" min="{{ expiry_min_date }}" value="{{ vaccination_card.pcec_expiry or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
                         </div>
                       </div>
                       <div>
@@ -335,13 +335,15 @@
               {% endfor %}
             </datalist>
 
-            <div class="flex items-center gap-3">
-              <button type="submit" class="rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600">
-                Save Changes
-              </button>
-              <a href="{{ url_for('view_patient_case', case_id=case.case_id) }}" class="text-sm font-medium text-slate-500 hover:text-slate-700">
-                Cancel
-              </a>
+            <div class="fixed bottom-5 right-5 z-50 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur">
+              <div class="flex items-center gap-3">
+                <button type="submit" class="rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600">
+                  Save Changes
+                </button>
+                <a href="{{ url_for('view_patient_case', case_id=case.case_id) }}" class="rounded-xl px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-700">
+                  Cancel
+                </a>
+              </div>
             </div>
           </form>
 {% endblock %}
@@ -374,6 +376,22 @@
     }
 
     document.addEventListener("DOMContentLoaded", function() {
+      const expiryInput = document.getElementById("vc_pcec_expiry");
+      if (expiryInput) {
+        const today = formatLocalYMD(new Date());
+        expiryInput.min = today;
+        const validateExpiry = function() {
+          const value = (expiryInput.value || "").trim();
+          if (value && value < today) {
+            expiryInput.setCustomValidity("Expiry date cannot be before today.");
+          } else {
+            expiryInput.setCustomValidity("");
+          }
+        };
+        validateExpiry();
+        expiryInput.addEventListener("change", validateExpiry);
+      }
+
       const schedules = [
         { prefix: "vc_pre", days: [0, 7, 28] },
         { prefix: "vc_post", days: [0, 3, 7, 14, 28] },
