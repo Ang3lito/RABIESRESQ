@@ -44,7 +44,7 @@
               <i class="fa-solid fa-syringe"></i>
               Vaccinations
             </a>
-            <a href="#" class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-100">
+            <a href="{{ url_for('staff_reports') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 {{ 'bg-emerald-100 font-medium text-emerald-700' if (active_page|default('dashboard')) == 'reports' else 'text-slate-600 hover:bg-slate-100' }}">
               <i class="fa-solid fa-chart-simple"></i>
               Reports
             </a>

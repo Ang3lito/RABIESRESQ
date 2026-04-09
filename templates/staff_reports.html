@@ -1,0 +1,235 @@
+{% extends "staff_base.html" %}
+
+{% block title %}Reports - RabiesResQ{% endblock %}
+
+{% block header_left %}
+  <nav class="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+    {% for crumb in breadcrumbs %}
+      {% if crumb.href %}
+        <a href="{{ crumb.href }}" class="hover:text-slate-700">{{ crumb.label }}</a>
+      {% else %}
+        <span class="font-bold text-blue-600">{{ crumb.label }}</span>
+      {% endif %}
+      {% if not loop.last %}
+        <span>/</span>
+      {% endif %}
+    {% endfor %}
+  </nav>
+{% endblock %}
+
+{% block main_content %}
+  <section class="mt-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <div>
+      <h1 class="text-4xl font-bold text-blue-900">Reports & Analytics</h1>
+      <p class="mt-1 text-slate-500">Database-backed analytics for cases, appointments, and vaccinations.</p>
+    </div>
+    <form method="get" action="{{ url_for('staff_reports') }}" class="grid grid-cols-1 gap-2 rounded-2xl border border-slate-200 bg-white p-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto_auto]">
+      <div>
+        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" for="date_from">From</label>
+        <input id="date_from" name="date_from" type="date" value="{{ date_from }}" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" for="date_to">To</label>
+        <input id="date_to" name="date_to" type="date" value="{{ date_to }}" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+      </div>
+      <button type="submit" class="self-end rounded-xl bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Apply</button>
+      <a href="{{ url_for('staff_reports') }}" class="self-end rounded-xl border border-slate-300 px-4 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-slate-100">Reset</a>
+    </form>
+  </section>
+
+  <section class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <article class="rounded-2xl border border-slate-200 bg-white p-5">
+      <p class="text-sm text-slate-500">Total Cases</p>
+      <p class="mt-2 text-4xl font-bold text-blue-900">{{ kpi.total_cases }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-200 bg-white p-5">
+      <p class="text-sm text-slate-500">Pending Cases</p>
+      <p class="mt-2 text-4xl font-bold text-amber-600">{{ kpi.pending_cases }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-200 bg-white p-5">
+      <p class="text-sm text-slate-500">Completed Cases</p>
+      <p class="mt-2 text-4xl font-bold text-emerald-600">{{ kpi.completed_cases }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-200 bg-white p-5">
+      <p class="text-sm text-slate-500">No Show Cases</p>
+      <p class="mt-2 text-4xl font-bold text-slate-700">{{ kpi.no_show_cases }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-200 bg-white p-5">
+      <p class="text-sm text-slate-500">Vaccinations Given</p>
+      <p class="mt-2 text-4xl font-bold text-emerald-600">{{ kpi.total_vaccinations }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-200 bg-white p-5">
+      <p class="text-sm text-slate-500">Appointments</p>
+      <p class="mt-2 text-4xl font-bold text-indigo-600">{{ kpi.total_appointments }}</p>
+    </article>
+  </section>
+
+  <section class="mt-8 grid grid-cols-1 gap-4 xl:grid-cols-2">
+    <article class="rounded-2xl border border-slate-200 bg-white p-5">
+      <h2 class="text-lg font-semibold text-blue-900">Case Category Distribution</h2>
+      <div class="mt-4 space-y-3">
+        {% if category_breakdown %}
+          {% for row in category_breakdown %}
+            <div>
+              <div class="mb-1 flex items-center justify-between text-sm">
+                <span class="font-medium text-slate-700">{{ row.label }}</span>
+                <span class="text-slate-500">{{ row.count }} ({{ row.percent }}%)</span>
+              </div>
+              <div class="h-2 rounded-full bg-slate-200">
+                <div class="h-full rounded-full bg-blue-500" style="width: {{ row.percent }}%"></div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-sm text-slate-500">No category data in selected range.</p>
+        {% endif %}
+      </div>
+    </article>
+
+    <article class="rounded-2xl border border-slate-200 bg-white p-5">
+      <h2 class="text-lg font-semibold text-blue-900">Appointment Status Breakdown</h2>
+      <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {% for row in appointment_status_breakdown %}
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p class="text-xs uppercase tracking-wide text-slate-500">{{ row.label }}</p>
+            <p class="mt-1 text-2xl font-bold text-slate-800">{{ row.count }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    </article>
+  </section>
+
+  <section class="mt-8 grid grid-cols-1 gap-4 xl:grid-cols-2">
+    <article class="rounded-2xl border border-slate-200 bg-white p-5">
+      <h2 class="text-lg font-semibold text-blue-900">Top Vaccine Types</h2>
+      <ul class="mt-4 space-y-2 text-sm">
+        {% if vaccine_type_breakdown %}
+          {% for row in vaccine_type_breakdown %}
+            <li class="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+              <span class="text-slate-700">{{ row.label }}</span>
+              <span class="font-semibold text-slate-900">{{ row.count }}</span>
+            </li>
+          {% endfor %}
+        {% else %}
+          <li class="text-slate-500">No vaccination data in selected range.</li>
+        {% endif %}
+      </ul>
+    </article>
+
+    <article class="rounded-2xl border border-slate-200 bg-white p-5">
+      <h2 class="text-lg font-semibold text-blue-900">Top Administering Staff</h2>
+      <ul class="mt-4 space-y-2 text-sm">
+        {% if top_administered_by %}
+          {% for row in top_administered_by %}
+            <li class="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+              <span class="text-slate-700">{{ row.name }}</span>
+              <span class="font-semibold text-slate-900">{{ row.count }}</span>
+            </li>
+          {% endfor %}
+        {% else %}
+          <li class="text-slate-500">No staff vaccination data in selected range.</li>
+        {% endif %}
+      </ul>
+    </article>
+  </section>
+
+  <section class="mt-8 grid grid-cols-1 gap-4 xl:grid-cols-2">
+    <article class="rounded-2xl border border-slate-200 bg-white p-5">
+      <h2 class="text-lg font-semibold text-blue-900">Daily New Cases Trend</h2>
+      <div id="cases-trend-chart" class="mt-4 h-56 w-full rounded-xl border border-slate-100 bg-slate-50 p-3"></div>
+    </article>
+    <article class="rounded-2xl border border-slate-200 bg-white p-5">
+      <h2 class="text-lg font-semibold text-blue-900">Daily Vaccinations Trend</h2>
+      <div id="vaccinations-trend-chart" class="mt-4 h-56 w-full rounded-xl border border-slate-100 bg-slate-50 p-3"></div>
+    </article>
+  </section>
+
+  <section class="mt-8">
+    <h2 class="text-xl font-bold text-blue-900">Recent Cases (Selected Range)</h2>
+    <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200">
+      <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="px-4 py-3">Case ID</th>
+            <th class="px-4 py-3">Patient Name</th>
+            <th class="px-4 py-3">Exposure Date</th>
+            <th class="px-4 py-3">Category</th>
+            <th class="px-4 py-3">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 bg-white">
+          {% if recent_cases %}
+            {% for row in recent_cases %}
+              <tr class="hover:bg-slate-50">
+                <td class="px-4 py-3 font-medium text-slate-700">{{ row.case_code }}</td>
+                <td class="px-4 py-3">
+                  <a href="{{ url_for('view_patient_case', case_id=row.id) }}" class="font-medium text-blue-700 hover:text-blue-800">{{ row.patient_name }}</a>
+                </td>
+                <td class="px-4 py-3 text-slate-700">{{ row.exposure_date }}</td>
+                <td class="px-4 py-3 text-slate-700">{{ row.category }}</td>
+                <td class="px-4 py-3 text-slate-700">{{ row.case_status }}</td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="5" class="px-4 py-8 text-center text-slate-500">No case records found for the selected period.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    function renderMiniBarChart(targetId, labels, values, barClass) {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      target.innerHTML = "";
+
+      const maxValue = Math.max(...values, 0);
+      const wrapper = document.createElement("div");
+      wrapper.className = "flex h-full items-end gap-1";
+
+      if (!labels.length) {
+        const empty = document.createElement("p");
+        empty.className = "text-sm text-slate-500";
+        empty.textContent = "No trend data.";
+        target.appendChild(empty);
+        return;
+      }
+
+      labels.forEach((label, index) => {
+        const col = document.createElement("div");
+        col.className = "group flex min-w-0 flex-1 flex-col items-center justify-end";
+
+        const bar = document.createElement("div");
+        const val = values[index] || 0;
+        const heightPct = maxValue > 0 ? Math.max((val / maxValue) * 100, 3) : 3;
+        bar.className = "w-full rounded-t " + barClass;
+        bar.style.height = heightPct + "%";
+        bar.title = label + ": " + val;
+
+        const tick = document.createElement("span");
+        tick.className = "mt-1 block w-full truncate text-center text-[10px] text-slate-500";
+        tick.textContent = label;
+
+        col.appendChild(bar);
+        col.appendChild(tick);
+        wrapper.appendChild(col);
+      });
+
+      target.appendChild(wrapper);
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      const labels = {{ daily_labels|tojson }};
+      const caseValues = {{ daily_case_counts|tojson }};
+      const vaxValues = {{ daily_vaccination_counts|tojson }};
+
+      renderMiniBarChart("cases-trend-chart", labels, caseValues, "bg-blue-500");
+      renderMiniBarChart("vaccinations-trend-chart", labels, vaxValues, "bg-emerald-500");
+    });
+  </script>
+{% endblock %}
