@@ -20,7 +20,12 @@
             <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">{{ n.type }}</span>
             {% endif %}
           </div>
-          <p class="mt-1 text-sm text-slate-700">{{ n.message }}</p>
+          <p class="mt-1 text-sm text-slate-700">
+            {% if n.count is not none %}
+              <span class="font-semibold text-slate-900">{{ n.count }}</span>
+            {% endif %}
+            {{ n.message }}
+          </p>
           {% if n.link_href %}
           <a href="{{ n.link_href }}" class="mt-1 inline-block text-sm font-medium text-emerald-600 hover:text-emerald-700">View details</a>
           {% endif %}

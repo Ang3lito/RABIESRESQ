@@ -27,7 +27,7 @@
               <div class="flex-1 min-w-0">
                 <div class="flex flex-wrap items-center gap-3">
                   <h2 class="font-semibold text-slate-900">
-                    Vaccination &mdash; {{ item.patient_name }}
+                    Vaccination &mdash; {{ item.patient_name|namecase }}
                   </h2>
                   {% if item.status %}
                     {% set status_lower = item.status|lower %}

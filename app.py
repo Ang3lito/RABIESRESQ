@@ -345,7 +345,8 @@ def _get_admin_dashboard_notifications(db, clinic_id: int) -> list[dict[str, obj
         out.append(
             {
                 "type": "case",
-                "message": f"{int(pending)} bite case(s) still pending at this clinic.",
+                "count": int(pending),
+                "message": "bite case(s) still pending at this clinic.",
                 "link_href": url_for("admin_patients"),
                 "recipient_label": None,
             }
@@ -365,7 +366,8 @@ def _get_admin_dashboard_notifications(db, clinic_id: int) -> list[dict[str, obj
         out.append(
             {
                 "type": "appointment",
-                "message": f"{int(today_appts)} appointment(s) scheduled for today.",
+                "count": int(today_appts),
+                "message": "appointment(s) scheduled for today.",
                 "link_href": url_for("admin_appointments", date_filter="today", page=1),
                 "recipient_label": None,
             }
@@ -396,7 +398,8 @@ def _get_admin_dashboard_notifications(db, clinic_id: int) -> list[dict[str, obj
         out.append(
             {
                 "type": "alert",
-                "message": f"{int(inactive)} user account(s) linked to this clinic are deactivated.",
+                "count": int(inactive),
+                "message": "user account(s) linked to this clinic are deactivated.",
                 "link_href": url_for("admin_users"),
                 "recipient_label": None,
             }
@@ -2136,6 +2139,29 @@ def create_app():
     load_dotenv(Path(__file__).resolve().parent / ".env")
 
     app = Flask(__name__, instance_relative_config=True)
+
+    def _namecase(value: object) -> str:
+        """Display-only name formatting (safe: does not affect stored values)."""
+        if value is None:
+            return ""
+        s = str(value).strip()
+        if not s:
+            return ""
+        # Collapse internal whitespace, lowercase, then capitalize after separators.
+        s = " ".join(s.split()).lower()
+        out: list[str] = []
+        cap_next = True
+        for ch in s:
+            if cap_next and ch.isalpha():
+                out.append(ch.upper())
+                cap_next = False
+            else:
+                out.append(ch)
+            if ch in (" ", "-", "'", "."):
+                cap_next = True
+        return "".join(out)
+
+    app.jinja_env.filters["namecase"] = _namecase
 
     mail_user = os.getenv("MAIL_USERNAME", "").strip()
     mail_pass = os.getenv("MAIL_PASSWORD", "").strip()
@@ -9414,12 +9440,16 @@ def create_app():
             flash("No clinic configured.", "error")
             return redirect(url_for("admin_analytics", tab="clinic"))
 
-        cid = clinic["id"]
+        clinic_d = dict(clinic)
+        cid = clinic_d.get("id")
+        if cid is None:
+            flash("Clinic record missing an ID.", "error")
+            return redirect(url_for("admin_analytics", tab="clinic"))
         buf = io.StringIO()
         w = csv.writer(buf)
         w.writerow(["Clinic performance summary"])
-        w.writerow(["Clinic", clinic.get("name") or ""])
-        w.writerow(["Address", clinic.get("address") or ""])
+        w.writerow(["Clinic", clinic_d.get("name") or ""])
+        w.writerow(["Address", clinic_d.get("address") or ""])
         w.writerow(["Period mode", period])
         w.writerow(["Date from", date_from])
         w.writerow(["Date to", date_to])

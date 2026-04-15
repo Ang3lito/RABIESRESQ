@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Case Record - {{ case.patient_name or 'Patient' }} (Case {{ case.id }})</title>
+    <title>Case Record - {{ (case.patient_name or 'Patient')|namecase }} (Case {{ case.id }})</title>
     <style>
       @page {
         size: 215.9mm 330.2mm;
@@ -127,7 +127,7 @@
         <div class="header-title">Case Record Summary</div>
         <div class="header-meta">
           Case ID: {{ case.id }} &mdash;
-          Patient: {{ case.patient_name or 'Unknown Patient' }} &mdash;
+          Patient: {{ (case.patient_name or 'Unknown Patient')|namecase }} &mdash;
           Clinic: {{ case.clinic_name or 'N/A' }}
         </div>
       </div>

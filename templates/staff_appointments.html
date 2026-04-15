@@ -57,7 +57,7 @@
               onclick="window.location.href=this.dataset.href"
             >
               <td class="px-4 py-3 font-medium text-slate-700">{{ appt.appointment_code }}</td>
-              <td class="px-4 py-3 text-blue-700">{{ appt.patient_name }}</td>
+              <td class="px-4 py-3 text-blue-700">{{ appt.patient_name|namecase }}</td>
               <td class="px-4 py-3 text-slate-700">{{ appt.appointment_datetime }}</td>
               <td class="px-4 py-3">
                 {% set category_lower = (appt.category or '')|lower %}

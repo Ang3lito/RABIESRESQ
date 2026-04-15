@@ -161,7 +161,7 @@
               <td class="px-4 py-3 text-slate-700">{{ row.date_given }}</td>
               <td class="px-4 py-3 text-slate-700">{{ row.administered_by_name }}</td>
               <td class="px-4 py-3">
-                <a href="{{ url_for('view_patient_case', case_id=row.case_id) }}" class="font-medium text-blue-700 hover:text-blue-800">{{ row.patient_name }}</a>
+                <a href="{{ url_for('view_patient_case', case_id=row.case_id) }}" class="font-medium text-blue-700 hover:text-blue-800">{{ row.patient_name|namecase }}</a>
               </td>
               <td class="px-4 py-3 text-slate-700">{{ row.case_code }}</td>
             </tr>

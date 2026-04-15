@@ -1,3 +1,15 @@
+#
+# How to run (PowerShell, from repo root):
+#   python -m venv .venv
+#   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+#   .\.venv\Scripts\Activate.ps1
+#   pip install -r requirements.txt
+#   $env:FLASK_ENV="development"
+#   flask --app app:create_app --debug run
+#
+# If you want a specific host/port:
+#   flask --app app:create_app --debug run --host 0.0.0.0 --port 5000
+#
 flask>=2.0
 python-dotenv>=0.19
 click>=8.0

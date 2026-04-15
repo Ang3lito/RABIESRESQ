@@ -37,7 +37,7 @@
             <td>{{ r.dose_display or 'N/A' }}</td>
             <td>{{ r.date_given or 'N/A' }}</td>
             <td>{{ r.administered_by_name or 'N/A' }}</td>
-            <td>{{ r.patient_name or 'N/A' }}</td>
+            <td>{{ (r.patient_name or 'N/A')|namecase }}</td>
             <td>{{ r.case_code or '' }}</td>
             <td>{{ r.source or '' }}</td>
           </tr>

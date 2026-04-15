@@ -189,7 +189,7 @@
                     >
                       <td class="px-4 py-3 font-medium text-slate-700">{{ case.case_code }}</td>
                       <td class="px-4 py-3">
-                        <a href="{{ url_for('view_patient_case', case_id=case.id) }}" class="font-medium text-blue-700 hover:text-blue-800">{{ case.patient_name }}</a>
+                        <a href="{{ url_for('view_patient_case', case_id=case.id) }}" class="font-medium text-blue-700 hover:text-blue-800">{{ case.patient_name|namecase }}</a>
                       </td>
                       <td class="px-4 py-3 text-slate-700">{{ case.exposure_date }}</td>
                       <td class="px-4 py-3">

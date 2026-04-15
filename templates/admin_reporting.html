@@ -94,6 +94,37 @@
       <div class="mt-4 h-64">
         <canvas id="adminChartBiteMonths"></canvas>
       </div>
+      <button
+        type="button"
+        class="js-toggle-numeric mt-3 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+        data-kind="overview_monthly_bites"
+        data-target="adminChartBiteMonthsNumeric"
+        aria-expanded="false"
+        aria-controls="adminChartBiteMonthsNumeric"
+      >
+        <i class="fa-solid fa-table"></i>
+        <span>View Numerical Data for this Graph/Table</span>
+        <i class="js-chevron fa-solid fa-chevron-down ml-auto text-xs text-slate-400 transition-transform"></i>
+      </button>
+      <div id="adminChartBiteMonthsNumeric" class="mt-3 hidden overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <table class="w-full min-w-[18rem] text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 text-left text-slate-600">
+              <th class="py-1 pr-2">Month</th>
+              <th class="py-1 pr-2">Bite cases</th>
+              <th class="py-1 pr-2">Δ</th>
+              <th class="py-1">Δ%</th>
+            </tr>
+          </thead>
+          <tbody class="js-numeric-body"></tbody>
+        </table>
+        <p class="mt-2 text-xs text-slate-500">
+          <span class="font-semibold text-slate-600">Legend:</span>
+          <span class="font-semibold text-slate-600">Δ</span> = change vs previous month,
+          <span class="font-semibold text-slate-600">Δ%</span> = percent change vs previous month.
+          <span class="font-semibold text-slate-600">—</span> means no prior month in range (or prior month was 0 for Δ%).
+        </p>
+      </div>
     </article>
     <article class="rounded-2xl border border-slate-200 bg-white p-5">
       <div class="flex flex-wrap items-start justify-between gap-2">
@@ -107,6 +138,42 @@
         <canvas id="adminChartRadial"></canvas>
       </div>
       <p class="mt-2 text-center text-sm text-slate-600">{{ vaccination_completion_pct }}% Completed</p>
+      <button
+        type="button"
+        class="js-toggle-numeric mt-3 inline-flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+        data-kind="overview_vaccination_completion"
+        data-target="adminChartRadialNumeric"
+        aria-expanded="false"
+        aria-controls="adminChartRadialNumeric"
+      >
+        <i class="fa-solid fa-table"></i>
+        <span>View Numerical Data for this Graph/Table</span>
+        <i class="js-chevron fa-solid fa-chevron-down ml-auto text-xs text-slate-400 transition-transform"></i>
+      </button>
+      <div id="adminChartRadialNumeric" class="mt-3 hidden overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <table class="w-full min-w-[18rem] text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 text-left text-slate-600">
+              <th class="py-1 pr-2">Metric</th>
+              <th class="py-1">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-slate-100">
+              <td class="py-1.5 pr-2 font-medium text-slate-700">Completed cases</td>
+              <td class="py-1.5 text-slate-700">{{ completed_cases_period }}</td>
+            </tr>
+            <tr class="border-b border-slate-100">
+              <td class="py-1.5 pr-2 font-medium text-slate-700">Other cases in range</td>
+              <td class="py-1.5 text-slate-700">{{ (bite_cases_period - completed_cases_period) if bite_cases_period else 0 }}</td>
+            </tr>
+            <tr>
+              <td class="py-1.5 pr-2 font-medium text-slate-700">Completion rate</td>
+              <td class="py-1.5 text-slate-700">{{ vaccination_completion_pct }}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </article>
   </section>
 
@@ -167,6 +234,69 @@
         });
       }
 
+      function buildMonthlyBiteTable(targetEl, labels, values) {
+        if (!targetEl) return;
+        var body = targetEl.querySelector('.js-numeric-body');
+        if (!body) return;
+        if (body.childElementCount) return; // already built
+        if (!labels || !values || !labels.length) return;
+        for (var i = 0; i < labels.length; i++) {
+          var prev = i > 0 ? Number(values[i - 1] ?? 0) : null;
+          var cur = Number(values[i] ?? 0);
+          var delta = prev === null ? null : (cur - prev);
+          var deltaPct = null;
+          if (prev !== null) {
+            deltaPct = prev === 0 ? null : ((delta / prev) * 100);
+          }
+
+          var tr = document.createElement('tr');
+          tr.className = 'border-b border-slate-100';
+          var td1 = document.createElement('td');
+          td1.className = 'py-1.5 pr-2 font-medium text-slate-700';
+          td1.textContent = String(labels[i] ?? '');
+          var td2 = document.createElement('td');
+          td2.className = 'py-1.5 pr-2 text-slate-700';
+          td2.textContent = String(values[i] ?? '');
+          var td3 = document.createElement('td');
+          td3.className = 'py-1.5 pr-2 text-slate-700';
+          td3.textContent = delta === null ? '—' : String(delta);
+          var td4 = document.createElement('td');
+          td4.className = 'py-1.5 text-slate-700';
+          td4.textContent = deltaPct === null ? '—' : (deltaPct.toFixed(1) + '%');
+          tr.appendChild(td1);
+          tr.appendChild(td2);
+          tr.appendChild(td3);
+          tr.appendChild(td4);
+          body.appendChild(tr);
+        }
+      }
+
+      document.querySelectorAll('.js-toggle-numeric').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var targetId = btn.getAttribute('data-target');
+          var kind = btn.getAttribute('data-kind');
+          if (!targetId) return;
+          var panel = document.getElementById(targetId);
+          if (!panel) return;
+
+          var isHidden = panel.classList.contains('hidden');
+          if (isHidden) {
+            if (kind === 'overview_monthly_bites') {
+              buildMonthlyBiteTable(panel, data.monthly_labels, data.monthly_counts);
+            }
+            panel.classList.remove('hidden');
+            btn.setAttribute('aria-expanded', 'true');
+            var chevOpen = btn.querySelector('.js-chevron');
+            if (chevOpen) chevOpen.classList.add('rotate-180');
+          } else {
+            panel.classList.add('hidden');
+            btn.setAttribute('aria-expanded', 'false');
+            var chevClose = btn.querySelector('.js-chevron');
+            if (chevClose) chevClose.classList.remove('rotate-180');
+          }
+        });
+      });
+
       var doughnutCtx = document.getElementById('adminChartRadial');
       if (doughnutCtx) {
         var pct = Math.max(0, Math.min(100, parseInt(data.vaccination_completion_pct || 0, 10)));
@@ -194,16 +324,10 @@
   <section class="mt-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
     <p class="text-sm text-slate-600">Profile and performance for <span class="font-semibold text-slate-800">{{ clinic.name if clinic else 'Clinic' }}</span>.</p>
     <div class="flex flex-wrap items-center gap-2">
-      <a href="{{ url_for('admin_patients') }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-        <i class="fa-solid fa-folder-open mr-2 text-emerald-600"></i>Cases
-      </a>
-      <a href="{{ url_for('admin_appointments') }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-        <i class="fa-regular fa-calendar mr-2 text-emerald-600"></i>Appointments
-      </a>
       {% if clinic %}
       <a
         href="{{ url_for('admin_clinic_export_csv') }}?period={{ period }}&date_from={{ date_from }}&date_to={{ date_to }}{% if yearly_year is not none %}&year={{ yearly_year }}{% endif %}"
-        class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
+        class="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-base font-semibold text-emerald-800 hover:bg-emerald-100 sm:mr-2"
       >
         <i class="fa-solid fa-download mr-2"></i>Export CSV
       </a>
@@ -215,10 +339,6 @@
     <article class="rounded-2xl border border-slate-200 bg-white p-5">
       <p class="text-sm text-slate-500">Address</p>
       <p class="mt-2 text-lg font-semibold text-blue-900">{{ clinic.address if clinic and clinic.address else '—' }}</p>
-    </article>
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <p class="text-sm text-slate-500">Contact Person</p>
-      <p class="mt-2 text-lg font-semibold text-blue-900">{{ contact_name }}</p>
     </article>
     <article class="rounded-2xl border border-slate-200 bg-white p-5">
       <p class="text-sm text-slate-500">Total active patients</p>
@@ -704,7 +824,7 @@
       <ul class="mt-3 space-y-2 text-sm">
         {% for row in priority_cases %}
         <li class="flex flex-wrap justify-between gap-2 border-b border-slate-100 py-2">
-          <span class="font-medium text-slate-800">{{ row.patient_name }}</span>
+          <span class="font-medium text-slate-800">{{ row.patient_name|namecase }}</span>
           <span class="text-slate-600">{{ row.status }} · {{ row.reported_at or '—' }}</span>
         </li>
         {% else %}

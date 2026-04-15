@@ -109,7 +109,7 @@
             {% for appt in todays_appointments %}
               <tr>
                 <td class="px-4 py-3">{{ appt.time }}</td>
-                <td class="px-4 py-3">{{ appt.patient_name }}</td>
+                <td class="px-4 py-3">{{ appt.patient_name|namecase }}</td>
                 <td class="px-4 py-3">{{ appt.owner_name }}</td>
                 <td class="px-4 py-3">{{ appt.reason }}</td>
                 <td class="px-4 py-3">
