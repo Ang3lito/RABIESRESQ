@@ -17,16 +17,63 @@
   </nav>
 {% endblock %}
 
+{% block scripts %}
+  {{ super() }}
+  <script>
+    function toggleCasesExportMenu() {
+      const panel = document.getElementById("cases-export-menu-panel");
+      if (!panel) return;
+      panel.classList.toggle("hidden");
+    }
+    document.addEventListener("click", function(e) {
+      const wrap = document.getElementById("cases-export-menu");
+      const panel = document.getElementById("cases-export-menu-panel");
+      if (!wrap || !panel) return;
+      if (!wrap.contains(e.target)) panel.classList.add("hidden");
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key !== "Escape") return;
+      const panel = document.getElementById("cases-export-menu-panel");
+      if (panel) panel.classList.add("hidden");
+    });
+  </script>
+{% endblock %}
+
 {% block main_content %}
   <section class="mt-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
     <div>
       <h1 class="text-4xl font-bold text-blue-900">Patient Case Management</h1>
       <p class="mt-1 text-slate-500">Manage and track all patient rabies exposure cases.</p>
     </div>
-    <div>
-      <a href="{{ url_for('staff_create_case_record') }}" class="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600">
-        + Add Record
-      </a>
+    <div class="flex flex-wrap items-center gap-2">
+      {% set export_args = {
+        'search': search,
+        'category': selected_category,
+        'status': selected_status,
+        'gender': selected_gender,
+        'age_min': selected_age_min,
+        'age_max': selected_age_max,
+        'barangay': selected_barangay,
+        'site': selected_site,
+        'animal_type': selected_animal_type,
+        'animal_status': selected_animal_status,
+        'animal_vaccination': selected_animal_vaccination,
+        'bio': selected_bio,
+        'batch': selected_batch,
+        'date_from': selected_date_from,
+        'date_to': selected_date_to
+      } %}
+      <div class="relative" id="cases-export-menu">
+        <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" onclick="toggleCasesExportMenu()">
+          <i class="fa-solid fa-download"></i>
+          Download cases
+          <i class="fa-solid fa-chevron-down text-xs"></i>
+        </button>
+        <div id="cases-export-menu-panel" class="absolute right-0 z-20 mt-2 hidden w-44 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+          <a class="block px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50" href="{{ url_for('staff_cases_export_csv', **export_args) }}">Export CSV</a>
+          <a class="block px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50" href="{{ url_for('staff_cases_export_pdf', **export_args) }}">Export PDF</a>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -46,6 +93,18 @@
       <input type="hidden" name="page" value="1" />
       <input type="hidden" name="category" value="{{ selected_category }}" />
       <input type="hidden" name="status" value="{{ selected_status }}" />
+      <input type="hidden" name="gender" value="{{ selected_gender }}" />
+      <input type="hidden" name="age_min" value="{{ selected_age_min }}" />
+      <input type="hidden" name="age_max" value="{{ selected_age_max }}" />
+      <input type="hidden" name="barangay" value="{{ selected_barangay }}" />
+      <input type="hidden" name="site" value="{{ selected_site }}" />
+      <input type="hidden" name="animal_type" value="{{ selected_animal_type }}" />
+      <input type="hidden" name="animal_status" value="{{ selected_animal_status }}" />
+      <input type="hidden" name="animal_vaccination" value="{{ selected_animal_vaccination }}" />
+      <input type="hidden" name="bio" value="{{ selected_bio }}" />
+      <input type="hidden" name="batch" value="{{ selected_batch }}" />
+      <input type="hidden" name="date_from" value="{{ selected_date_from }}" />
+      <input type="hidden" name="date_to" value="{{ selected_date_to }}" />
       <label class="sr-only" for="staff-case-search">Search by name or case ID</label>
       <div class="flex flex-col gap-2 sm:flex-row sm:items-stretch">
         <div class="relative min-w-0 flex-1">
@@ -63,10 +122,38 @@
       </div>
     </form>
 
-    <form action="{{ url_for('staff_patients') }}" method="get" class="space-y-3">
+    <form action="{{ url_for('staff_patients') }}" method="get" class="space-y-4">
       <input type="hidden" name="page" value="1" />
       <input type="hidden" name="search" value="{{ search }}" />
       <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Refine list</p>
+      <div class="grid grid-cols-1 gap-3 lg:grid-cols-4">
+        <div class="min-w-0">
+          <label class="mb-1 block text-xs font-medium text-slate-600" for="gender">Gender</label>
+          <select id="gender" name="gender" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring">
+            <option value="all" {{ "selected" if (selected_gender or 'all')|lower == "all" else "" }}>All</option>
+            <option value="Male" {{ "selected" if (selected_gender or '') == "Male" else "" }}>Male</option>
+            <option value="Female" {{ "selected" if (selected_gender or '') == "Female" else "" }}>Female</option>
+            <option value="Other" {{ "selected" if (selected_gender or '') == "Other" else "" }}>Other</option>
+          </select>
+        </div>
+        <div class="min-w-0">
+          <label class="mb-1 block text-xs font-medium text-slate-600" for="age_min">Age (min)</label>
+          <input id="age_min" name="age_min" type="number" value="{{ selected_age_min or '' }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring" placeholder="e.g., 1" />
+        </div>
+        <div class="min-w-0">
+          <label class="mb-1 block text-xs font-medium text-slate-600" for="age_max">Age (max)</label>
+          <input id="age_max" name="age_max" type="number" value="{{ selected_age_max or '' }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring" placeholder="e.g., 65" />
+        </div>
+        <div class="min-w-0">
+          <label class="mb-1 block text-xs font-medium text-slate-600" for="barangay">Location (Barangay)</label>
+          <select id="barangay" name="barangay" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring">
+            <option value="" {{ "selected" if not selected_barangay else "" }}>All</option>
+            {% for b in ['Adlaon','Agsungot','Apas','Babag','Bacayan','Banilad','Basak Pardo','Basak San Nicolas','Binaliw','Bonbon','Budlaan','Buhisan','Bulacao','Buot','Busay','Calamba','Cambinocot','Capitol Site','Carreta','Cogon Pardo','Cogon Ramos','Day-as','Duljo Fatima','Ermita','Guadalupe','Guba','Hipodromo','Inayawan','Kalubihan','Kalunasan','Kamagayan','Kamputhaw','Kasambagan','Kinasang-an Pardo','Labangon','Lahug','Lorega San Miguel','Lusaran','Luz','Mabini','Mabolo','Malubog','Mambaling','Pahina Central','Pahina San Nicolas','Pamutan','Pari-an','Paril','Pasil','Pit-os','Poblacion Pardo','Pulangbato','Pung-ol Sibugay','Punta Princesa','Quiot Pardo','Sambag I','Sambag II','San Antonio','San Jose','San Nicolas Proper','San Roque','Santa Cruz','Santo Niño','Sapangdaku','Sawang Calero','Sinsin','Sirao','Suba','Sudlon I','Sudlon II','T. Padilla','Tabunan','Tagba-o','Talamban','Taptap','Tejero','Tinago','Tisa','To-ong','Zapatera'] %}
+              <option value="{{ b }}" {{ "selected" if (selected_barangay or '') == b else "" }}>{{ b }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
       <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <div class="min-w-0 flex-1 sm:min-w-[11rem] sm:max-w-xs">
           <label class="mb-1 block text-xs font-medium text-slate-600" for="category">Category</label>
@@ -94,9 +181,73 @@
             <option value="no show" {{ "selected" if selected_status == "no show" else "" }}>No show</option>
           </select>
         </div>
-        <div class="flex w-full sm:w-auto sm:shrink-0 sm:pb-0.5">
-          <button type="submit" class="w-full rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 sm:w-auto">Apply filters</button>
+        <div class="hidden lg:block lg:flex-1"></div>
+      </div>
+      <div class="grid grid-cols-1 gap-3 lg:grid-cols-4">
+        <div class="min-w-0">
+          <label class="mb-1 block text-xs font-medium text-slate-600" for="site">Site of bite</label>
+          <select id="site" name="site" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring">
+            <option value="" {{ "selected" if not selected_site else "" }}>All</option>
+            {% for opt in ['Head/Face','Neck','Trunk','Right arm','Left arm','Right hand','Left hand','Right leg','Left leg','Right foot','Left foot','Other'] %}
+              <option value="{{ opt }}" {{ "selected" if (selected_site or '') == opt else "" }}>{{ opt }}</option>
+            {% endfor %}
+          </select>
         </div>
+        <div class="min-w-0">
+          <label class="mb-1 block text-xs font-medium text-slate-600" for="animal_type">Animal type</label>
+          <select id="animal_type" name="animal_type" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring">
+            <option value="all" {{ "selected" if (selected_animal_type or 'all')|lower == "all" else "" }}>All</option>
+            <option value="Dog" {{ "selected" if (selected_animal_type or '') == "Dog" else "" }}>Dog</option>
+            <option value="Cat" {{ "selected" if (selected_animal_type or '') == "Cat" else "" }}>Cat</option>
+            <option value="Others" {{ "selected" if (selected_animal_type or '') == "Others" else "" }}>Others</option>
+          </select>
+        </div>
+        <div class="min-w-0">
+          <label class="mb-1 block text-xs font-medium text-slate-600" for="animal_status">Animal status</label>
+          <select id="animal_status" name="animal_status" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring">
+            <option value="all" {{ "selected" if (selected_animal_status or 'all')|lower == "all" else "" }}>All</option>
+            {% for opt in ['Healthy','Killed','Sick','Lost','Died'] %}
+              <option value="{{ opt }}" {{ "selected" if (selected_animal_status or '') == opt else "" }}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="min-w-0">
+          <label class="mb-1 block text-xs font-medium text-slate-600" for="animal_vaccination">Animal vaccination</label>
+          <select id="animal_vaccination" name="animal_vaccination" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring">
+            <option value="all" {{ "selected" if (selected_animal_vaccination or 'all')|lower == "all" else "" }}>All</option>
+            {% for opt in ['Updated','Not Updated','None'] %}
+              <option value="{{ opt }}" {{ "selected" if (selected_animal_vaccination or '') == opt else "" }}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 gap-3 lg:grid-cols-4">
+        <div class="min-w-0">
+          <label class="mb-1 block text-xs font-medium text-slate-600" for="bio">Type of biologicals</label>
+          <select id="bio" name="bio" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring">
+            <option value="all" {{ "selected" if (selected_bio or 'all')|lower == "all" else "" }}>All</option>
+            <option value="Anti-rabies" {{ "selected" if (selected_bio or '') == "Anti-rabies" else "" }}>Anti-rabies</option>
+            <option value="HRIG/ERIG" {{ "selected" if (selected_bio or '') == "HRIG/ERIG" else "" }}>HRIG / ERIG</option>
+            <option value="Tetanus" {{ "selected" if (selected_bio or '') == "Tetanus" else "" }}>Tetanus</option>
+          </select>
+        </div>
+        <div class="min-w-0">
+          <label class="mb-1 block text-xs font-medium text-slate-600" for="batch">Batch / Lot number</label>
+          <input id="batch" name="batch" type="text" value="{{ selected_batch or '' }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring" placeholder="Search batch/lot…" />
+        </div>
+        <div class="min-w-0">
+          <label class="mb-1 block text-xs font-medium text-slate-600" for="date_from">Date from</label>
+          <input id="date_from" name="date_from" type="date" value="{{ selected_date_from or '' }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring" />
+        </div>
+        <div class="min-w-0">
+          <label class="mb-1 block text-xs font-medium text-slate-600" for="date_to">Date to</label>
+          <input id="date_to" name="date_to" type="date" value="{{ selected_date_to or '' }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring" />
+        </div>
+      </div>
+      <div class="flex justify-end pt-1">
+        <button type="submit" class="w-full rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 sm:w-auto">
+          Apply filters
+        </button>
       </div>
     </form>
   </section>
@@ -166,21 +317,21 @@
     <p>Showing {{ cases.first }} to {{ cases.last }} of {{ cases.total }} results</p>
     <div class="flex items-center gap-2">
       <a
-        href="{{ url_for('staff_patients', search=search, category=selected_category, status=selected_status, page=cases.prev_num or 1) }}"
+        href="{{ url_for('staff_patients', search=search, category=selected_category, status=selected_status, gender=selected_gender, age_min=selected_age_min, age_max=selected_age_max, barangay=selected_barangay, site=selected_site, animal_type=selected_animal_type, animal_status=selected_animal_status, animal_vaccination=selected_animal_vaccination, bio=selected_bio, batch=selected_batch, date_from=selected_date_from, date_to=selected_date_to, page=cases.prev_num or 1) }}"
         class="rounded-lg px-2 py-1 {{ 'text-slate-400 pointer-events-none' if not cases.has_prev else 'hover:bg-slate-100 text-slate-700' }}"
       >
         <i class="fa-solid fa-chevron-left"></i>
       </a>
       {% for p in cases.iter_pages() %}
         <a
-          href="{{ url_for('staff_patients', search=search, category=selected_category, status=selected_status, page=p) }}"
+          href="{{ url_for('staff_patients', search=search, category=selected_category, status=selected_status, gender=selected_gender, age_min=selected_age_min, age_max=selected_age_max, barangay=selected_barangay, site=selected_site, animal_type=selected_animal_type, animal_status=selected_animal_status, animal_vaccination=selected_animal_vaccination, bio=selected_bio, batch=selected_batch, date_from=selected_date_from, date_to=selected_date_to, page=p) }}"
           class="rounded-lg px-3 py-1 {{ 'bg-emerald-500 text-white' if p == cases.page else 'text-slate-700 hover:bg-slate-100' }}"
         >
           {{ p }}
         </a>
       {% endfor %}
       <a
-        href="{{ url_for('staff_patients', search=search, category=selected_category, status=selected_status, page=cases.next_num or cases.pages) }}"
+        href="{{ url_for('staff_patients', search=search, category=selected_category, status=selected_status, gender=selected_gender, age_min=selected_age_min, age_max=selected_age_max, barangay=selected_barangay, site=selected_site, animal_type=selected_animal_type, animal_status=selected_animal_status, animal_vaccination=selected_animal_vaccination, bio=selected_bio, batch=selected_batch, date_from=selected_date_from, date_to=selected_date_to, page=cases.next_num or cases.pages) }}"
         class="rounded-lg px-2 py-1 {{ 'text-slate-400 pointer-events-none' if not cases.has_next else 'hover:bg-slate-100 text-slate-700' }}"
       >
         <i class="fa-solid fa-chevron-right"></i>

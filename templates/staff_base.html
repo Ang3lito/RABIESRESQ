@@ -67,10 +67,14 @@
           </nav>
 
           <div class="mt-auto pt-8">
-            <a href="{{ url_for('staff_new_patient_account') }}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 font-semibold text-white transition hover:bg-emerald-600">
+            <a href="{{ url_for('staff_create_case_record') }}" class="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 font-semibold text-emerald-800 transition hover:bg-emerald-100">
+              <i class="fa-solid fa-file-circle-plus"></i>
+              Add Existing Record
+            </a>
+            <button type="button" onclick="openPreScreeningModal('case')" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 font-semibold text-white transition hover:bg-emerald-600">
               <i class="fa-solid fa-plus"></i>
               New Patient
-            </a>
+            </button>
             <div class="mt-4 space-y-2 text-sm">
               <a href="{{ url_for('auth.logout') }}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 font-semibold text-white transition hover:bg-red-600">
                 <i class="fa-solid fa-arrow-right-from-bracket"></i>
@@ -104,6 +108,14 @@
       </main>
     </div>
     {% include "_confirm_modal.html" %}
+    {% include "_alert_modal.html" %}
+    {# Staff-side pre-screening modal (walk-in / case intake) #}
+    {% set pre_screening_embedded = false %}
+    {% set pre_screening_form_action = url_for('staff_new_patient_account') %}
+    {% set pre_screening_submit_label = 'Create patient account' %}
+    {% set pre_screening_cancel_url = url_for('staff_patients') %}
+    {% set pre_screening_email_autofill = false %}
+    {% include "pre_screening_form.html" %}
     {% block scripts %}
       <script>
         function openStaffSidebar() {

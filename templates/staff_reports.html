@@ -114,8 +114,8 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 bg-white">
-          {% if recent_cases %}
-            {% for row in recent_cases %}
+          {% if recent_cases.items %}
+            {% for row in recent_cases.items %}
               <tr class="hover:bg-slate-50">
                 <td class="px-4 py-3 font-medium text-slate-700">{{ row.case_code }}</td>
                 <td class="px-4 py-3">
@@ -134,6 +134,32 @@
         </tbody>
       </table>
     </div>
+
+    <footer class="mt-4 flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+      <p>Showing {{ recent_cases.first }} to {{ recent_cases.last }} of {{ recent_cases.total }} results</p>
+      <div class="flex items-center gap-2">
+        <a
+          href="{{ url_for('staff_reports', date_from=date_from, date_to=date_to, recent_page=recent_cases.prev_num or 1) }}"
+          class="rounded-lg px-2 py-1 {{ 'text-slate-400 pointer-events-none' if not recent_cases.has_prev else 'hover:bg-slate-100 text-slate-700' }}"
+        >
+          <i class="fa-solid fa-chevron-left"></i>
+        </a>
+        {% for p in recent_cases.iter_pages() %}
+          <a
+            href="{{ url_for('staff_reports', date_from=date_from, date_to=date_to, recent_page=p) }}"
+            class="rounded-lg px-3 py-1 {{ 'bg-emerald-500 text-white' if p == recent_cases.page else 'text-slate-700 hover:bg-slate-100' }}"
+          >
+            {{ p }}
+          </a>
+        {% endfor %}
+        <a
+          href="{{ url_for('staff_reports', date_from=date_from, date_to=date_to, recent_page=recent_cases.next_num or recent_cases.pages) }}"
+          class="rounded-lg px-2 py-1 {{ 'text-slate-400 pointer-events-none' if not recent_cases.has_next else 'hover:bg-slate-100 text-slate-700' }}"
+        >
+          <i class="fa-solid fa-chevron-right"></i>
+        </a>
+      </div>
+    </footer>
   </section>
 
   <section class="mt-8 grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -188,6 +214,7 @@
 {% endblock %}
 
 {% block scripts %}
+  {{ super() }}
   <script>
     function renderMiniBarChart(targetId, labels, values, barClass) {
       const target = document.getElementById(targetId);

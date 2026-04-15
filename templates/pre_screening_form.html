@@ -2,6 +2,7 @@
 {# This template is included site-wide (via base_patient.html). Not all pages pass patient/clinics. #}
 {% set patient = patient|default({}) %}
 {% set clinics = clinics|default([]) %}
+{% set _ps_email_autofill = pre_screening_email_autofill|default(true) %}
 <!-- Pre-Screening Form (modal on patient pages; embedded on staff new patient) -->
 <div id="pre-screening-modal" class="{% if _ps_emb %}relative z-10 mx-auto w-full max-w-4xl{% else %}hidden fixed inset-0 z-50 overflow-y-auto{% endif %}">
   {% if not _ps_emb %}
@@ -17,7 +18,7 @@
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-2xl font-bold text-slate-900">Pre-Screening Form</h2>
-            <p id="step-indicator" class="mt-1 text-sm text-slate-600">Step 1: Bite Details</p>
+            <p id="step-indicator" class="mt-1 text-sm text-slate-600">Step 1: Victim Info</p>
           </div>
           {% if _ps_emb %}
           <a href="{{ pre_screening_cancel_url|default(url_for('staff_patients')) }}" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Back to patients">
@@ -49,8 +50,98 @@
       <form id="pre-screening-form" method="post" action="{{ pre_screening_form_action|default(url_for('pre_screening_submit')) }}" class="px-6 py-6" onsubmit="collectAllFormData()">
         <input type="hidden" name="form_type" id="form-type" value="case">
         
-        <!-- Step 1: Bite Details -->
+        <!-- Step 1: Victim Information -->
         <div id="step-1" class="step-content">
+          <div class="mb-6">
+            <h3 class="text-lg font-bold text-slate-900">Victim Information</h3>
+            <p class="mt-1 text-sm text-slate-600">Please provide the details of the person who was bitten.</p>
+          </div>
+
+          <div class="space-y-6">
+            <div>
+              <label for="relationship_to_user" class="mb-2 block text-sm font-semibold text-slate-900">Relationship to Account User</label>
+              <select
+                id="relationship_to_user"
+                name="relationship_to_user"
+                class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="Self" selected>Self</option>
+                <option value="Child">Child</option>
+                <option value="Relative">Relative</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div>
+                <label for="victim_first_name" class="mb-2 block text-sm font-semibold text-slate-900">First Name</label>
+                <input type="text" id="victim_first_name" name="victim_first_name" value="{{ patient.first_name or '' }}" data-self-value="{{ patient.first_name or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="First name">
+              </div>
+              <div>
+                <label for="victim_middle_initial" class="mb-2 block text-sm font-semibold text-slate-900">Middle Initial <span class="font-normal text-slate-500">(optional)</span></label>
+                <input type="text" id="victim_middle_initial" name="victim_middle_initial" maxlength="2" data-self-value="" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="M.I.">
+              </div>
+              <div>
+                <label for="victim_last_name" class="mb-2 block text-sm font-semibold text-slate-900">Last Name</label>
+                <input type="text" id="victim_last_name" name="victim_last_name" value="{{ patient.last_name or '' }}" data-self-value="{{ patient.last_name or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Last name">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div>
+                <label for="date_of_birth" class="mb-2 block text-sm font-semibold text-slate-900">Birthday</label>
+                <input type="date" id="date_of_birth" name="date_of_birth" value="{{ patient.date_of_birth or '' }}" data-self-value="{{ patient.date_of_birth or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              </div>
+              <div>
+                <label for="gender" class="mb-2 block text-sm font-semibold text-slate-900">Gender</label>
+                <select id="gender" name="gender" data-self-value="{{ patient.gender or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <option value="">Select gender...</option>
+                  <option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
+                  <option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
+                  <option value="Other" {% if patient.gender == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+              </div>
+              <div>
+                <label for="age" class="mb-2 block text-sm font-semibold text-slate-900">Age</label>
+                <input type="number" id="age" name="age" value="{{ patient.age or '' }}" data-self-value="{{ patient.age or '' }}" required readonly inputmode="none" tabindex="-1" title="Computed from birthday" class="w-full cursor-default rounded-lg border border-slate-300 bg-slate-100 px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="—">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label for="barangay" class="mb-2 block text-sm font-semibold text-slate-900">Barangay</label>
+                {% set _addr = patient.address or '' %}
+                {% set _parts = _addr.split(',') %}
+                {% set patient_barangay = _parts[0].strip() if _parts else '' %}
+                <select id="barangay" name="barangay" data-self-value="{{ patient_barangay }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <option value="">Select barangay...</option>
+                  <option value="Adlaon" {% if patient_barangay == 'Adlaon' %}selected{% endif %}>Adlaon</option>
+                  <option value="Agsungot" {% if patient_barangay == 'Agsungot' %}selected{% endif %}>Agsungot</option>
+                  <option value="Apas" {% if patient_barangay == 'Apas' %}selected{% endif %}>Apas</option>
+                  {% for b in ['Babag','Bacayan','Banilad','Basak Pardo','Basak San Nicolas','Binaliw','Bonbon','Budlaan','Buhisan','Bulacao','Buot','Busay','Calamba','Cambinocot','Capitol Site','Carreta','Cogon Pardo','Cogon Ramos','Day-as','Duljo Fatima','Ermita','Guadalupe','Guba','Hipodromo','Inayawan','Kalubihan','Kalunasan','Kamagayan','Kamputhaw','Kasambagan','Kinasang-an Pardo','Labangon','Lahug','Lorega San Miguel','Lusaran','Luz','Mabini','Mabolo','Malubog','Mambaling','Pahina Central','Pahina San Nicolas','Pamutan','Pari-an','Paril','Pasil','Pit-os','Poblacion Pardo','Pulangbato','Pung-ol Sibugay','Punta Princesa','Quiot Pardo','Sambag I','Sambag II','San Antonio','San Jose','San Nicolas Proper','San Roque','Santa Cruz','Santo Niño','Sapangdaku','Sawang Calero','Sinsin','Sirao','Suba','Sudlon I','Sudlon II','T. Padilla','Tabunan','Tagba-o','Talamban','Taptap','Tejero','Tinago','Tisa','To-ong','Zapatera'] %}
+                  <option value="{{ b }}" {% if patient_barangay == b %}selected{% endif %}>{{ b }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label for="contact_number" class="mb-2 block text-sm font-semibold text-slate-900">Contact Number</label>
+                <input type="tel" id="contact_number" name="contact_number" value="{{ patient.phone_number or '' }}" data-self-value="{{ patient.phone_number or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="09XXXXXXXXX">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div class="md:col-span-2">
+                <label for="email_address" class="mb-2 block text-sm font-semibold text-slate-900">Email Address</label>
+                {% set _self_email = (session.email or patient.user_email or '') if _ps_email_autofill else '' %}
+                <input type="email" id="email_address" name="email_address" value="{{ _self_email }}" data-self-value="{{ _self_email }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="you@example.com">
+                <p class="mt-1 text-xs text-slate-500">We use email to send appointment updates and instructions.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Bite Details -->
+        <div id="step-2" class="step-content hidden">
           <div class="mb-6">
             <h3 class="text-lg font-bold text-slate-900">Bite Details</h3>
             <p class="mt-1 text-sm text-slate-600">Please provide the following information about the incident to help us assess the situation.</p>
@@ -130,7 +221,7 @@
             </div>
             <div>
               <label id="affected-area-label" for="affected-area-trigger" class="mb-2 block text-sm font-semibold text-slate-900">AFFECTED AREA</label>
-              <div id="affected-area-group" class="relative rounded-lg border border-slate-200 bg-slate-50/50 p-3">
+              <div id="affected-area-group" class="relative">
                 <button
                   type="button"
                   id="affected-area-trigger"
@@ -152,18 +243,18 @@
                 >
                   <p class="mb-2 text-xs text-slate-500">Select all that apply</p>
                   <div class="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Head/Face" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Head/Face</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Neck" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Neck</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Trunk" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Trunk</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Right arm" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Right arm</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Left arm" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Left arm</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Right hand" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Right hand</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Left hand" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Left hand</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Right leg" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Right leg</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Left leg" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Left leg</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Right foot" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Right foot</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50"><input type="checkbox" name="affected_area" value="Left foot" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Left foot</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 hover:bg-slate-50 sm:col-span-2"><input type="checkbox" name="affected_area" value="Other" id="affected_area_cb_other" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"> Other</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Head/Face" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Head/Face</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Neck" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Neck</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Trunk" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Trunk</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Right arm" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Right arm</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Left arm" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Left arm</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Right hand" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Right hand</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Left hand" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Left hand</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Right leg" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Right leg</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Left leg" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Left leg</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Right foot" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Right foot</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Left foot" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Left foot</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" name="affected_area" value="Other" id="affected_area_cb_other" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Other</label>
                   </div>
                 </div>
               </div>
@@ -182,33 +273,63 @@
             <div class="mb-4">
               <label class="mb-2 block text-sm font-medium text-slate-700">Description of Wound</label>
               <div class="grid grid-cols-2 gap-3 overflow-visible pt-1 md:grid-cols-5">
-                <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="Punctured">
+                <label class="group relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 px-3 py-3 transition-colors wound-type" data-value="Punctured">
                   <input type="radio" name="wound_description" value="Punctured" class="peer sr-only" required aria-describedby="wound-desc-punctured">
                   <span id="wound-desc-punctured" class="sr-only">Small, deep hole—often from teeth; may close quickly on the surface.</span>
+                  <span class="grid h-11 w-11 place-items-center rounded-lg bg-slate-100 text-slate-600">
+                    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" class="h-7 w-7">
+                      <path d="M10 20c10-8 34-8 44 0" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                      <path d="M10 44c10 8 34 8 44 0" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                      <circle cx="32" cy="32" r="4" fill="currentColor"/>
+                    </svg>
+                  </span>
                   <span class="text-xs font-medium">Punctured</span>
                   <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Small, deep hole—often from teeth; may close quickly on the surface.</span>
                 </label>
-                <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="Abrasion">
+                <label class="group relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 px-3 py-3 transition-colors wound-type" data-value="Abrasion">
                   <input type="radio" name="wound_description" value="Abrasion" class="peer sr-only" aria-describedby="wound-desc-abrasion">
                   <span id="wound-desc-abrasion" class="sr-only">Superficial scrape; top layers of skin rubbed off.</span>
+                  <span class="grid h-11 w-11 place-items-center rounded-lg bg-slate-100 text-slate-600">
+                    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" class="h-7 w-7">
+                      <path d="M14 26h36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                      <path d="M18 32h28" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                      <path d="M22 38h20" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                  </span>
                   <span class="text-xs font-medium">Abrasion</span>
                   <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Superficial scrape; top layers of skin rubbed off.</span>
                 </label>
-                <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="Lacerated">
+                <label class="group relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 px-3 py-3 transition-colors wound-type" data-value="Lacerated">
                   <input type="radio" name="wound_description" value="Lacerated" class="peer sr-only" aria-describedby="wound-desc-lacerated">
                   <span id="wound-desc-lacerated" class="sr-only">Jagged or torn cut with irregular edges.</span>
+                  <span class="grid h-11 w-11 place-items-center rounded-lg bg-slate-100 text-slate-600">
+                    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" class="h-7 w-7">
+                      <path d="M14 42l10-10 8 6 8-12 10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
                   <span class="text-xs font-medium">Lacerated</span>
                   <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Jagged or torn cut with irregular edges.</span>
                 </label>
-                <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="Avulsed">
+                <label class="group relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 px-3 py-3 transition-colors wound-type" data-value="Avulsed">
                   <input type="radio" name="wound_description" value="Avulsed" class="peer sr-only" aria-describedby="wound-desc-avulsed">
                   <span id="wound-desc-avulsed" class="sr-only">Skin or tissue partly torn away or hanging as a flap.</span>
+                  <span class="grid h-11 w-11 place-items-center rounded-lg bg-slate-100 text-slate-600">
+                    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" class="h-7 w-7">
+                      <path d="M18 40c8-16 20-16 28 0" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                      <path d="M18 40c2 6 8 10 14 10h0c6 0 12-4 14-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                  </span>
                   <span class="text-xs font-medium">Avulsed</span>
                   <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Skin or tissue partly torn away or hanging as a flap.</span>
                 </label>
-                <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors wound-type" data-value="None">
+                <label class="group relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 px-3 py-3 transition-colors wound-type" data-value="None">
                   <input type="radio" name="wound_description" value="None" class="peer sr-only" aria-describedby="wound-desc-none">
                   <span id="wound-desc-none" class="sr-only">No break in the skin or no wound visible.</span>
+                  <span class="grid h-11 w-11 place-items-center rounded-lg bg-slate-100 text-slate-600">
+                    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" class="h-7 w-7">
+                      <path d="M18 32h28" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                  </span>
                   <span class="text-xs font-medium">None</span>
                   <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">No break in the skin or no wound visible.</span>
                 </label>
@@ -401,98 +522,6 @@
               <label for="hrtig_date" class="mb-2 block text-sm font-medium text-slate-700">HRIG Date</label>
               <input type="date" id="hrtig_date" name="hrtig_date" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
               <p class="mt-1 text-xs text-slate-500">Required only if HRIG is Yes</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Step 2: Victim Information -->
-        <div id="step-2" class="step-content hidden">
-          <div class="mb-6">
-            <h3 class="text-lg font-bold text-slate-900">Victim Information</h3>
-            <p class="mt-1 text-sm text-slate-600">Please provide the details of the person who was bitten.</p>
-          </div>
-
-          <div class="space-y-6">
-            <div>
-              <label for="relationship_to_user" class="mb-2 block text-sm font-semibold text-slate-900">Relationship to Account User</label>
-              <select
-                id="relationship_to_user"
-                name="relationship_to_user"
-                class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              >
-                <option value="Self" selected>Self</option>
-                <option value="Child">Child</option>
-                <option value="Relative">Relative</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div>
-                <label for="victim_first_name" class="mb-2 block text-sm font-semibold text-slate-900">First Name</label>
-                <input type="text" id="victim_first_name" name="victim_first_name" value="{{ patient.first_name or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="First name">
-              </div>
-              <div>
-                <label for="victim_middle_initial" class="mb-2 block text-sm font-semibold text-slate-900">Middle Initial <span class="font-normal text-slate-500">(optional)</span></label>
-                <input type="text" id="victim_middle_initial" name="victim_middle_initial" maxlength="2" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="M.I.">
-              </div>
-              <div>
-                <label for="victim_last_name" class="mb-2 block text-sm font-semibold text-slate-900">Last Name</label>
-                <input type="text" id="victim_last_name" name="victim_last_name" value="{{ patient.last_name or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Last name">
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div>
-                <label for="date_of_birth" class="mb-2 block text-sm font-semibold text-slate-900">Birthday</label>
-                <input type="date" id="date_of_birth" name="date_of_birth" value="{{ patient.date_of_birth or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              </div>
-              <div>
-                <label for="gender" class="mb-2 block text-sm font-semibold text-slate-900">Gender</label>
-                <select id="gender" name="gender" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                  <option value="">Select gender...</option>
-                  <option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
-                  <option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
-                  <option value="Other" {% if patient.gender == 'Other' %}selected{% endif %}>Other</option>
-                </select>
-              </div>
-              <div>
-                <label for="age" class="mb-2 block text-sm font-semibold text-slate-900">Age</label>
-                <input type="number" id="age" name="age" value="{{ patient.age or '' }}" required readonly inputmode="none" tabindex="-1" title="Computed from birthday" class="w-full cursor-default rounded-lg border border-slate-300 bg-slate-100 px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="—">
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label for="barangay" class="mb-2 block text-sm font-semibold text-slate-900">Barangay</label>
-                <select id="barangay" name="barangay" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                  <option value="">Select barangay...</option>
-                  {% set _addr = patient.address or '' %}
-                  {% set _parts = _addr.split(',') %}
-                  {% set patient_barangay = _parts[0].strip() if _parts else '' %}
-                  <option value="Adlaon" {% if patient_barangay == 'Adlaon' %}selected{% endif %}>Adlaon</option>
-                  <option value="Agsungot" {% if patient_barangay == 'Agsungot' %}selected{% endif %}>Agsungot</option>
-                  <option value="Apas" {% if patient_barangay == 'Apas' %}selected{% endif %}>Apas</option>
-                  {% for b in ['Babag','Bacayan','Banilad','Basak Pardo','Basak San Nicolas','Binaliw','Bonbon','Budlaan','Buhisan','Bulacao','Buot','Busay','Calamba','Cambinocot','Capitol Site','Carreta','Cogon Pardo','Cogon Ramos','Day-as','Duljo Fatima','Ermita','Guadalupe','Guba','Hipodromo','Inayawan','Kalubihan','Kalunasan','Kamagayan','Kamputhaw','Kasambagan','Kinasang-an Pardo','Labangon','Lahug','Lorega San Miguel','Lusaran','Luz','Mabini','Mabolo','Malubog','Mambaling','Pahina Central','Pahina San Nicolas','Pamutan','Pari-an','Paril','Pasil','Pit-os','Poblacion Pardo','Pulangbato','Pung-ol Sibugay','Punta Princesa','Quiot Pardo','Sambag I','Sambag II','San Antonio','San Jose','San Nicolas Proper','San Roque','Santa Cruz','Santo Niño','Sapangdaku','Sawang Calero','Sinsin','Sirao','Suba','Sudlon I','Sudlon II','T. Padilla','Tabunan','Tagba-o','Talamban','Taptap','Tejero','Tinago','Tisa','To-ong','Zapatera'] %}
-                  <option value="{{ b }}" {% if patient_barangay == b %}selected{% endif %}>{{ b }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div>
-                <label for="victim_address" class="mb-2 block text-sm font-semibold text-slate-900">Address (Street, Building, etc.)</label>
-                <input type="text" id="victim_address" name="victim_address" value="{{ (_parts[1:]|join(', ')) if _parts|length > 1 else (_parts[0].strip() if _parts else '') }}" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Street, building, house no., etc.">
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label for="contact_number" class="mb-2 block text-sm font-semibold text-slate-900">Contact Number</label>
-                <input type="tel" id="contact_number" name="contact_number" value="{{ patient.phone_number or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g., 09123456789">
-              </div>
-              <div>
-                <label for="email_address" class="mb-2 block text-sm font-semibold text-slate-900">Email Address</label>
-                <input type="email" id="email_address" name="email_address" value="{{ patient.email or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Enter email address">
-              </div>
             </div>
           </div>
         </div>
@@ -791,8 +820,8 @@ function getStepDivId(step) {
 }
 
 function getStepName(step) {
-  const names4 = ['', 'Bite Details', 'Victim Info', 'Choose appointment time', 'Summary'];
-  const names3 = ['', 'Bite Details', 'Victim Info', 'Summary'];
+  const names4 = ['', 'Victim Info', 'Bite Details', 'Choose appointment time', 'Summary'];
+  const names3 = ['', 'Victim Info', 'Bite Details', 'Summary'];
   const names = totalSteps === 4 ? names4 : names3;
   return names[step] || '';
 }
@@ -814,12 +843,30 @@ function showStep(step) {
   document.getElementById('submit-btn').classList.toggle('hidden', step !== totalSteps);
 
   initializeRadioButtons();
-  if (step === 2) {
+  if (step === 1) {
     updateAgeFromDob();
   }
   if (isAppointmentFlow && step === 3) {
     var sel = document.getElementById('clinic_select');
     if (sel) document.getElementById('clinic_id_slot').value = sel.value;
+  }
+
+  // Ensure each step starts at the top (modal vs embedded page)
+  try {
+    if (window.preScreeningEmbedded) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      var modal = document.getElementById('pre-screening-modal');
+      if (modal) modal.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  } catch (e) {
+    // Ignore scroll errors (older browsers / unsupported options)
+    if (window.preScreeningEmbedded) {
+      window.scrollTo(0, 0);
+    } else {
+      var modal2 = document.getElementById('pre-screening-modal');
+      if (modal2) modal2.scrollTop = 0;
+    }
   }
 }
 
@@ -869,7 +916,7 @@ function validateStep(step) {
     return true;
   }
 
-  if (step === 1) {
+  if (step === 2) {
     const areaChecked = stepElement.querySelectorAll('input[name="affected_area"]:checked');
     if (areaChecked.length === 0) {
       showAlert('Please select at least one affected area.');
@@ -942,7 +989,7 @@ function collectStepData(step) {
       formData[input.name] = input.value;
     }
   });
-  if (step === 1) {
+  if (step === 2) {
     formData.affected_area = collectAffectedAreaArray();
   }
 }
@@ -1518,6 +1565,61 @@ document.addEventListener('DOMContentLoaded', function() {
         placeOtherInput.value = '';
       }
     });
+  }
+
+  function syncRelationshipVictimAutofill() {
+    var rel = document.getElementById('relationship_to_user');
+    if (!rel) return;
+
+    var ids = [
+      'victim_first_name',
+      'victim_middle_initial',
+      'victim_last_name',
+      'date_of_birth',
+      'gender',
+      'age',
+      'barangay',
+      'contact_number',
+      'email_address',
+    ];
+
+    function setFromSelf() {
+      ids.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        var v = el.getAttribute('data-self-value') || '';
+        if (el.tagName === 'SELECT') {
+          el.value = v;
+        } else {
+          el.value = v;
+        }
+      });
+      updateAgeFromDob();
+    }
+
+    function clearVictim() {
+      ids.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (el.tagName === 'SELECT') {
+          el.value = '';
+        } else {
+          el.value = '';
+        }
+      });
+      updateAgeFromDob();
+    }
+
+    if ((rel.value || '').toLowerCase() === 'self') setFromSelf();
+    else clearVictim();
+  }
+
+  var relEl = document.getElementById('relationship_to_user');
+  if (relEl) {
+    relEl.addEventListener('change', function() {
+      syncRelationshipVictimAutofill();
+    });
+    syncRelationshipVictimAutofill();
   }
 
   function syncAffectedOther() {

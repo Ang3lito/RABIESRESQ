@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS cases (
   type_of_exposure TEXT,
   animal_detail TEXT,
   animal_condition TEXT,
+  animal_vaccination TEXT,
   category TEXT,
   risk_level TEXT NOT NULL,
   case_status TEXT,

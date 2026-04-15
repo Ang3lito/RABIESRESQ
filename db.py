@@ -80,32 +80,47 @@ def init_app(app):
         except sqlite3.OperationalError:
             # If appointments table itself doesn't exist yet, schema/init will create it later.
             pass
-    # Ensure cases WHO category columns exist (for older DBs before WHO classifier).
     try:
-        conn.execute("SELECT who_category_auto FROM cases LIMIT 1")
-    except sqlite3.OperationalError:
+        # Ensure cases WHO category columns exist (for older DBs before WHO classifier).
         try:
-            conn.execute("ALTER TABLE cases ADD COLUMN who_category_auto TEXT")
-            conn.execute("ALTER TABLE cases ADD COLUMN who_category_final TEXT")
-            conn.execute("ALTER TABLE cases ADD COLUMN who_category_reasons_json TEXT")
-            conn.execute("ALTER TABLE cases ADD COLUMN who_category_version TEXT")
-            conn.execute("ALTER TABLE cases ADD COLUMN who_category_overridden_by_user_id INTEGER")
-            conn.execute("ALTER TABLE cases ADD COLUMN who_category_overridden_at TEXT")
-            conn.execute("ALTER TABLE cases ADD COLUMN who_category_override_reason TEXT")
-            # Backfill from existing fields when available.
-            conn.execute(
-                """
-                UPDATE cases
-                SET who_category_auto = COALESCE(NULLIF(TRIM(risk_level), ''), NULLIF(TRIM(category), '')),
-                    who_category_final = COALESCE(NULLIF(TRIM(risk_level), ''), NULLIF(TRIM(category), ''))
-                WHERE (who_category_auto IS NULL OR TRIM(who_category_auto) = '')
-                   OR (who_category_final IS NULL OR TRIM(who_category_final) = '')
-                """
-            )
-            conn.commit()
+            conn.execute("SELECT who_category_auto FROM cases LIMIT 1")
         except sqlite3.OperationalError:
-            # If cases table itself doesn't exist yet, schema/init will create it later.
-            pass
+            try:
+                conn.execute("ALTER TABLE cases ADD COLUMN who_category_auto TEXT")
+                conn.execute("ALTER TABLE cases ADD COLUMN who_category_final TEXT")
+                conn.execute("ALTER TABLE cases ADD COLUMN who_category_reasons_json TEXT")
+                conn.execute("ALTER TABLE cases ADD COLUMN who_category_version TEXT")
+                conn.execute("ALTER TABLE cases ADD COLUMN who_category_overridden_by_user_id INTEGER")
+                conn.execute("ALTER TABLE cases ADD COLUMN who_category_overridden_at TEXT")
+                conn.execute("ALTER TABLE cases ADD COLUMN who_category_override_reason TEXT")
+                # Backfill from existing fields when available.
+                conn.execute(
+                    """
+                    UPDATE cases
+                    SET who_category_auto = COALESCE(NULLIF(TRIM(risk_level), ''), NULLIF(TRIM(category), '')),
+                        who_category_final = COALESCE(NULLIF(TRIM(risk_level), ''), NULLIF(TRIM(category), ''))
+                    WHERE (who_category_auto IS NULL OR TRIM(who_category_auto) = '')
+                       OR (who_category_final IS NULL OR TRIM(who_category_final) = '')
+                    """
+                )
+                conn.commit()
+            except sqlite3.OperationalError:
+                # If cases table itself doesn't exist yet, schema/init will create it later.
+                pass
+
+        # Ensure cases.animal_vaccination exists (for analytics/filtering parity with pre-screening form).
+        _ensure_cases_animal_vaccination_column(conn)
     finally:
         conn.close()
+
+
+def _ensure_cases_animal_vaccination_column(conn: sqlite3.Connection) -> None:
+    try:
+        conn.execute("SELECT animal_vaccination FROM cases LIMIT 1")
+    except sqlite3.OperationalError:
+        try:
+            conn.execute("ALTER TABLE cases ADD COLUMN animal_vaccination TEXT")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass
 

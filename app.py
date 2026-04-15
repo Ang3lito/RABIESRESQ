@@ -4464,10 +4464,10 @@ def create_app():
                 INSERT INTO cases (
                     patient_id, clinic_id, exposure_date, exposure_time,
                     place_of_exposure, affected_area,
-                    type_of_exposure, animal_detail, animal_condition,
+                    type_of_exposure, animal_detail, animal_condition, animal_vaccination,
                     risk_level, case_status, tetanus_prophylaxis_status,
                     who_category_auto, who_category_final, who_category_reasons_json, who_category_version
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     target_patient_id,
@@ -4479,6 +4479,7 @@ def create_app():
                     type_of_exposure,
                     animal_detail,
                     animal_status,
+                    animal_vaccination,
                     risk_level,
                     "Queued" if form_type == "appointment" else "Active",
                     tetanus_immunization,
@@ -5168,7 +5169,7 @@ def create_app():
                         patient = _patient_defaults_from_prescreening_form(request.form)
                         breadcrumbs = [
                             {"label": "Home", "href": url_for("staff_dashboard")},
-                            {"label": "Patients", "href": url_for("staff_patients")},
+                            {"label": "Cases", "href": url_for("staff_patients")},
                             {"label": "New Patient", "href": None},
                         ]
                         return render_template(
@@ -5179,10 +5180,10 @@ def create_app():
                             clinics=clinics,
                             breadcrumbs=breadcrumbs,
                             active_page="cases",
-                            pre_screening_embedded=True,
-                            pre_screening_form_action=url_for("staff_new_patient_account"),
-                            pre_screening_cancel_url=url_for("staff_patients"),
-                            pre_screening_submit_label="Create patient account",
+            pre_screening_embedded=False,
+            pre_screening_form_action=url_for("staff_new_patient_account"),
+            pre_screening_cancel_url=url_for("staff_patients"),
+            pre_screening_submit_label="Create patient account",
                         )
 
                 username_seed = email.split("@", 1)[0]
@@ -5248,10 +5249,10 @@ def create_app():
                         INSERT INTO cases (
                             patient_id, clinic_id, exposure_date, exposure_time,
                             place_of_exposure, affected_area,
-                            type_of_exposure, animal_detail, animal_condition,
+                            type_of_exposure, animal_detail, animal_condition, animal_vaccination,
                             category, risk_level, case_status, tetanus_prophylaxis_status,
                             who_category_auto, who_category_final, who_category_reasons_json, who_category_version
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             patient_id,
@@ -5263,6 +5264,7 @@ def create_app():
                             pdata["type_of_exposure"],
                             pdata["animal_detail"],
                             pdata["animal_status"],
+                            pdata.get("animal_vaccination") or "",
                             pdata["risk_level"],
                             pdata["risk_level"],
                             "Pending",
@@ -5342,7 +5344,7 @@ def create_app():
 
         breadcrumbs = [
             {"label": "Home", "href": url_for("staff_dashboard")},
-            {"label": "Patients", "href": url_for("staff_patients")},
+            {"label": "Cases", "href": url_for("staff_patients")},
             {"label": "New Patient", "href": None},
         ]
         patient_ctx = empty_patient
@@ -5356,7 +5358,7 @@ def create_app():
             clinics=clinics,
             breadcrumbs=breadcrumbs,
             active_page="cases",
-            pre_screening_embedded=True,
+            pre_screening_embedded=False,
             pre_screening_form_action=url_for("staff_new_patient_account"),
             pre_screening_cancel_url=url_for("staff_patients"),
             pre_screening_submit_label="Create patient account",
@@ -5393,11 +5395,14 @@ def create_app():
             "address": "",
             "exposure_date": "",
             "type_of_exposure": "",
+            "animal_type": "",
+            "other_animal": "",
             "animal_detail": "",
             "risk_level": "",
             "wound_description": "",
             "bleeding_type": "",
             "local_treatment": "",
+            "other_treatment": "",
             "patient_prev_immunization": "",
             "prev_vaccine_date": "",
             "tetanus_date": "",
@@ -5446,14 +5451,32 @@ def create_app():
                 errors.append("Exposure date is required.")
             if not form_data["type_of_exposure"]:
                 errors.append("Type of exposure is required.")
-            if not form_data["animal_detail"]:
-                errors.append("Animal detail is required.")
             if not form_data["risk_level"]:
                 errors.append("Category / risk level is required.")
             if errors:
                 for err in errors:
                     flash(err, "error")
             else:
+                animal_type = (form_data.get("animal_type") or "").strip()
+                other_animal = (form_data.get("other_animal") or "").strip()
+                if animal_type == "Others" and other_animal:
+                    form_data["animal_detail"] = f"Others: {other_animal}"
+                elif animal_type == "Others":
+                    form_data["animal_detail"] = "Others"
+                elif animal_type:
+                    form_data["animal_detail"] = animal_type
+
+                local_base = (form_data.get("local_treatment") or "").strip()
+                other_treat = (form_data.get("other_treatment") or "").strip()
+                if local_base == "Others" and other_treat:
+                    form_data["local_treatment"] = f"Others: {other_treat}"
+                elif local_base == "Others":
+                    form_data["local_treatment"] = "Others"
+
+                if not form_data["animal_detail"]:
+                    flash("Animal detail is required.", "error")
+                    return redirect(url_for("staff_create_case_record"))
+
                 risk_level = form_data["risk_level"]
                 if risk_level.lower() in {"category 1", "category i", "1", "i"}:
                     risk_level = "Category I"
@@ -5461,6 +5484,8 @@ def create_app():
                     risk_level = "Category II"
                 elif risk_level.lower() in {"category 3", "category iii", "3", "iii"}:
                     risk_level = "Category III"
+                elif risk_level.lower() == "unknown":
+                    risk_level = "Unknown"
 
                 try:
                     age_value = None
@@ -5502,9 +5527,10 @@ def create_app():
                         """
                         INSERT INTO cases (
                           patient_id, clinic_id, exposure_date, type_of_exposure, animal_detail,
+                          animal_vaccination,
                           risk_level, category, case_status,
                           who_category_auto, who_category_final, who_category_reasons_json, who_category_version
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?)
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?)
                         """,
                         (
                             patient_id,
@@ -5512,6 +5538,7 @@ def create_app():
                             form_data["exposure_date"],
                             form_data["type_of_exposure"],
                             form_data["animal_detail"],
+                            "",
                             risk_level,
                             risk_level,
                             who_category_auto,
@@ -5644,8 +5671,8 @@ def create_app():
 
         breadcrumbs = [
             {"label": "Home", "href": url_for("staff_dashboard")},
-            {"label": "Patients", "href": url_for("staff_patients")},
-            {"label": "Add Record", "href": None},
+            {"label": "Cases", "href": url_for("staff_patients")},
+            {"label": "Add Existing Record", "href": None},
         ]
         return render_template(
             "staff_case_create.html",
@@ -5658,7 +5685,7 @@ def create_app():
             suggested_dates_by_type=suggested_dates_by_type,
             expiry_min_date=datetime.now().date().isoformat(),
             breadcrumbs=breadcrumbs,
-            active_page="cases",
+            active_page="cases_add",
         )
 
     @app.get("/staff/patients")
@@ -5687,13 +5714,38 @@ def create_app():
         staff_display_name = _staff_display_name(staff)
         maintenance = _run_case_status_maintenance(staff["clinic_id"])
 
-        search = (request.args.get("search") or "").strip()
+        q = request.args.to_dict(flat=True)
+        search = (q.get("search") or "").strip()
         category = (request.args.get("category") or "all").strip().lower()
         if category not in {"all", "category i", "category ii", "category iii"}:
             category = "all"
         case_status = (request.args.get("status") or "all").strip().lower()
         if case_status not in {"all", "pending", "completed", "no show"}:
             case_status = "all"
+
+        # Extended filters (reasonable subset + inventory joins)
+        gender = (q.get("gender") or "all").strip()
+        if gender.lower() not in {"all", "male", "female", "other"}:
+            gender = "all"
+        age_min_raw = (q.get("age_min") or "").strip()
+        age_max_raw = (q.get("age_max") or "").strip()
+        barangay = (q.get("barangay") or "").strip()
+        site_of_bite = (q.get("site") or "").strip()
+        animal_type = (q.get("animal_type") or "all").strip()
+        if animal_type.lower() not in {"all", "dog", "cat", "others"}:
+            animal_type = "all"
+        animal_status = (q.get("animal_status") or "all").strip()
+        if animal_status.lower() not in {"all", "healthy", "killed", "sick", "lost", "died"}:
+            animal_status = "all"
+        animal_vacc = (q.get("animal_vaccination") or "all").strip()
+        if animal_vacc.lower() not in {"all", "updated", "not updated", "none"}:
+            animal_vacc = "all"
+        bio = (q.get("bio") or "all").strip()
+        if bio.lower() not in {"all", "anti-rabies", "hrig/erig", "tetanus"}:
+            bio = "all"
+        batch = (q.get("batch") or "").strip()
+        date_from = (q.get("date_from") or "").strip()
+        date_to = (q.get("date_to") or "").strip()
 
         try:
             page = int(request.args.get("page", "1"))
@@ -5730,6 +5782,110 @@ def create_app():
             where_clauses.append("(" + " OR ".join(search_parts) + ")")
             params.extend(search_params)
 
+        if gender.lower() != "all":
+            where_clauses.append("LOWER(COALESCE(p.gender, '')) = ?")
+            params.append(gender.lower())
+
+        def _try_int(s: str) -> int | None:
+            try:
+                return int(s)
+            except Exception:
+                return None
+
+        age_min = _try_int(age_min_raw) if age_min_raw else None
+        age_max = _try_int(age_max_raw) if age_max_raw else None
+        if age_min is not None:
+            where_clauses.append("COALESCE(p.age, 0) >= ?")
+            params.append(age_min)
+        if age_max is not None:
+            where_clauses.append("COALESCE(p.age, 0) <= ?")
+            params.append(age_max)
+
+        if barangay:
+            # Barangay is typically the first segment of the address before a comma.
+            where_clauses.append(
+                """LOWER(
+                      CASE WHEN INSTR(COALESCE(p.address,''), ',') > 0
+                           THEN TRIM(SUBSTR(COALESCE(p.address,''), 1, INSTR(COALESCE(p.address,''), ',') - 1))
+                           ELSE TRIM(COALESCE(p.address,''))
+                      END
+                    ) LIKE ?"""
+            )
+            params.append(f"%{barangay.lower()}%")
+
+        if site_of_bite:
+            where_clauses.append("LOWER(COALESCE(c.affected_area, '')) LIKE ?")
+            params.append(f"%{site_of_bite.lower()}%")
+
+        if animal_type.lower() != "all":
+            if animal_type.lower() == "dog":
+                where_clauses.append("LOWER(COALESCE(c.animal_detail, '')) LIKE 'dog%'")
+            elif animal_type.lower() == "cat":
+                where_clauses.append("LOWER(COALESCE(c.animal_detail, '')) LIKE 'cat%'")
+            else:
+                where_clauses.append(
+                    "(LOWER(COALESCE(c.animal_detail, '')) LIKE 'others%' OR (LOWER(COALESCE(c.animal_detail, '')) NOT LIKE 'dog%' AND LOWER(COALESCE(c.animal_detail, '')) NOT LIKE 'cat%'))"
+                )
+
+        if animal_status.lower() != "all":
+            where_clauses.append("LOWER(COALESCE(c.animal_condition, '')) = ?")
+            params.append(animal_status.lower())
+
+        if animal_vacc.lower() != "all":
+            where_clauses.append("LOWER(COALESCE(c.animal_vaccination, '')) = ?")
+            params.append(animal_vacc.lower())
+
+        if date_from:
+            where_clauses.append("DATE(COALESCE(NULLIF(c.exposure_date,''), c.created_at)) >= DATE(?)")
+            params.append(date_from)
+        if date_to:
+            where_clauses.append("DATE(COALESCE(NULLIF(c.exposure_date,''), c.created_at)) <= DATE(?)")
+            params.append(date_to)
+
+        if batch:
+            where_clauses.append(
+                """(
+                    LOWER(COALESCE(vc.pcec_batch, '')) LIKE ?
+                    OR EXISTS (
+                        SELECT 1 FROM vaccination_records vr
+                        WHERE vr.case_id = c.id
+                          AND LOWER(COALESCE(vr.vaccine_brand_batch, '')) LIKE ?
+                        LIMIT 1
+                    )
+                )"""
+            )
+            b_like = f"%{batch.lower()}%"
+            params.extend([b_like, b_like])
+
+        if bio.lower() != "all":
+            if bio.lower() == "anti-rabies":
+                where_clauses.append(
+                    """(
+                      NULLIF(TRIM(COALESCE(vc.anti_rabies, '')), '') IS NOT NULL
+                      OR EXISTS (
+                        SELECT 1 FROM vaccination_card_doses vcd
+                        WHERE vcd.case_id = c.id AND NULLIF(TRIM(COALESCE(vcd.dose_date,'')), '') IS NOT NULL
+                        LIMIT 1
+                      )
+                    )"""
+                )
+            elif bio.lower() == "hrig/erig":
+                where_clauses.append(
+                    """(
+                      NULLIF(TRIM(COALESCE(vc.erig_hrig, '')), '') IS NOT NULL
+                      OR NULLIF(TRIM(COALESCE(vc.htig, '')), '') IS NOT NULL
+                      OR COALESCE(psd.hrtig_immunization, 0) = 1
+                    )"""
+                )
+            else:
+                where_clauses.append(
+                    """(
+                      NULLIF(TRIM(COALESCE(vc.tetanus_prophylaxis, '')), '') IS NOT NULL
+                      OR NULLIF(TRIM(COALESCE(vc.tetanus_toxoid, '')), '') IS NOT NULL
+                      OR NULLIF(TRIM(COALESCE(vc.ats, '')), '') IS NOT NULL
+                    )"""
+                )
+
         where_sql = " AND ".join(where_clauses)
 
         count_sql = (
@@ -5738,6 +5894,8 @@ def create_app():
             FROM cases c
             JOIN patients p ON p.id = c.patient_id
             LEFT JOIN users u ON u.id = p.user_id
+            LEFT JOIN pre_screening_details psd ON psd.case_id = c.id
+            LEFT JOIN vaccination_card vc ON vc.case_id = c.id
             WHERE
             """
             + where_sql
@@ -5775,6 +5933,8 @@ def create_app():
             FROM cases c
             JOIN patients p ON p.id = c.patient_id
             LEFT JOIN users u ON u.id = p.user_id
+            LEFT JOIN pre_screening_details psd ON psd.case_id = c.id
+            LEFT JOIN vaccination_card vc ON vc.case_id = c.id
             WHERE
             """
             + where_sql
@@ -5870,7 +6030,7 @@ def create_app():
 
         breadcrumbs = [
             {"label": "Home", "href": url_for("staff_dashboard")},
-            {"label": "Patients", "href": None},
+            {"label": "Cases", "href": None},
         ]
 
 
@@ -5882,6 +6042,18 @@ def create_app():
             selected_category=category,
             selected_status=case_status,
             search=search,
+            selected_gender=gender,
+            selected_age_min=age_min_raw,
+            selected_age_max=age_max_raw,
+            selected_barangay=barangay,
+            selected_site=site_of_bite,
+            selected_animal_type=animal_type,
+            selected_animal_status=animal_status,
+            selected_animal_vaccination=animal_vacc,
+            selected_bio=bio,
+            selected_batch=batch,
+            selected_date_from=date_from,
+            selected_date_to=date_to,
             breadcrumbs=breadcrumbs,
             active_page="cases",
         )
@@ -6017,6 +6189,664 @@ def create_app():
             breadcrumbs=breadcrumbs,
             active_page="appointments",
         )
+
+    @app.get("/staff/cases/export.csv")
+    @role_required("clinic_personnel", "system_admin")
+    def staff_cases_export_csv():
+        if session.get("role") == "system_admin":
+            return redirect(url_for("admin_dashboard"))
+        db = get_db()
+        staff = db.execute(
+            """
+            SELECT cp.*, u.username, u.email, c.name AS clinic_name
+            FROM clinic_personnel cp
+            JOIN users u ON u.id = cp.user_id
+            JOIN clinics c ON c.id = cp.clinic_id
+            WHERE cp.user_id = ?
+            """,
+            (session["user_id"],),
+        ).fetchone()
+        if staff is None:
+            session.clear()
+            flash("Account profile missing, contact admin.", "error")
+            return redirect(url_for("auth.login"))
+
+        # Reuse staff_patients query params by calling that route's logic shape.
+        q = request.args.to_dict(flat=True)
+        # Build a minimal where clause identical to staff_patients
+        # (kept inline to avoid a large refactor).
+        search = (q.get("search") or "").strip()
+        category = (q.get("category") or "all").strip().lower()
+        if category not in {"all", "category i", "category ii", "category iii"}:
+            category = "all"
+        case_status = (q.get("status") or "all").strip().lower()
+        if case_status not in {"all", "pending", "completed", "no show"}:
+            case_status = "all"
+        gender = (q.get("gender") or "all").strip()
+        if gender.lower() not in {"all", "male", "female", "other"}:
+            gender = "all"
+        age_min_raw = (q.get("age_min") or "").strip()
+        age_max_raw = (q.get("age_max") or "").strip()
+        barangay = (q.get("barangay") or "").strip()
+        site_of_bite = (q.get("site") or "").strip()
+        animal_type = (q.get("animal_type") or "all").strip()
+        if animal_type.lower() not in {"all", "dog", "cat", "others"}:
+            animal_type = "all"
+        animal_status = (q.get("animal_status") or "all").strip()
+        if animal_status.lower() not in {"all", "healthy", "killed", "sick", "lost", "died"}:
+            animal_status = "all"
+        animal_vacc = (q.get("animal_vaccination") or "all").strip()
+        if animal_vacc.lower() not in {"all", "updated", "not updated", "none"}:
+            animal_vacc = "all"
+        bio = (q.get("bio") or "all").strip()
+        if bio.lower() not in {"all", "anti-rabies", "hrig/erig", "tetanus"}:
+            bio = "all"
+        batch = (q.get("batch") or "").strip()
+        date_from = (q.get("date_from") or "").strip()
+        date_to = (q.get("date_to") or "").strip()
+
+        where_clauses = [
+            "c.clinic_id = ?",
+            "LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('archived', 'queued', 'scheduled')",
+        ]
+        params: list[object] = [staff["clinic_id"]]
+        if category != "all":
+            where_clauses.append("LOWER(COALESCE(c.risk_level, c.category, '')) = ?")
+            params.append(category)
+        if case_status != "all":
+            where_clauses.append("LOWER(COALESCE(c.case_status, 'pending')) = ?")
+            params.append(case_status)
+        if search:
+            search_like = f"%{search.lower()}%"
+            search_parts = ["LOWER(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')) LIKE ?"]
+            search_params: list[object] = [search_like]
+            case_id_search = search.lower().removeprefix("c-")
+            if case_id_search.isdigit():
+                search_parts.append("c.id = ?")
+                search_params.append(int(case_id_search))
+            where_clauses.append("(" + " OR ".join(search_parts) + ")")
+            params.extend(search_params)
+        if gender.lower() != "all":
+            where_clauses.append("LOWER(COALESCE(p.gender, '')) = ?")
+            params.append(gender.lower())
+
+        def _try_int(s: str) -> int | None:
+            try:
+                return int(s)
+            except Exception:
+                return None
+
+        age_min = _try_int(age_min_raw) if age_min_raw else None
+        age_max = _try_int(age_max_raw) if age_max_raw else None
+        if age_min is not None:
+            where_clauses.append("COALESCE(p.age, 0) >= ?")
+            params.append(age_min)
+        if age_max is not None:
+            where_clauses.append("COALESCE(p.age, 0) <= ?")
+            params.append(age_max)
+        if barangay:
+            where_clauses.append(
+                """LOWER(
+                      CASE WHEN INSTR(COALESCE(p.address,''), ',') > 0
+                           THEN TRIM(SUBSTR(COALESCE(p.address,''), 1, INSTR(COALESCE(p.address,''), ',') - 1))
+                           ELSE TRIM(COALESCE(p.address,''))
+                      END
+                    ) LIKE ?"""
+            )
+            params.append(f"%{barangay.lower()}%")
+        if site_of_bite:
+            where_clauses.append("LOWER(COALESCE(c.affected_area, '')) LIKE ?")
+            params.append(f"%{site_of_bite.lower()}%")
+        if animal_type.lower() != "all":
+            if animal_type.lower() == "dog":
+                where_clauses.append("LOWER(COALESCE(c.animal_detail, '')) LIKE 'dog%'")
+            elif animal_type.lower() == "cat":
+                where_clauses.append("LOWER(COALESCE(c.animal_detail, '')) LIKE 'cat%'")
+            else:
+                where_clauses.append(
+                    "(LOWER(COALESCE(c.animal_detail, '')) LIKE 'others%' OR (LOWER(COALESCE(c.animal_detail, '')) NOT LIKE 'dog%' AND LOWER(COALESCE(c.animal_detail, '')) NOT LIKE 'cat%'))"
+                )
+        if animal_status.lower() != "all":
+            where_clauses.append("LOWER(COALESCE(c.animal_condition, '')) = ?")
+            params.append(animal_status.lower())
+        if animal_vacc.lower() != "all":
+            where_clauses.append("LOWER(COALESCE(c.animal_vaccination, '')) = ?")
+            params.append(animal_vacc.lower())
+        if date_from:
+            where_clauses.append("DATE(COALESCE(NULLIF(c.exposure_date,''), c.created_at)) >= DATE(?)")
+            params.append(date_from)
+        if date_to:
+            where_clauses.append("DATE(COALESCE(NULLIF(c.exposure_date,''), c.created_at)) <= DATE(?)")
+            params.append(date_to)
+        if batch:
+            where_clauses.append(
+                """(
+                    LOWER(COALESCE(vc.pcec_batch, '')) LIKE ?
+                    OR EXISTS (
+                        SELECT 1 FROM vaccination_records vr
+                        WHERE vr.case_id = c.id
+                          AND LOWER(COALESCE(vr.vaccine_brand_batch, '')) LIKE ?
+                        LIMIT 1
+                    )
+                )"""
+            )
+            b_like = f"%{batch.lower()}%"
+            params.extend([b_like, b_like])
+        if bio.lower() != "all":
+            if bio.lower() == "anti-rabies":
+                where_clauses.append(
+                    """(
+                      NULLIF(TRIM(COALESCE(vc.anti_rabies, '')), '') IS NOT NULL
+                      OR EXISTS (
+                        SELECT 1 FROM vaccination_card_doses vcd
+                        WHERE vcd.case_id = c.id AND NULLIF(TRIM(COALESCE(vcd.dose_date,'')), '') IS NOT NULL
+                        LIMIT 1
+                      )
+                    )"""
+                )
+            elif bio.lower() == "hrig/erig":
+                where_clauses.append(
+                    """(
+                      NULLIF(TRIM(COALESCE(vc.erig_hrig, '')), '') IS NOT NULL
+                      OR NULLIF(TRIM(COALESCE(vc.htig, '')), '') IS NOT NULL
+                      OR COALESCE(psd.hrtig_immunization, 0) = 1
+                    )"""
+                )
+            else:
+                where_clauses.append(
+                    """(
+                      NULLIF(TRIM(COALESCE(vc.tetanus_prophylaxis, '')), '') IS NOT NULL
+                      OR NULLIF(TRIM(COALESCE(vc.tetanus_toxoid, '')), '') IS NOT NULL
+                      OR NULLIF(TRIM(COALESCE(vc.ats, '')), '') IS NOT NULL
+                    )"""
+                )
+
+        where_sql = " AND ".join(where_clauses)
+        rows = db.execute(
+            """
+            SELECT
+              c.id AS case_id,
+              COALESCE(NULLIF(TRIM(p.first_name), ''), '') AS first_name,
+              COALESCE(NULLIF(TRIM(p.last_name), ''), '') AS last_name,
+              COALESCE(
+                NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''),
+                u.username,
+                'Unknown'
+              ) AS patient_name,
+              p.gender,
+              p.age,
+              p.phone_number,
+              p.address,
+              c.exposure_date,
+              c.exposure_time,
+              c.place_of_exposure,
+              c.affected_area,
+              c.type_of_exposure,
+              c.animal_detail,
+              c.animal_condition,
+              c.animal_vaccination,
+              COALESCE(
+                NULLIF(TRIM(c.who_category_final), ''),
+                NULLIF(TRIM(c.who_category_auto), ''),
+                NULLIF(TRIM(c.risk_level), ''),
+                NULLIF(TRIM(c.category), ''),
+                'Unknown'
+              ) AS category,
+              COALESCE(c.case_status, 'Pending') AS case_status,
+              psd.wound_description,
+              psd.bleeding_type,
+              psd.local_treatment,
+              psd.patient_prev_immunization,
+              psd.prev_vaccine_date,
+              psd.tetanus_date,
+              psd.hrtig_immunization,
+              vc.anti_rabies,
+              vc.pvrv,
+              vc.pcec_batch,
+              vc.pcec_mfg_date,
+              vc.pcec_expiry,
+              vc.erig_hrig,
+              vc.tetanus_prophylaxis,
+              vc.tetanus_toxoid,
+              vc.ats,
+              vc.htig,
+              vc.remarks
+            FROM cases c
+            JOIN patients p ON p.id = c.patient_id
+            LEFT JOIN users u ON u.id = p.user_id
+            LEFT JOIN pre_screening_details psd ON psd.case_id = c.id
+            LEFT JOIN vaccination_card vc ON vc.case_id = c.id
+            WHERE
+            """
+            + where_sql
+            + """
+            ORDER BY datetime(c.created_at) DESC, c.id DESC
+            """,
+            params,
+        ).fetchall()
+
+        def _barangay_from_address(addr: str | None) -> str:
+            a = (addr or "").strip()
+            if not a:
+                return ""
+            return a.split(",", 1)[0].strip()
+
+        import csv
+        import io
+        output = io.StringIO()
+        w = csv.writer(output)
+        case_ids = [int(r["case_id"]) for r in rows]
+        doses_by_case: dict[int, list[str]] = {}
+        if case_ids:
+            placeholders = ",".join(["?"] * len(case_ids))
+            dose_rows = db.execute(
+                f"""
+                SELECT case_id, record_type, day_number, dose_date, type_of_vaccine, dose, route_site, given_by
+                FROM vaccination_card_doses
+                WHERE case_id IN ({placeholders})
+                ORDER BY case_id, record_type, day_number
+                """,
+                case_ids,
+            ).fetchall()
+            for dr in dose_rows:
+                cid = int(dr["case_id"])
+                label = (
+                    f"{dr['record_type']} Day {dr['day_number']}: "
+                    f"{(dr['dose_date'] or '').strip()} | {(dr['type_of_vaccine'] or '').strip()} | "
+                    f"{(dr['dose'] or '').strip()} | {(dr['route_site'] or '').strip()} | {(dr['given_by'] or '').strip()}"
+                ).strip()
+                doses_by_case.setdefault(cid, []).append(label)
+
+        w.writerow(
+            [
+                "case_id",
+                "case_code",
+                "patient_name",
+                "first_name",
+                "last_name",
+                "gender",
+                "age",
+                "phone_number",
+                "address",
+                "barangay",
+                "exposure_date",
+                "exposure_time",
+                "place_of_exposure",
+                "site_of_bite",
+                "type_of_exposure",
+                "wound_description",
+                "bleeding_type",
+                "local_treatment",
+                "patient_prev_immunization",
+                "prev_vaccine_date",
+                "tetanus_date",
+                "hrtig_immunization",
+                "category",
+                "status",
+                "animal_detail",
+                "animal_status",
+                "animal_vaccination",
+                "vc_anti_rabies",
+                "vc_pvrv",
+                "vc_pcec_batch",
+                "vc_pcec_mfg_date",
+                "vc_pcec_expiry",
+                "vc_erig_hrig",
+                "vc_tetanus_prophylaxis",
+                "vc_tetanus_toxoid",
+                "vc_ats",
+                "vc_htig",
+                "vc_remarks",
+                "vaccination_card_doses",
+            ]
+        )
+        for r in rows:
+            cid = int(r["case_id"])
+            w.writerow(
+                [
+                    cid,
+                    f"C-000{cid}",
+                    r["patient_name"],
+                    r["first_name"] or "",
+                    r["last_name"] or "",
+                    r["gender"] or "",
+                    r["age"] if r["age"] is not None else "",
+                    r["phone_number"] or "",
+                    r["address"] or "",
+                    _barangay_from_address(r["address"]),
+                    r["exposure_date"] or "",
+                    r["exposure_time"] or "",
+                    r["place_of_exposure"] or "",
+                    r["affected_area"] or "",
+                    r["type_of_exposure"] or "",
+                    r["wound_description"] or "",
+                    r["bleeding_type"] or "",
+                    r["local_treatment"] or "",
+                    r["patient_prev_immunization"] or "",
+                    r["prev_vaccine_date"] or "",
+                    r["tetanus_date"] or "",
+                    r["hrtig_immunization"] if r["hrtig_immunization"] is not None else "",
+                    r["category"] or "",
+                    r["case_status"] or "",
+                    r["animal_detail"] or "",
+                    r["animal_condition"] or "",
+                    r["animal_vaccination"] or "",
+                    r["anti_rabies"] or "",
+                    r["pvrv"] or "",
+                    r["pcec_batch"] or "",
+                    r["pcec_mfg_date"] or "",
+                    r["pcec_expiry"] or "",
+                    r["erig_hrig"] or "",
+                    r["tetanus_prophylaxis"] or "",
+                    r["tetanus_toxoid"] or "",
+                    r["ats"] or "",
+                    r["htig"] or "",
+                    r["remarks"] or "",
+                    " || ".join(doses_by_case.get(cid, [])),
+                ]
+            )
+        csv_data = output.getvalue().encode("utf-8-sig")
+        resp = make_response(csv_data)
+        resp.headers["Content-Type"] = "text/csv; charset=utf-8"
+        resp.headers["Content-Disposition"] = 'attachment; filename="cases_export.csv"'
+        return resp
+
+    @app.get("/staff/cases/export.pdf")
+    @role_required("clinic_personnel", "system_admin")
+    def staff_cases_export_pdf():
+        if session.get("role") == "system_admin":
+            return redirect(url_for("admin_dashboard"))
+        try:
+            from xhtml2pdf import pisa  # type: ignore[import]
+        except Exception:
+            flash("PDF generation is temporarily unavailable. Please contact the clinic.", "error")
+            return redirect(url_for("staff_patients"))
+
+        # Reuse CSV builder output and render in a PDF-friendly template.
+        db = get_db()
+        staff = db.execute(
+            """
+            SELECT cp.*, u.username, u.email, c.name AS clinic_name
+            FROM clinic_personnel cp
+            JOIN users u ON u.id = cp.user_id
+            JOIN clinics c ON c.id = cp.clinic_id
+            WHERE cp.user_id = ?
+            """,
+            (session["user_id"],),
+        ).fetchone()
+        if staff is None:
+            session.clear()
+            flash("Account profile missing, contact admin.", "error")
+            return redirect(url_for("auth.login"))
+
+        # Fetch same rows as CSV export by calling the SQL snippet directly.
+        q = request.args.to_dict(flat=True)
+        # Build where clause exactly like CSV route by delegating via an internal request.
+        # For maintainability, this calls the CSV route's query logic via a shared helper pattern.
+        # (Kept simple: repeat the SELECT with same filters as CSV route.)
+        # NOTE: We re-run the same filter builder by calling staff_cases_export_csv's logic above is not possible here.
+        # Instead, we reuse the same SQL+params construction by importing it via a local function scope duplication.
+        # This is acceptable given the tight coupling to the export feature.
+        # -- Begin duplicated filter builder (kept in sync with CSV export) --
+        search = (q.get("search") or "").strip()
+        category = (q.get("category") or "all").strip().lower()
+        if category not in {"all", "category i", "category ii", "category iii"}:
+            category = "all"
+        case_status = (q.get("status") or "all").strip().lower()
+        if case_status not in {"all", "pending", "completed", "no show"}:
+            case_status = "all"
+        gender = (q.get("gender") or "all").strip()
+        if gender.lower() not in {"all", "male", "female", "other"}:
+            gender = "all"
+        age_min_raw = (q.get("age_min") or "").strip()
+        age_max_raw = (q.get("age_max") or "").strip()
+        barangay = (q.get("barangay") or "").strip()
+        site_of_bite = (q.get("site") or "").strip()
+        animal_type = (q.get("animal_type") or "all").strip()
+        if animal_type.lower() not in {"all", "dog", "cat", "others"}:
+            animal_type = "all"
+        animal_status = (q.get("animal_status") or "all").strip()
+        if animal_status.lower() not in {"all", "healthy", "killed", "sick", "lost", "died"}:
+            animal_status = "all"
+        animal_vacc = (q.get("animal_vaccination") or "all").strip()
+        if animal_vacc.lower() not in {"all", "updated", "not updated", "none"}:
+            animal_vacc = "all"
+        bio = (q.get("bio") or "all").strip()
+        if bio.lower() not in {"all", "anti-rabies", "hrig/erig", "tetanus"}:
+            bio = "all"
+        batch = (q.get("batch") or "").strip()
+        date_from = (q.get("date_from") or "").strip()
+        date_to = (q.get("date_to") or "").strip()
+
+        where_clauses = [
+            "c.clinic_id = ?",
+            "LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('archived', 'queued', 'scheduled')",
+        ]
+        params: list[object] = [staff["clinic_id"]]
+        if category != "all":
+            where_clauses.append("LOWER(COALESCE(c.risk_level, c.category, '')) = ?")
+            params.append(category)
+        if case_status != "all":
+            where_clauses.append("LOWER(COALESCE(c.case_status, 'pending')) = ?")
+            params.append(case_status)
+        if search:
+            search_like = f"%{search.lower()}%"
+            search_parts = ["LOWER(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')) LIKE ?"]
+            search_params: list[object] = [search_like]
+            case_id_search = search.lower().removeprefix("c-")
+            if case_id_search.isdigit():
+                search_parts.append("c.id = ?")
+                search_params.append(int(case_id_search))
+            where_clauses.append("(" + " OR ".join(search_parts) + ")")
+            params.extend(search_params)
+        if gender.lower() != "all":
+            where_clauses.append("LOWER(COALESCE(p.gender, '')) = ?")
+            params.append(gender.lower())
+
+        def _try_int(s: str) -> int | None:
+            try:
+                return int(s)
+            except Exception:
+                return None
+
+        age_min = _try_int(age_min_raw) if age_min_raw else None
+        age_max = _try_int(age_max_raw) if age_max_raw else None
+        if age_min is not None:
+            where_clauses.append("COALESCE(p.age, 0) >= ?")
+            params.append(age_min)
+        if age_max is not None:
+            where_clauses.append("COALESCE(p.age, 0) <= ?")
+            params.append(age_max)
+        if barangay:
+            where_clauses.append(
+                """LOWER(
+                      CASE WHEN INSTR(COALESCE(p.address,''), ',') > 0
+                           THEN TRIM(SUBSTR(COALESCE(p.address,''), 1, INSTR(COALESCE(p.address,''), ',') - 1))
+                           ELSE TRIM(COALESCE(p.address,''))
+                      END
+                    ) LIKE ?"""
+            )
+            params.append(f"%{barangay.lower()}%")
+        if site_of_bite:
+            where_clauses.append("LOWER(COALESCE(c.affected_area, '')) LIKE ?")
+            params.append(f"%{site_of_bite.lower()}%")
+        if animal_type.lower() != "all":
+            if animal_type.lower() == "dog":
+                where_clauses.append("LOWER(COALESCE(c.animal_detail, '')) LIKE 'dog%'")
+            elif animal_type.lower() == "cat":
+                where_clauses.append("LOWER(COALESCE(c.animal_detail, '')) LIKE 'cat%'")
+            else:
+                where_clauses.append(
+                    "(LOWER(COALESCE(c.animal_detail, '')) LIKE 'others%' OR (LOWER(COALESCE(c.animal_detail, '')) NOT LIKE 'dog%' AND LOWER(COALESCE(c.animal_detail, '')) NOT LIKE 'cat%'))"
+                )
+        if animal_status.lower() != "all":
+            where_clauses.append("LOWER(COALESCE(c.animal_condition, '')) = ?")
+            params.append(animal_status.lower())
+        if animal_vacc.lower() != "all":
+            where_clauses.append("LOWER(COALESCE(c.animal_vaccination, '')) = ?")
+            params.append(animal_vacc.lower())
+        if date_from:
+            where_clauses.append("DATE(COALESCE(NULLIF(c.exposure_date,''), c.created_at)) >= DATE(?)")
+            params.append(date_from)
+        if date_to:
+            where_clauses.append("DATE(COALESCE(NULLIF(c.exposure_date,''), c.created_at)) <= DATE(?)")
+            params.append(date_to)
+        if batch:
+            where_clauses.append(
+                """(
+                    LOWER(COALESCE(vc.pcec_batch, '')) LIKE ?
+                    OR EXISTS (
+                        SELECT 1 FROM vaccination_records vr
+                        WHERE vr.case_id = c.id
+                          AND LOWER(COALESCE(vr.vaccine_brand_batch, '')) LIKE ?
+                        LIMIT 1
+                    )
+                )"""
+            )
+            b_like = f"%{batch.lower()}%"
+            params.extend([b_like, b_like])
+        if bio.lower() != "all":
+            if bio.lower() == "anti-rabies":
+                where_clauses.append(
+                    """(
+                      NULLIF(TRIM(COALESCE(vc.anti_rabies, '')), '') IS NOT NULL
+                      OR EXISTS (
+                        SELECT 1 FROM vaccination_card_doses vcd
+                        WHERE vcd.case_id = c.id AND NULLIF(TRIM(COALESCE(vcd.dose_date,'')), '') IS NOT NULL
+                        LIMIT 1
+                      )
+                    )"""
+                )
+            elif bio.lower() == "hrig/erig":
+                where_clauses.append(
+                    """(
+                      NULLIF(TRIM(COALESCE(vc.erig_hrig, '')), '') IS NOT NULL
+                      OR NULLIF(TRIM(COALESCE(vc.htig, '')), '') IS NOT NULL
+                      OR COALESCE(psd.hrtig_immunization, 0) = 1
+                    )"""
+                )
+            else:
+                where_clauses.append(
+                    """(
+                      NULLIF(TRIM(COALESCE(vc.tetanus_prophylaxis, '')), '') IS NOT NULL
+                      OR NULLIF(TRIM(COALESCE(vc.tetanus_toxoid, '')), '') IS NOT NULL
+                      OR NULLIF(TRIM(COALESCE(vc.ats, '')), '') IS NOT NULL
+                    )"""
+                )
+        where_sql = " AND ".join(where_clauses)
+        # -- End duplicated filter builder --
+
+        raw = db.execute(
+            """
+            SELECT
+              c.id AS case_id,
+              COALESCE(
+                NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''),
+                u.username,
+                'Unknown'
+              ) AS patient_name,
+              p.gender,
+              p.age,
+              p.phone_number,
+              p.address,
+              c.exposure_date,
+              c.exposure_time,
+              c.place_of_exposure,
+              c.affected_area,
+              c.type_of_exposure,
+              c.animal_detail,
+              c.animal_condition,
+              c.animal_vaccination,
+              COALESCE(
+                NULLIF(TRIM(c.who_category_final), ''),
+                NULLIF(TRIM(c.who_category_auto), ''),
+                NULLIF(TRIM(c.risk_level), ''),
+                NULLIF(TRIM(c.category), ''),
+                'Unknown'
+              ) AS category,
+              COALESCE(c.case_status, 'Pending') AS case_status,
+              psd.wound_description,
+              psd.bleeding_type,
+              psd.local_treatment,
+              psd.patient_prev_immunization,
+              psd.prev_vaccine_date,
+              psd.tetanus_date,
+              psd.hrtig_immunization,
+              vc.anti_rabies,
+              vc.pvrv,
+              vc.pcec_batch,
+              vc.pcec_mfg_date,
+              vc.pcec_expiry,
+              vc.erig_hrig,
+              vc.tetanus_prophylaxis,
+              vc.tetanus_toxoid,
+              vc.ats,
+              vc.htig,
+              vc.remarks
+            FROM cases c
+            JOIN patients p ON p.id = c.patient_id
+            LEFT JOIN users u ON u.id = p.user_id
+            LEFT JOIN pre_screening_details psd ON psd.case_id = c.id
+            LEFT JOIN vaccination_card vc ON vc.case_id = c.id
+            WHERE
+            """
+            + where_sql
+            + """
+            ORDER BY datetime(c.created_at) DESC, c.id DESC
+            """,
+            params,
+        ).fetchall()
+
+        def _barangay_from_address(addr: str | None) -> str:
+            a = (addr or "").strip()
+            if not a:
+                return ""
+            return a.split(",", 1)[0].strip()
+
+        case_ids = [int(r["case_id"]) for r in raw]
+        doses_by_case: dict[int, list[dict[str, object]]] = {}
+        if case_ids:
+            placeholders = ",".join(["?"] * len(case_ids))
+            dose_rows = db.execute(
+                f"""
+                SELECT case_id, record_type, day_number, dose_date, type_of_vaccine, dose, route_site, given_by
+                FROM vaccination_card_doses
+                WHERE case_id IN ({placeholders})
+                ORDER BY case_id, record_type, day_number
+                """,
+                case_ids,
+            ).fetchall()
+            for dr in dose_rows:
+                cid = int(dr["case_id"])
+                doses_by_case.setdefault(cid, []).append(dict(dr))
+
+        rows = []
+        for r in raw:
+            d = dict(r)
+            cid = int(d["case_id"])
+            d["case_code"] = f"C-000{cid}"
+            d["barangay"] = _barangay_from_address(d.get("address"))
+            d["vaccination_doses"] = doses_by_case.get(cid, [])
+            rows.append(d)
+
+        filters_summary = "Exported with current filters."
+        html = render_template(
+            "staff_cases_export_pdf.html",
+            clinic_name=staff["clinic_name"],
+            generated_at=datetime.now().strftime("%b %d, %Y %I:%M %p"),
+            filters_summary=filters_summary,
+            rows=rows,
+        )
+        pdf_io = io.BytesIO()
+        err = pisa.CreatePDF(html, dest=pdf_io, encoding="utf-8")
+        if err.err:
+            flash("PDF generation failed. Please try again.", "error")
+            return redirect(url_for("staff_patients", **q))
+        data = pdf_io.getvalue()
+        resp = make_response(data)
+        resp.headers["Content-Type"] = "application/pdf"
+        resp.headers["Content-Disposition"] = 'attachment; filename="cases_export.pdf"'
+        return resp
 
     @app.get("/staff/vaccinations")
     @role_required("clinic_personnel", "system_admin")
@@ -6312,6 +7142,333 @@ def create_app():
             active_page="vaccinations",
         )
 
+    def _staff_vaccinations_export_rows(staff, q: dict[str, str]) -> list[dict[str, object]]:
+        db = get_db()
+
+        vaccine_type = (q.get("vaccine_type") or "").strip()
+        dose_query = (q.get("dose_query") or "").strip()
+        date_from = (q.get("date_from") or "").strip()
+        date_to = (q.get("date_to") or "").strip()
+        administered_by = (q.get("administered_by") or "").strip()
+        sort_by = (q.get("sort_by") or "date").strip().lower()
+        sort_dir = (q.get("sort_dir") or "desc").strip().lower()
+        if sort_dir not in {"asc", "desc"}:
+            sort_dir = "desc"
+        if sort_by not in {"date", "vaccine_type", "dose", "administered_by", "patient"}:
+            sort_by = "date"
+
+        def _normalize_iso_date(raw_value: str) -> str:
+            value = (raw_value or "").strip()
+            if not value:
+                return ""
+            try:
+                return datetime.fromisoformat(value).date().isoformat()
+            except ValueError:
+                return ""
+
+        date_from = _normalize_iso_date(date_from)
+        date_to = _normalize_iso_date(date_to)
+        if date_from and date_to and date_from > date_to:
+            date_from = ""
+            date_to = ""
+
+        records_rows = db.execute(
+            """
+            SELECT
+              vr.id,
+              vr.case_id,
+              vr.vaccine_type,
+              vr.dose_number,
+              vr.dose_amount,
+              vr.date_administered,
+              COALESCE(
+                NULLIF(TRIM(cp.title || ' ' || cp.first_name || ' ' || cp.last_name), ''),
+                NULLIF(TRIM(cp.first_name || ' ' || cp.last_name), ''),
+                NULLIF(TRIM(u_staff.username), ''),
+                'Unknown Staff'
+              ) AS administered_by_name,
+              COALESCE(
+                NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''),
+                u.username,
+                'Unknown'
+              ) AS patient_name
+            FROM vaccination_records vr
+            JOIN cases c ON c.id = vr.case_id
+            JOIN patients p ON p.id = c.patient_id
+            LEFT JOIN users u ON u.id = p.user_id
+            LEFT JOIN clinic_personnel cp ON cp.id = vr.administered_by_personnel_id
+            LEFT JOIN users u_staff ON u_staff.id = cp.user_id
+            WHERE c.clinic_id = ?
+            """,
+            (staff["clinic_id"],),
+        ).fetchall()
+
+        card_rows = db.execute(
+            """
+            SELECT
+              vcd.rowid AS id,
+              vcd.case_id,
+              vcd.type_of_vaccine AS vaccine_type,
+              CAST(vcd.day_number AS TEXT) AS dose_number,
+              vcd.dose AS dose_amount,
+              vcd.dose_date AS date_administered,
+              COALESCE(NULLIF(TRIM(vcd.given_by), ''), '') AS administered_by_name,
+              COALESCE(
+                NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''),
+                u.username,
+                'Unknown'
+              ) AS patient_name
+            FROM vaccination_card_doses vcd
+            JOIN cases c ON c.id = vcd.case_id
+            JOIN patients p ON p.id = c.patient_id
+            LEFT JOIN users u ON u.id = p.user_id
+            WHERE c.clinic_id = ?
+            """,
+            (staff["clinic_id"],),
+        ).fetchall()
+
+        normalized_rows: list[dict[str, object]] = []
+        seen_keys: set[tuple] = set()
+
+        def _safe_date(value: str) -> str:
+            return _normalize_iso_date(value)
+
+        for source, rows in [("records", records_rows), ("card", card_rows)]:
+            for row in rows:
+                date_iso = _safe_date(row["date_administered"] or "")
+                vaccine_value = (row["vaccine_type"] or "").strip()
+                dose_number = (row["dose_number"] or "").strip()
+                dose_amount = (row["dose_amount"] or "").strip()
+                administered_name = (row["administered_by_name"] or "").strip()
+                dedupe_key = (
+                    row["case_id"],
+                    date_iso,
+                    vaccine_value.lower(),
+                    dose_number.lower(),
+                    dose_amount.lower(),
+                    administered_name.lower(),
+                )
+                if dedupe_key in seen_keys:
+                    continue
+                seen_keys.add(dedupe_key)
+
+                normalized_rows.append(
+                    {
+                        "id": row["id"],
+                        "source": source,
+                        "case_id": int(row["case_id"]),
+                        "case_code": f"C-000{row['case_id']}",
+                        "patient_name": row["patient_name"] or "Unknown Patient",
+                        "vaccine_type": vaccine_value or "N/A",
+                        "dose_number": dose_number,
+                        "dose_amount": dose_amount,
+                        "date_iso": date_iso,
+                        "administered_by_name": administered_name or "Unknown Staff",
+                    }
+                )
+
+        vaccine_type_l = vaccine_type.lower()
+        dose_query_l = dose_query.lower()
+        administered_by_l = administered_by.lower()
+        filtered_rows: list[dict[str, object]] = []
+        for row in normalized_rows:
+            if vaccine_type_l and vaccine_type_l not in (row["vaccine_type"] or "").lower():
+                continue
+            if dose_query_l:
+                dose_haystack = f"{row.get('dose_number','')} {row.get('dose_amount','')}".lower()
+                if dose_query_l not in dose_haystack:
+                    continue
+            if date_from and row["date_iso"] and row["date_iso"] < date_from:
+                continue
+            if date_from and not row["date_iso"]:
+                continue
+            if date_to and row["date_iso"] and row["date_iso"] > date_to:
+                continue
+            if date_to and not row["date_iso"]:
+                continue
+            if administered_by_l and administered_by_l not in (row["administered_by_name"] or "").lower():
+                continue
+            filtered_rows.append(row)
+
+        def _sort_key(r: dict[str, object]):
+            if sort_by == "vaccine_type":
+                return (r.get("vaccine_type") or "").__str__().lower()
+            if sort_by == "dose":
+                return f"{r.get('dose_number','')} {r.get('dose_amount','')}".lower()
+            if sort_by == "administered_by":
+                return (r.get("administered_by_name") or "").__str__().lower()
+            if sort_by == "patient":
+                return (r.get("patient_name") or "").__str__().lower()
+            return r.get("date_iso") or ""
+
+        filtered_rows.sort(key=_sort_key, reverse=(sort_dir == "desc"))
+
+        out: list[dict[str, object]] = []
+        for r in filtered_rows:
+            date_display = r.get("date_iso") or "N/A"
+            if r.get("date_iso"):
+                try:
+                    date_display = datetime.fromisoformat(str(r["date_iso"])).strftime("%b %d, %Y")
+                except ValueError:
+                    date_display = r.get("date_iso") or "N/A"
+            dose_display = (r.get("dose_number") or "").__str__()
+            dose_amount = (r.get("dose_amount") or "").__str__()
+            if dose_amount:
+                dose_display = f"{dose_display} ({dose_amount})" if dose_display else dose_amount
+            out.append(
+                {
+                    "source": r.get("source") or "",
+                    "case_id": r.get("case_id"),
+                    "case_code": r.get("case_code") or "",
+                    "patient_name": r.get("patient_name") or "N/A",
+                    "vaccine_type": r.get("vaccine_type") or "N/A",
+                    "dose_display": dose_display or "N/A",
+                    "date_given": date_display or "N/A",
+                    "administered_by_name": r.get("administered_by_name") or "N/A",
+                }
+            )
+        return out
+
+    @app.get("/staff/vaccinations/export.csv")
+    @role_required("clinic_personnel", "system_admin")
+    def staff_vaccinations_export_csv():
+        if session.get("role") == "system_admin":
+            return redirect(url_for("admin_dashboard"))
+
+        db = get_db()
+        staff = db.execute(
+            """
+            SELECT cp.*, u.username, u.email
+            FROM clinic_personnel cp
+            JOIN users u ON u.id = cp.user_id
+            WHERE cp.user_id = ?
+            """,
+            (session["user_id"],),
+        ).fetchone()
+        if staff is None:
+            session.clear()
+            flash("Account profile missing, contact admin.", "error")
+            return redirect(url_for("auth.login"))
+
+        q = {
+            "vaccine_type": request.args.get("vaccine_type", ""),
+            "dose_query": request.args.get("dose_query", ""),
+            "date_from": request.args.get("date_from", ""),
+            "date_to": request.args.get("date_to", ""),
+            "administered_by": request.args.get("administered_by", ""),
+            "sort_by": request.args.get("sort_by", ""),
+            "sort_dir": request.args.get("sort_dir", ""),
+        }
+        rows = _staff_vaccinations_export_rows(staff, q)
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(
+            [
+                "Case ID",
+                "Case Code",
+                "Patient",
+                "Vaccine Type",
+                "Dose",
+                "Date Given",
+                "Administered By",
+                "Source",
+            ]
+        )
+        for r in rows:
+            writer.writerow(
+                [
+                    r.get("case_id") or "",
+                    r.get("case_code") or "",
+                    r.get("patient_name") or "",
+                    r.get("vaccine_type") or "",
+                    r.get("dose_display") or "",
+                    r.get("date_given") or "",
+                    r.get("administered_by_name") or "",
+                    r.get("source") or "",
+                ]
+            )
+
+        data = output.getvalue().encode("utf-8-sig")
+        resp = make_response(data)
+        resp.headers["Content-Type"] = "text/csv; charset=utf-8"
+        resp.headers["Content-Disposition"] = 'attachment; filename="vaccinations_export.csv"'
+        return resp
+
+    @app.get("/staff/vaccinations/export.pdf")
+    @role_required("clinic_personnel", "system_admin")
+    def staff_vaccinations_export_pdf():
+        if session.get("role") == "system_admin":
+            return redirect(url_for("admin_dashboard"))
+        try:
+            from xhtml2pdf import pisa  # type: ignore[import]
+        except Exception:
+            flash("PDF generation is temporarily unavailable. Please contact the clinic.", "error")
+            return redirect(url_for("staff_vaccinations"))
+
+        db = get_db()
+        staff = db.execute(
+            """
+            SELECT cp.*, u.username, u.email
+            FROM clinic_personnel cp
+            JOIN users u ON u.id = cp.user_id
+            WHERE cp.user_id = ?
+            """,
+            (session["user_id"],),
+        ).fetchone()
+        if staff is None:
+            session.clear()
+            flash("Account profile missing, contact admin.", "error")
+            return redirect(url_for("auth.login"))
+
+        clinic_row = db.execute(
+            "SELECT name FROM clinics WHERE id = ?",
+            (staff["clinic_id"],),
+        ).fetchone()
+        clinic_name = clinic_row["name"] if clinic_row else ""
+
+        q = {
+            "vaccine_type": request.args.get("vaccine_type", ""),
+            "dose_query": request.args.get("dose_query", ""),
+            "date_from": request.args.get("date_from", ""),
+            "date_to": request.args.get("date_to", ""),
+            "administered_by": request.args.get("administered_by", ""),
+            "sort_by": request.args.get("sort_by", ""),
+            "sort_dir": request.args.get("sort_dir", ""),
+        }
+        rows = _staff_vaccinations_export_rows(staff, q)
+
+        filters_parts = []
+        for label, key in [
+            ("Vaccine type", "vaccine_type"),
+            ("Dose", "dose_query"),
+            ("From", "date_from"),
+            ("To", "date_to"),
+            ("Administered by", "administered_by"),
+        ]:
+            v = (q.get(key) or "").strip()
+            if v:
+                filters_parts.append(f"{label}: {v}")
+        filters_summary = ", ".join(filters_parts) if filters_parts else "All"
+
+        html = render_template(
+            "staff_vaccinations_export_pdf.html",
+            clinic_name=clinic_name,
+            generated_at=datetime.now().strftime("%b %d, %Y %I:%M %p"),
+            filters_summary=filters_summary,
+            rows=rows,
+        )
+        pdf_io = io.BytesIO()
+        err = pisa.CreatePDF(html, dest=pdf_io, encoding="utf-8")
+        if err.err:
+            flash("PDF generation failed. Please try again.", "error")
+            return redirect(url_for("staff_vaccinations", **q))
+        data = pdf_io.getvalue()
+        resp = make_response(data)
+        resp.headers["Content-Type"] = "application/pdf"
+        resp.headers["Content-Disposition"] = 'attachment; filename="vaccinations_export.pdf"'
+        return resp
+
     @app.get("/staff/reports")
     @role_required("clinic_personnel", "system_admin")
     def staff_reports():
@@ -6361,6 +7518,13 @@ def create_app():
             flash("Date range is invalid. 'From' date must be on or before 'To' date.", "error")
             date_to = today.isoformat()
             date_from = (today - timedelta(days=13)).isoformat()
+
+        try:
+            recent_page = int(request.args.get("recent_page", "1"))
+        except ValueError:
+            recent_page = 1
+        recent_page = 1 if recent_page < 1 else recent_page
+        recent_per_page = 12
 
         clinic_id = staff["clinic_id"]
         _run_case_status_maintenance(clinic_id)
@@ -6571,6 +7735,23 @@ def create_app():
             {"label": "Cancelled/Removed", "count": int(appointment_status_row["cancelled"] or 0)},
         ]
 
+        total_recent = db.execute(
+            """
+            SELECT COUNT(*) AS total
+            FROM cases c
+            WHERE c.clinic_id = ?
+              AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
+              AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
+            """,
+            (clinic_id, date_from, date_to),
+        ).fetchone()["total"]
+        total_recent = int(total_recent or 0)
+
+        recent_pages = max((total_recent + recent_per_page - 1) // recent_per_page, 1)
+        if recent_page > recent_pages:
+            recent_page = recent_pages
+        recent_offset = (recent_page - 1) * recent_per_page
+
         recent_case_rows = db.execute(
             """
             SELECT
@@ -6590,9 +7771,9 @@ def create_app():
               AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
               AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
             ORDER BY DATE(c.exposure_date) DESC, c.id DESC
-            LIMIT 12
+            LIMIT ? OFFSET ?
             """,
-            (clinic_id, date_from, date_to),
+            (clinic_id, date_from, date_to, recent_per_page, recent_offset),
         ).fetchall()
         recent_cases = []
         for row in recent_case_rows:
@@ -6613,6 +7794,10 @@ def create_app():
                     "exposure_date": exposure_display or "N/A",
                 }
             )
+
+        recent_cases_pagination = SimplePagination(
+            recent_cases, page=recent_page, per_page=recent_per_page, total=total_recent
+        )
 
         kpi = {
             "total_cases": int(case_status_row["total_cases"] or 0),
@@ -6642,7 +7827,7 @@ def create_app():
             daily_labels=daily_labels,
             daily_case_counts=daily_case_counts,
             daily_vaccination_counts=daily_vaccination_counts,
-            recent_cases=recent_cases,
+            recent_cases=recent_cases_pagination,
             breadcrumbs=breadcrumbs,
             active_page="reports",
         )
@@ -7402,7 +8587,7 @@ def create_app():
 
         breadcrumbs = [
             {"label": "Home", "href": url_for("staff_dashboard")},
-            {"label": "Patients", "href": url_for("staff_patients")},
+            {"label": "Cases", "href": url_for("staff_patients")},
             {"label": case_row["patient_name"], "href": None},
         ]
 
@@ -7855,12 +9040,6 @@ def create_app():
             allowed_who = {"Category I", "Category II", "Category III", "Unknown"}
             if who_final_in not in allowed_who:
                 who_final_in = risk_level
-            if who_final_in != risk_level and not override_reason_in:
-                flash(
-                    "Reason for override is required when the final WHO category differs from the system category.",
-                    "error",
-                )
-                return redirect(url_for("edit_patient_case", case_id=case_id))
             if len(override_reason_in) > 300:
                 flash("Override reason is too long (max 300 characters).", "error")
                 return redirect(url_for("edit_patient_case", case_id=case_id))
@@ -7869,6 +9048,16 @@ def create_app():
                 (case_patient.get("who_category_final") or "").strip()
                 or (case_patient.get("who_category_auto") or "").strip()
             )
+
+            # Require an override reason only when the user is actively changing the final category
+            # to something different from the system category. If the final category was already
+            # different (previous override) and the user didn't change it, don't block saving.
+            if who_final_in != risk_level and who_final_in != old_who_final and not override_reason_in:
+                flash(
+                    "Reason for override is required when the final WHO category differs from the system category.",
+                    "error",
+                )
+                return redirect(url_for("edit_patient_case", case_id=case_id))
 
             if who_final_in != risk_level:
                 o_uid = session["user_id"]
@@ -8176,7 +9365,7 @@ def create_app():
 
         breadcrumbs = [
             {"label": "Home", "href": url_for("staff_dashboard")},
-            {"label": "Patients", "href": url_for("staff_patients")},
+            {"label": "Cases", "href": url_for("staff_patients")},
             {"label": patient_name, "href": url_for("view_patient_case", case_id=case_id)},
             {"label": "Edit", "href": None},
         ]

@@ -18,9 +18,33 @@
 {% endblock %}
 
 {% block main_content %}
-  <section class="mt-6">
-    <h1 class="text-4xl font-bold text-blue-900">Vaccination Record</h1>
-    <p class="mt-1 text-slate-500">Review administered vaccines and filter records by dose details.</p>
+  <section class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <h1 class="text-4xl font-bold text-blue-900">Vaccination Record</h1>
+      <p class="mt-1 text-slate-500">Review administered vaccines and filter records by dose details.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      {% set export_args = {
+        'vaccine_type': vaccine_type,
+        'dose_query': dose_query,
+        'date_from': date_from,
+        'date_to': date_to,
+        'administered_by': administered_by,
+        'sort_by': sort_by,
+        'sort_dir': sort_dir
+      } %}
+      <div class="relative" id="vaccinations-export-menu">
+        <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" onclick="toggleVaccinationsExportMenu()">
+          <i class="fa-solid fa-download"></i>
+          Download
+          <i class="fa-solid fa-chevron-down text-xs"></i>
+        </button>
+        <div id="vaccinations-export-menu-panel" class="absolute right-0 z-20 mt-2 hidden w-44 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+          <a class="block px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50" href="{{ url_for('staff_vaccinations_export_csv', **export_args) }}">Export CSV</a>
+          <a class="block px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50" href="{{ url_for('staff_vaccinations_export_pdf', **export_args) }}">Export PDF</a>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section class="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
@@ -176,4 +200,26 @@
       </a>
     </div>
   </footer>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    function toggleVaccinationsExportMenu() {
+      const panel = document.getElementById("vaccinations-export-menu-panel");
+      if (!panel) return;
+      panel.classList.toggle("hidden");
+    }
+    document.addEventListener("click", function(e) {
+      const wrap = document.getElementById("vaccinations-export-menu");
+      const panel = document.getElementById("vaccinations-export-menu-panel");
+      if (!wrap || !panel) return;
+      if (!wrap.contains(e.target)) panel.classList.add("hidden");
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key !== "Escape") return;
+      const panel = document.getElementById("vaccinations-export-menu-panel");
+      if (panel) panel.classList.add("hidden");
+    });
+  </script>
 {% endblock %}

@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; color: #0f172a; }
+      .title { font-size: 16px; font-weight: bold; margin-bottom: 6px; }
+      .meta { font-size: 10px; color: #475569; margin-bottom: 10px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border-bottom: 1px solid #e2e8f0; padding: 6px 4px; vertical-align: top; }
+      th { text-align: left; font-size: 10px; color: #64748b; text-transform: uppercase; }
+    </style>
+  </head>
+  <body>
+    <div class="title">Vaccinations Export</div>
+    <div class="meta">
+      Clinic: {{ clinic_name or 'N/A' }}<br/>
+      Generated: {{ generated_at or '' }}<br/>
+      Filters: {{ filters_summary or 'All' }}
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Vaccine type</th>
+          <th>Dose</th>
+          <th>Date given</th>
+          <th>Administered by</th>
+          <th>Patient</th>
+          <th>Case</th>
+          <th>Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+          <tr>
+            <td>{{ r.vaccine_type or 'N/A' }}</td>
+            <td>{{ r.dose_display or 'N/A' }}</td>
+            <td>{{ r.date_given or 'N/A' }}</td>
+            <td>{{ r.administered_by_name or 'N/A' }}</td>
+            <td>{{ r.patient_name or 'N/A' }}</td>
+            <td>{{ r.case_code or '' }}</td>
+            <td>{{ r.source or '' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </body>
+</html>
+

@@ -143,6 +143,7 @@
 {% endblock %}
 
 {% block scripts %}
+  {{ super() }}
     <script>
       const STAFF_RESCHED_AVAILABILITY_URL = "{{ url_for('patient_availability') }}";
       const STAFF_RESCHED_CLINIC_ID = "{{ appointment.clinic_id }}";

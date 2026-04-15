@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; color: #0f172a; }
+      .title { font-size: 16px; font-weight: bold; margin-bottom: 6px; }
+      .meta { font-size: 10px; color: #475569; margin-bottom: 10px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border-bottom: 1px solid #e2e8f0; padding: 6px 4px; vertical-align: top; }
+      th { text-align: left; font-size: 10px; color: #64748b; text-transform: uppercase; }
+    </style>
+  </head>
+  <body>
+    <div class="title">Cases Export</div>
+    <div class="meta">
+      Clinic: {{ clinic_name or 'N/A' }}<br/>
+      Generated: {{ generated_at or '' }}<br/>
+      Filters: {{ filters_summary or 'All' }}
+    </div>
+    {% for r in rows %}
+      <div style="margin: 14px 0 6px; font-weight: bold; font-size: 13px;">
+        {{ r.case_code }} — {{ r.patient_name or 'Unknown' }}
+      </div>
+      <table>
+        <tbody>
+          <tr>
+            <th style="width: 22%;">Victim</th>
+            <td>
+              Gender/Age: {{ (r.gender or 'N/A') }} / {{ (r.age if r.age is not none else 'N/A') }}<br/>
+              Contact: {{ r.phone_number or 'N/A' }}<br/>
+              Address: {{ r.address or 'N/A' }}<br/>
+              Barangay: {{ r.barangay or 'N/A' }}
+            </td>
+          </tr>
+          <tr>
+            <th>Exposure</th>
+            <td>
+              Date/Time: {{ r.exposure_date or 'N/A' }} {{ ('@ ' ~ r.exposure_time) if r.exposure_time else '' }}<br/>
+              Place: {{ r.place_of_exposure or 'N/A' }}<br/>
+              Type: {{ r.type_of_exposure or 'N/A' }}<br/>
+              Site of bite: {{ r.affected_area or 'N/A' }}
+            </td>
+          </tr>
+          <tr>
+            <th>Clinical</th>
+            <td>
+              Category: {{ r.category or 'N/A' }}<br/>
+              Status: {{ r.case_status or 'N/A' }}<br/>
+              Wound: {{ r.wound_description or 'N/A' }}<br/>
+              Bleeding: {{ r.bleeding_type or 'N/A' }}<br/>
+              Local treatment: {{ r.local_treatment or 'N/A' }}<br/>
+              Prev rabies vax: {{ r.patient_prev_immunization or 'N/A' }} {{ ('(' ~ r.prev_vaccine_date ~ ')') if r.prev_vaccine_date else '' }}<br/>
+              Tetanus date: {{ r.tetanus_date or 'N/A' }}<br/>
+              HRIG: {% if r.hrtig_immunization in [1, '1', True] %}Yes{% elif r.hrtig_immunization in [0, '0', False] %}No{% else %}N/A{% endif %}
+            </td>
+          </tr>
+          <tr>
+            <th>Animal</th>
+            <td>
+              Detail: {{ r.animal_detail or 'N/A' }}<br/>
+              Status: {{ r.animal_condition or 'N/A' }}<br/>
+              Vaccination: {{ r.animal_vaccination or 'N/A' }}
+            </td>
+          </tr>
+          <tr>
+            <th>Vaccination card</th>
+            <td>
+              Anti-rabies: {{ r.anti_rabies or 'N/A' }}<br/>
+              PVRV: {{ r.pvrv or 'N/A' }}<br/>
+              PCEC batch: {{ r.pcec_batch or 'N/A' }}<br/>
+              PCEC mfg/expiry: {{ r.pcec_mfg_date or 'N/A' }} / {{ r.pcec_expiry or 'N/A' }}<br/>
+              ERIG/HRIG: {{ r.erig_hrig or 'N/A' }}<br/>
+              Tetanus prophylaxis/toxoid/ATS: {{ r.tetanus_prophylaxis or 'N/A' }} / {{ r.tetanus_toxoid or 'N/A' }} / {{ r.ats or 'N/A' }}<br/>
+              HTIG: {{ r.htig or 'N/A' }}<br/>
+              Remarks: {{ r.remarks or '' }}
+            </td>
+          </tr>
+          <tr>
+            <th>Doses</th>
+            <td>
+              {% if r.vaccination_doses and r.vaccination_doses|length %}
+                {% for d in r.vaccination_doses %}
+                  {{ d.record_type }} Day {{ d.day_number }} — {{ d.dose_date or 'N/A' }} — {{ d.type_of_vaccine or '' }} {{ d.dose or '' }} ({{ d.route_site or '' }}) — {{ d.given_by or '' }}<br/>
+                {% endfor %}
+              {% else %}
+                No dose rows recorded.
+              {% endif %}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="height: 1px; background: #e2e8f0; margin: 10px 0;"></div>
+    {% endfor %}
+  </body>
+</html>
+

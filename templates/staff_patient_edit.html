@@ -452,6 +452,7 @@
 {% endblock %}
 
 {% block scripts %}
+  {{ super() }}
   <script>
     function formatLocalYMD(dateObj) {
       const y = dateObj.getFullYear();
