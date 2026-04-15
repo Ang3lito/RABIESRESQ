@@ -1,0 +1,36 @@
+<div class="shrink-0 border-b border-slate-100 pb-5">
+  {% set notifs = dashboard_notifications|default([]) %}
+  {% if notifs %}
+    <div class="mt-2 space-y-2">
+      {% for n in notifs %}
+      <div class="flex flex-wrap gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm md:flex-nowrap md:items-start">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+          <i class="fa-solid fa-bell text-sm"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            {% if n.recipient_label %}
+            <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">{{ n.recipient_label }}</span>
+            {% endif %}
+            {% if n.type == 'appointment' %}
+            <span class="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">Appointment</span>
+            {% elif n.type == 'vaccination' %}
+            <span class="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700">Vaccination</span>
+            {% elif n.type %}
+            <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">{{ n.type }}</span>
+            {% endif %}
+          </div>
+          <p class="mt-1 text-sm text-slate-700">{{ n.message }}</p>
+          {% if n.link_href %}
+          <a href="{{ n.link_href }}" class="mt-1 inline-block text-sm font-medium text-emerald-600 hover:text-emerald-700">View details</a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="mt-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
+      No new notifications.
+    </div>
+  {% endif %}
+</div>

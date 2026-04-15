@@ -70,6 +70,42 @@ def init_app(app):
             "CREATE INDEX IF NOT EXISTS idx_availability_slots_clinic_datetime ON availability_slots(clinic_id, slot_datetime)"
         )
         conn.commit()
+    # Ensure appointments.patient_hidden exists (for older DBs before "hide appointment" feature).
+    try:
+        conn.execute("SELECT patient_hidden FROM appointments LIMIT 1")
+    except sqlite3.OperationalError:
+        try:
+            conn.execute("ALTER TABLE appointments ADD COLUMN patient_hidden INTEGER NOT NULL DEFAULT 0")
+            conn.commit()
+        except sqlite3.OperationalError:
+            # If appointments table itself doesn't exist yet, schema/init will create it later.
+            pass
+    # Ensure cases WHO category columns exist (for older DBs before WHO classifier).
+    try:
+        conn.execute("SELECT who_category_auto FROM cases LIMIT 1")
+    except sqlite3.OperationalError:
+        try:
+            conn.execute("ALTER TABLE cases ADD COLUMN who_category_auto TEXT")
+            conn.execute("ALTER TABLE cases ADD COLUMN who_category_final TEXT")
+            conn.execute("ALTER TABLE cases ADD COLUMN who_category_reasons_json TEXT")
+            conn.execute("ALTER TABLE cases ADD COLUMN who_category_version TEXT")
+            conn.execute("ALTER TABLE cases ADD COLUMN who_category_overridden_by_user_id INTEGER")
+            conn.execute("ALTER TABLE cases ADD COLUMN who_category_overridden_at TEXT")
+            conn.execute("ALTER TABLE cases ADD COLUMN who_category_override_reason TEXT")
+            # Backfill from existing fields when available.
+            conn.execute(
+                """
+                UPDATE cases
+                SET who_category_auto = COALESCE(NULLIF(TRIM(risk_level), ''), NULLIF(TRIM(category), '')),
+                    who_category_final = COALESCE(NULLIF(TRIM(risk_level), ''), NULLIF(TRIM(category), ''))
+                WHERE (who_category_auto IS NULL OR TRIM(who_category_auto) = '')
+                   OR (who_category_final IS NULL OR TRIM(who_category_final) = '')
+                """
+            )
+            conn.commit()
+        except sqlite3.OperationalError:
+            # If cases table itself doesn't exist yet, schema/init will create it later.
+            pass
     finally:
         conn.close()
 

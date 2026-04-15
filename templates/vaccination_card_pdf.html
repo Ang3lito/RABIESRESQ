@@ -231,9 +231,16 @@
         </tr>
       </table>
 
-      <div class="section-title">Dose Record ({{ course_label }})</div>
+      {% if pre_screening_vaccination_note %}
+      <div style="margin-top: 8px; padding: 6px 8px; border: 1px solid #a7f3d0; border-radius: 6px; background: #ecfdf5; font-size: 10px;">
+        <strong>Pre-screening (history):</strong> {{ pre_screening_vaccination_note }}
+      </div>
+      {% endif %}
+
+      {% for sec in dose_course_sections %}
+      <div class="section-title" {% if not loop.first %}style="margin-top: 12px;"{% endif %}>Dose Record ({{ sec.course_label }})</div>
       <div class="dose-header-row">
-        <span class="dose-completed">Completed doses: <strong>{{ doses_completed }}</strong> of <strong>{{ expected_doses }}</strong></span>
+        <span class="dose-completed">Completed doses: <strong>{{ sec.doses_completed }}</strong> of <strong>{{ sec.expected_doses }}</strong></span>
       </div>
       <table class="dose-table">
         <thead>
@@ -247,7 +254,7 @@
           </tr>
         </thead>
         <tbody>
-          {% for row in course_rows %}
+          {% for row in sec.course_rows %}
           <tr>
             <td class="day-cell">DAY {{ row.day_number }}</td>
             <td>{{ row.dose_date or '—' }}</td>
@@ -259,10 +266,11 @@
           {% endfor %}
         </tbody>
       </table>
+      {% endfor %}
 
       <div class="section-title" style="margin-top: 12px;">Remarks</div>
       <div class="remarks-box">
-        {{ vaccination_card.remarks or '—' }}
+        {{ vaccination_card.remarks or pre_screening_vaccination_note or '—' }}
       </div>
     </div>
   </body>

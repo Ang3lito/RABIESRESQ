@@ -15,11 +15,27 @@
   </head>
   <body class="min-h-screen bg-slate-100 text-slate-900">
     <div class="flex min-h-screen flex-col lg:flex-row">
-      <aside class="w-full border-r border-slate-200 bg-white lg:fixed lg:inset-y-0 lg:left-0 lg:z-10 lg:h-screen lg:w-64 lg:overflow-y-auto">
+      <!-- Mobile overlay -->
+      <div id="staff-sidebar-overlay" class="fixed inset-0 z-40 hidden bg-black/40 lg:hidden" onclick="closeStaffSidebar()"></div>
+
+      <aside id="staff-sidebar" class="fixed inset-y-0 left-0 z-50 w-72 -translate-x-full border-r border-slate-200 bg-white transition-transform duration-200 ease-out lg:fixed lg:inset-y-0 lg:left-0 lg:z-10 lg:h-screen lg:w-64 lg:translate-x-0 lg:overflow-y-auto" aria-hidden="true">
         <div class="flex h-full flex-col p-6">
           <a href="{{ url_for('staff_dashboard') }}" class="text-2xl font-bold text-blue-800">RabiesResQ</a>
 
-          <nav class="mt-8 space-y-2 text-sm">
+          <a
+            href="{{ url_for('staff_profile') }}"
+            class="mt-6 flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3 text-left transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+          >
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-800">
+              {{ staff_initials|default('V') }}
+            </div>
+            <div class="min-w-0 leading-tight">
+              <p class="truncate text-sm font-semibold text-slate-900">{{ staff_display_name }}</p>
+              <p class="truncate text-xs text-slate-500">{{ staff_account_type_label|default('Clinic staff') }}</p>
+            </div>
+          </a>
+
+          <nav class="mt-6 space-y-2 text-sm">
             <a href="{{ url_for('staff_dashboard') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 {{ 'bg-emerald-100 font-medium text-emerald-700' if (active_page|default('dashboard')) == 'dashboard' else 'text-slate-600 hover:bg-slate-100' }}">
               <i class="fa-solid fa-table-columns"></i>
               Dashboard
@@ -45,8 +61,8 @@
               Vaccinations
             </a>
             <a href="{{ url_for('staff_reports') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 {{ 'bg-emerald-100 font-medium text-emerald-700' if (active_page|default('dashboard')) == 'reports' else 'text-slate-600 hover:bg-slate-100' }}">
-              <i class="fa-solid fa-chart-simple"></i>
-              Reports
+              <i class="fa-solid fa-clipboard-list"></i>
+              Operations
             </a>
           </nav>
 
@@ -67,28 +83,103 @@
 
       <main class="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6 lg:ml-64 lg:p-8">
         <div class="min-w-0 rounded-2xl bg-white p-4 shadow-sm sm:p-6">
-          <header class="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
+          <header class="border-b border-slate-200 pb-5">
             {% block header_left %}
-              <div class="relative w-full lg:max-w-md">
+              <div class="flex items-center gap-3">
+                <button type="button" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white p-2.5 text-slate-700 shadow-sm hover:bg-slate-50 lg:hidden" onclick="toggleStaffSidebar()" aria-label="Open menu">
+                  <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="relative w-full lg:max-w-md">
                 <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input type="text" placeholder="Search patients, cases..." class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none ring-emerald-300 transition focus:ring" />
+                </div>
               </div>
             {% endblock %}
-
-            <div class="flex items-center justify-between gap-4 sm:justify-end">
-              <a href="{{ url_for('staff_profile') }}" class="rounded-lg px-2 py-1.5 transition hover:bg-slate-100 hover:ring-2 hover:ring-emerald-400">
-                <div class="leading-tight">
-                  <p class="text-sm font-semibold">{{ staff_display_name }}</p>
-                  <p class="text-xs text-slate-500">Veterinarian</p>
-                </div>
-              </a>
-            </div>
           </header>
+
+          {% include "_flash.html" %}
 
           {% block main_content %}{% endblock %}
         </div>
       </main>
     </div>
-    {% block scripts %}{% endblock %}
+    {% include "_confirm_modal.html" %}
+    {% block scripts %}
+      <script>
+        function openStaffSidebar() {
+          const el = document.getElementById("staff-sidebar");
+          const ov = document.getElementById("staff-sidebar-overlay");
+          if (!el || !ov) return;
+          el.classList.remove("-translate-x-full");
+          ov.classList.remove("hidden");
+          el.setAttribute("aria-hidden", "false");
+        }
+        function closeStaffSidebar() {
+          const el = document.getElementById("staff-sidebar");
+          const ov = document.getElementById("staff-sidebar-overlay");
+          if (!el || !ov) return;
+          el.classList.add("-translate-x-full");
+          ov.classList.add("hidden");
+          el.setAttribute("aria-hidden", "true");
+        }
+        function toggleStaffSidebar() {
+          const el = document.getElementById("staff-sidebar");
+          if (!el) return;
+          if (el.classList.contains("-translate-x-full")) openStaffSidebar();
+          else closeStaffSidebar();
+        }
+        document.addEventListener("keydown", function(e) {
+          if (e.key === "Escape") closeStaffSidebar();
+        });
+      </script>
+      <script>
+        (function() {
+          const modal = document.getElementById("confirm-modal");
+          const msg = document.getElementById("confirm-modal-message");
+          const ok = modal ? modal.querySelector("[data-confirm-ok]") : null;
+          const cancel = modal ? modal.querySelector("[data-confirm-cancel]") : null;
+          let pendingForm = null;
+
+          function openConfirm(message, formEl) {
+            if (!modal || !msg) return true;
+            msg.textContent = message || "Are you sure?";
+            pendingForm = formEl || null;
+            modal.classList.remove("hidden");
+            modal.setAttribute("aria-hidden", "false");
+            return false;
+          }
+          function closeConfirm() {
+            if (!modal) return;
+            modal.classList.add("hidden");
+            modal.setAttribute("aria-hidden", "true");
+            pendingForm = null;
+          }
+          if (modal) {
+            modal.addEventListener("click", function(e) {
+              const t = e.target;
+              if (t && (t.matches("[data-confirm-close]") || t.closest("[data-confirm-close]"))) closeConfirm();
+            });
+          }
+          if (cancel) cancel.addEventListener("click", closeConfirm);
+          if (ok) ok.addEventListener("click", function() {
+            if (pendingForm) pendingForm.submit();
+            closeConfirm();
+          });
+          document.addEventListener("keydown", function(e) {
+            if (e.key === "Escape") closeConfirm();
+          });
+
+          document.addEventListener("submit", function(e) {
+            const form = e.target;
+            if (!form || !(form instanceof HTMLFormElement)) return;
+            const message = form.getAttribute("data-confirm");
+            if (!message) return;
+            if (form.getAttribute("data-confirm-bypass") === "1") return;
+            e.preventDefault();
+            openConfirm(message, form);
+          }, true);
+        })();
+      </script>
+    {% endblock %}
   </body>
 </html>

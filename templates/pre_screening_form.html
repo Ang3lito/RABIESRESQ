@@ -1,10 +1,16 @@
-<!-- Pre-Screening Form Modal -->
-<div id="pre-screening-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+{% set _ps_emb = pre_screening_embedded|default(false) %}
+{# This template is included site-wide (via base_patient.html). Not all pages pass patient/clinics. #}
+{% set patient = patient|default({}) %}
+{% set clinics = clinics|default([]) %}
+<!-- Pre-Screening Form (modal on patient pages; embedded on staff new patient) -->
+<div id="pre-screening-modal" class="{% if _ps_emb %}relative z-10 mx-auto w-full max-w-4xl{% else %}hidden fixed inset-0 z-50 overflow-y-auto{% endif %}">
+  {% if not _ps_emb %}
   <!-- Backdrop -->
   <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onclick="closePreScreeningModal()"></div>
-  
-  <!-- Modal Content -->
-  <div class="flex min-h-full items-center justify-center p-4">
+  {% endif %}
+
+  <!-- Modal / card content -->
+  <div class="{% if _ps_emb %}relative block w-full{% else %}flex min-h-full items-center justify-center p-4{% endif %}">
     <div class="relative w-full max-w-4xl transform overflow-visible rounded-xl bg-white shadow-xl transition-all">
       <!-- Header -->
       <div class="sticky top-0 z-10 border-b border-slate-200 bg-white px-6 py-4">
@@ -13,11 +19,19 @@
             <h2 class="text-2xl font-bold text-slate-900">Pre-Screening Form</h2>
             <p id="step-indicator" class="mt-1 text-sm text-slate-600">Step 1: Bite Details</p>
           </div>
+          {% if _ps_emb %}
+          <a href="{{ pre_screening_cancel_url|default(url_for('staff_patients')) }}" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Back to patients">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </a>
+          {% else %}
           <button type="button" onclick="closePreScreeningModal()" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
             </svg>
           </button>
+          {% endif %}
         </div>
         <!-- Progress Bar -->
         <div class="mt-4">
@@ -32,7 +46,7 @@
       </div>
 
       <!-- Form Content -->
-      <form id="pre-screening-form" method="post" action="{{ url_for('pre_screening_submit') }}" class="px-6 py-6" onsubmit="collectAllFormData()">
+      <form id="pre-screening-form" method="post" action="{{ pre_screening_form_action|default(url_for('pre_screening_submit')) }}" class="px-6 py-6" onsubmit="collectAllFormData()">
         <input type="hidden" name="form_type" id="form-type" value="case">
         
         <!-- Step 1: Bite Details -->
@@ -569,7 +583,7 @@
         <div class="mt-8 flex justify-end gap-3 border-t border-slate-200 pt-6">
           <button type="button" id="back-btn" onclick="previousStep()" class="hidden rounded-lg border-2 border-slate-300 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Back</button>
           <button type="button" id="next-btn" onclick="nextStep()" class="rounded-lg bg-emerald-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-emerald-600">Next</button>
-          <button type="submit" id="submit-btn" class="hidden rounded-lg bg-emerald-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-emerald-600">Submit & Continue to Dashboard</button>
+          <button type="submit" id="submit-btn" class="hidden rounded-lg bg-emerald-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-emerald-600">{{ pre_screening_submit_label|default('Submit & Continue to Dashboard') }}</button>
         </div>
       </form>
     </div>
@@ -577,11 +591,13 @@
 </div>
 
 <script>
+window.preScreeningEmbedded = {{ 'true' if _ps_emb else 'false' }};
+window.preScreeningCancelUrl = {{ (pre_screening_cancel_url|default(''))|tojson }};
 let currentStep = 1;
 let totalSteps = 3;
 let formData = {};
 let isAppointmentFlow = false;
-const AVAILABILITY_URL = "{{ url_for('patient_availability') }}";
+const AVAILABILITY_URL = "{{ pre_screening_availability_url|default(url_for('patient_availability')) }}";
 let calendarMonthStart = null;
 
 function collectAffectedAreaArray() {
@@ -695,6 +711,9 @@ function updateAffectedAreaTriggerText() {
 }
 
 function openPreScreeningModal(formType = 'case') {
+  if (window.preScreeningEmbedded) {
+    return;
+  }
   document.getElementById('pre-screening-modal').classList.remove('hidden');
   document.getElementById('form-type').value = formType;
   isAppointmentFlow = (formType === 'appointment');
@@ -742,6 +761,12 @@ function initializeRadioButtons() {
 }
 
 function closePreScreeningModal() {
+  if (window.preScreeningEmbedded) {
+    if (window.preScreeningCancelUrl) {
+      window.location.href = window.preScreeningCancelUrl;
+    }
+    return;
+  }
   document.getElementById('pre-screening-modal').classList.add('hidden');
   document.body.style.overflow = 'auto';
   currentStep = 1;
@@ -1031,14 +1056,6 @@ function populateSummary() {
     formData.appointment_datetime = dtEl ? dtEl.value : '';
   }
 
-  const riskCategory = computeRiskCategoryFromForm(formData);
-  let riskColor = '#10B981';
-  if (riskCategory === 'Category III') {
-    riskColor = '#FA5053';
-  } else if (riskCategory === 'Category II') {
-    riskColor = '#FFB343';
-  }
-
   var appointmentBlock = '';
   if (isAppointmentFlow && formData.appointment_datetime) {
     appointmentBlock = `
@@ -1054,6 +1071,9 @@ function populateSummary() {
   }
 
   const summaryContent = document.getElementById('summary-content');
+  // Render immediately with placeholder while server calculates authoritative risk.
+  var riskCategory = 'Calculating…';
+  var riskColor = '#64748B';
   summaryContent.innerHTML = `
     <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div class="mb-4 flex items-center justify-between">
@@ -1104,7 +1124,7 @@ function populateSummary() {
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div class="md:col-span-2">
           <p class="text-xs text-slate-500">Risk Category</p>
-          <p class="font-semibold" style="color: ${riskColor};">${riskCategory}</p>
+          <p class="font-semibold" id="risk-category-text" style="color: ${riskColor};">${riskCategory}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Type of Exposure</p>
@@ -1173,6 +1193,40 @@ function populateSummary() {
       </div>
     </div>
   `;
+
+  // Fetch server-authoritative risk (same logic used on case creation).
+  try {
+    fetch('{{ url_for("pre_screening_risk_preview") }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data || !data.risk_level) return;
+        var riskEl = document.getElementById('risk-category-text');
+        if (!riskEl) return;
+        var rc = String(data.risk_level || '').trim();
+        var color = '#10B981';
+        if (rc === 'Category III') color = '#FA5053';
+        else if (rc === 'Category II') color = '#FFB343';
+        riskEl.textContent = rc;
+        riskEl.style.color = color;
+      })
+      .catch(function () {
+        // If preview fails, fall back to local heuristic.
+        var rc = computeRiskCategoryFromForm(formData);
+        var riskEl = document.getElementById('risk-category-text');
+        if (!riskEl) return;
+        var color = '#10B981';
+        if (rc === 'Category III') color = '#FA5053';
+        else if (rc === 'Category II') color = '#FFB343';
+        riskEl.textContent = rc;
+        riskEl.style.color = color;
+      });
+  } catch (e) {
+    // ignore
+  }
 }
 
 var slotsByDate = {};
@@ -1499,7 +1553,8 @@ document.addEventListener('DOMContentLoaded', function() {
   document.addEventListener('keydown', function(ev) {
     if (ev.key !== 'Escape') return;
     var modal = document.getElementById('pre-screening-modal');
-    if (!modal || modal.classList.contains('hidden')) return;
+    if (!modal) return;
+    if (!window.preScreeningEmbedded && modal.classList.contains('hidden')) return;
     var panel = document.getElementById('affected-area-panel');
     if (panel && !panel.classList.contains('hidden')) {
       closeAffectedAreaPanel();
@@ -1538,6 +1593,25 @@ document.addEventListener('DOMContentLoaded', function() {
   if (dobEl) {
     dobEl.addEventListener('change', function() { updateAgeFromDob(); });
     updateAgeFromDob();
+  }
+
+  if (window.preScreeningEmbedded) {
+    var ft = document.getElementById('form-type');
+    if (ft) ft.value = 'case';
+    isAppointmentFlow = false;
+    totalSteps = 3;
+    currentStep = 1;
+    formData = {};
+    var slotIdEl = document.getElementById('appointment_slot_id');
+    if (slotIdEl) slotIdEl.value = '';
+    var slotDtEl = document.getElementById('appointment_datetime');
+    if (slotDtEl) slotDtEl.value = '';
+    showStep(1);
+    initializeRadioButtons();
+    setExposureDateMax();
+    updateAgeFromDob();
+    closeAffectedAreaPanel();
+    updateAffectedAreaTriggerText();
   }
 });
 </script>

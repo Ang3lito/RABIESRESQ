@@ -63,7 +63,7 @@
             <form
               method="post"
               action="{{ url_for('patient_hide_appointment', appointment_id=appointment.id) }}"
-              onsubmit="return confirm('Remove this appointment from your list?');"
+              data-confirm="Remove this appointment from your list?"
             >
               <button
                 type="submit"
@@ -95,7 +95,7 @@
             <form
               method="post"
               action="{{ url_for('patient_cancel_appointment', appointment_id=appointment.id) }}"
-              onsubmit="return confirm('Cancel this appointment?');"
+              data-confirm="Cancel this appointment?"
             >
               <button
                 type="submit"
@@ -111,7 +111,7 @@
             <form
               method="post"
               action="{{ url_for('patient_cancel_appointment', appointment_id=appointment.id) }}"
-              onsubmit="return confirm('Cancel this appointment?');"
+              data-confirm="Cancel this appointment?"
             >
               <button
                 type="submit"
@@ -143,7 +143,7 @@
 
             <div>
               <dt class="text-slate-500">Category / Risk</dt>
-              {% set category_value = appointment.risk_level or 'N/A' %}
+              {% set category_value = appointment.who_category_final or appointment.who_category_auto or appointment.risk_level or 'N/A' %}
               {% set category_lower = (category_value or '')|lower %}
               <dd class="mt-1">
                 {% if category_lower == 'category i' %}

@@ -140,7 +140,7 @@
               <tr>
                 <td class="field-label" style="padding: 2px 0;">Category / Risk</td>
                 <td class="field-value" style="text-align: right; padding: 2px 0;">
-                  {{ (case.risk_level or case.category or 'N/A') }}
+                  {{ (case.who_category_final or case.who_category_auto or case.risk_level or case.category or 'N/A') }}
                 </td>
               </tr>
               <tr>

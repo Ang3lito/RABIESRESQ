@@ -141,18 +141,25 @@
                     {{ vaccination_card.tetanus_toxoid or '—' }} / {{ vaccination_card.ats or '—' }} / {{ vaccination_card.htig or '—' }}
                   </dd>
                 </div>
+                {% if pre_screening_vaccination_note %}
+                <div class="mt-2 rounded-lg border border-emerald-200 bg-emerald-50/80 p-2 text-xs text-slate-800">
+                  <span class="font-semibold text-emerald-800">Pre-screening (history):</span>
+                  {{ pre_screening_vaccination_note }}
+                </div>
+                {% endif %}
               </dl>
             </section>
           </div>
 
+          {% for sec in dose_course_sections %}
           <section class="mt-6">
             <div class="flex items-center justify-between">
               <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Dose Record ({{ course_label }})
+                Dose Record ({{ sec.course_label }})
               </h3>
               <p class="text-xs text-slate-600">
-                Completed doses: <span class="font-semibold text-slate-900">{{ doses_completed }}</span> of
-                <span class="font-semibold text-slate-900">{{ expected_doses }}</span>
+                Completed doses: <span class="font-semibold text-slate-900">{{ sec.doses_completed }}</span> of
+                <span class="font-semibold text-slate-900">{{ sec.expected_doses }}</span>
               </p>
             </div>
             <div class="mt-2 overflow-x-auto rounded-xl border border-slate-200">
@@ -168,7 +175,7 @@
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
-                  {% for row in course_rows %}
+                  {% for row in sec.course_rows %}
                   <tr>
                     <td class="px-3 py-2 font-semibold">DAY {{ row.day_number }}</td>
                     <td class="px-3 py-2">{{ row.dose_date or '—' }}</td>
@@ -182,11 +189,12 @@
               </table>
             </div>
           </section>
+          {% endfor %}
 
           <section class="mt-4">
             <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500">Remarks</h3>
             <p class="mt-1 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
-              {{ vaccination_card.remarks or '—' }}
+              {{ vaccination_card.remarks or pre_screening_vaccination_note or '—' }}
             </p>
           </section>
         </div>

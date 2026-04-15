@@ -3,17 +3,13 @@
 {% block title %}Profile Management - RabiesResQ{% endblock %}
 
 {% block content %}
-  <form method="post" action="{{ url_for('patient_profile_update') }}" class="space-y-6">
-    <!-- Header -->
-    <div class="sticky top-0 z-50 mb-6 flex items-center justify-between bg-white py-2 border-b border-slate-200">
-      <h1 class="text-2xl font-bold text-slate-900">Profile Management</h1>
-      <button type="submit" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
-        Save Changes
-      </button>
-    </div>
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-slate-900">Profile Management</h1>
+  </div>
 
+  <form id="patient-profile-form" method="post" action="{{ url_for('patient_profile_update') }}" class="space-y-6">
     <!-- Section 1: Personal Information -->
-    <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
+    <div class="profile-section relative rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div class="mb-4">
         <h2 class="text-lg font-bold text-slate-900">Personal Information</h2>
       </div>
@@ -48,10 +44,15 @@
           <input type="tel" id="phone_number" name="phone_number" value="{{ patient.phone_number or '' }}" placeholder="e.g., +63 917 123 4567" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
         </div>
       </div>
+      <div class="profile-section-save hidden mt-6 flex justify-end border-t border-slate-200 pt-4">
+        <button type="submit" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
+          Save Changes
+        </button>
+      </div>
     </div>
 
     <!-- Section 2: Account Security -->
-    <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
+    <div class="profile-section relative rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div class="mb-4">
         <h2 class="text-lg font-bold text-slate-900">Account Security</h2>
       </div>
@@ -79,16 +80,16 @@
             </div>
           </div>
         </div>
-        <div class="md:col-span-2">
-          <label for="phone_verification" class="mb-1 block text-sm font-medium text-slate-700">Phone Number for Verification</label>
-          <input type="tel" id="phone_verification" value="{{ patient.phone_number or '' }}" disabled class="w-full rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-slate-500 cursor-not-allowed">
-          <p class="mt-1 text-xs text-slate-500">Same as Contact Details above</p>
-        </div>
+      </div>
+      <div class="profile-section-save hidden mt-6 flex justify-end border-t border-slate-200 pt-4">
+        <button type="submit" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
+          Save Changes
+        </button>
       </div>
     </div>
 
     <!-- Section 3: Medical Information -->
-    <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
+    <div class="profile-section relative rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div class="mb-4">
         <h2 class="text-lg font-bold text-slate-900">Medical Information</h2>
       </div>
@@ -106,19 +107,65 @@
           <textarea id="current_medications" name="current_medications" rows="3" class="w-full resize-y rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">{{ patient.current_medications or '' }}</textarea>
         </div>
       </div>
+      <div class="profile-section-save hidden mt-6 flex justify-end border-t border-slate-200 pt-4">
+        <button type="submit" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
+          Save Changes
+        </button>
+      </div>
     </div>
   </form>
 
   <script>
-    // Toggle password change fields
-    (function() {
+    (function () {
+      var form = document.getElementById('patient-profile-form');
+      if (!form) return;
+
+      function showSaveForSection(sectionEl) {
+        if (!sectionEl) return;
+        var all = form.querySelectorAll('.profile-section');
+        all.forEach(function (s) {
+          var bar = s.querySelector('.profile-section-save');
+          if (!bar) return;
+          if (s === sectionEl) {
+            bar.classList.remove('hidden');
+          } else {
+            bar.classList.add('hidden');
+          }
+        });
+      }
+
+      function sectionFromTarget(el) {
+        return el && el.closest ? el.closest('.profile-section') : null;
+      }
+
+      form.addEventListener(
+        'focusin',
+        function (e) {
+          var t = e.target;
+          if (t && t.closest && t.closest('.profile-section-save')) return;
+          var sec = sectionFromTarget(t);
+          if (sec) showSaveForSection(sec);
+        },
+        true
+      );
+
+      form.addEventListener(
+        'input',
+        function (e) {
+          var sec = sectionFromTarget(e.target);
+          if (sec) showSaveForSection(sec);
+        },
+        true
+      );
+
       var changeBtn = document.getElementById('change-password-btn');
       var passwordFields = document.getElementById('password-change-fields');
       if (changeBtn && passwordFields) {
-        changeBtn.addEventListener('click', function() {
+        changeBtn.addEventListener('click', function () {
           passwordFields.classList.toggle('hidden');
           if (!passwordFields.classList.contains('hidden')) {
-            document.getElementById('new_password').focus();
+            var np = document.getElementById('new_password');
+            if (np) np.focus();
           }
         });
       }

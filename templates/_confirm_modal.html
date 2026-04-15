@@ -1,0 +1,28 @@
+<!-- Reusable confirmation modal (wire using data-confirm="message" on <form>) -->
+<div id="confirm-modal" class="fixed inset-0 z-[80] hidden" aria-hidden="true">
+  <div class="absolute inset-0 bg-black/40" data-confirm-close></div>
+  <div class="relative flex min-h-full items-center justify-center p-4">
+    <div class="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-slate-900/10">
+      <div class="p-5">
+        <div class="flex items-start gap-3">
+          <div class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div class="min-w-0">
+            <h3 class="text-lg font-semibold text-slate-900">Confirm action</h3>
+            <p id="confirm-modal-message" class="mt-1 text-sm text-slate-600">Are you sure?</p>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3">
+        <button type="button" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200/60" data-confirm-cancel>
+          Cancel
+        </button>
+        <button type="button" class="rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600" data-confirm-ok>
+          Yes, continue
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+

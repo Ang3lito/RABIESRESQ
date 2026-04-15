@@ -1,10 +1,10 @@
-{% extends "staff_base.html" %}
+{% extends "admin_base.html" %}
 
-{% block title %}Edit Profile - RabiesResQ{% endblock %}
+{% block title %}Settings - RabiesResQ{% endblock %}
 
 {% block header_left %}
   <nav class="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-    {% for crumb in breadcrumbs %}
+    {% for crumb in breadcrumbs|default([]) %}
       {% if crumb.href %}
         <a href="{{ crumb.href }}" class="hover:text-slate-700">{{ crumb.label }}</a>
       {% else %}
@@ -20,14 +20,17 @@
 {% block main_content %}
   <div class="mb-6 border-b border-slate-200 pb-4">
     <h1 class="text-2xl font-bold text-slate-900">Profile Management</h1>
+    <p class="mt-1 text-sm text-slate-500">
+      System administrator account{% if clinic %} ({{ clinic.name }}){% endif %}.
+    </p>
   </div>
 
-  <div id="staff-profile-sections" class="space-y-6">
-    <section id="section-personal" class="staff-profile-section relative rounded-lg border border-slate-200 bg-slate-50 p-5">
+  <div id="admin-profile-sections" class="space-y-6">
+    <section id="section-personal" class="admin-profile-section relative rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div class="mb-4">
         <h2 class="text-lg font-bold text-slate-900">Personal Information</h2>
       </div>
-      <form method="post" id="form-personal" action="{{ url_for('staff_profile_update') }}" class="space-y-4">
+      <form method="post" id="form-personal" action="{{ url_for('admin_settings') }}" class="space-y-4">
         <input type="hidden" name="update_section" value="personal" />
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
@@ -35,7 +38,7 @@
             <input
               type="text"
               name="first_name"
-              value="{{ staff.first_name or '' }}"
+              value="{{ admin.first_name or '' }}"
               autocomplete="given-name"
               class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
@@ -45,40 +48,23 @@
             <input
               type="text"
               name="last_name"
-              value="{{ staff.last_name or '' }}"
+              value="{{ admin.last_name or '' }}"
               autocomplete="family-name"
               class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Title</label>
-            <input type="text" value="{{ staff.title or '' }}" disabled class="w-full cursor-not-allowed rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-slate-500" />
-            <p class="mt-1 text-xs text-slate-500">Only system admin can update title.</p>
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Phone Number</label>
-            <input
-              type="text"
-              name="phone_number"
-              value="{{ staff.phone_number or '' }}"
-              autocomplete="tel"
-              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            />
-          </div>
           <div class="md:col-span-2">
-            <label class="mb-1 block text-sm font-medium text-slate-700">Specialty</label>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Employee ID</label>
             <input
               type="text"
-              name="specialty"
-              value="{{ staff.specialty or '' }}"
-              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              placeholder="e.g. Rabies clinic lead"
+              value="{{ admin.employee_id }}"
+              disabled
+              class="w-full cursor-not-allowed rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-slate-500"
             />
+            <p class="mt-1 text-xs text-slate-500">Employee ID is managed by the system.</p>
           </div>
         </div>
-        <div
-          class="staff-section-save {% if highlight_section|default('') != 'personal' %}hidden{% endif %} mt-6 flex justify-end border-t border-slate-200 pt-4"
-        >
+        <div class="admin-section-save {% if highlight_section|default('') != 'personal' %}hidden{% endif %} mt-6 flex justify-end border-t border-slate-200 pt-4">
           <button type="submit" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
             Save changes
           </button>
@@ -86,11 +72,11 @@
       </form>
     </section>
 
-    <section id="section-account" class="staff-profile-section relative rounded-lg border border-slate-200 bg-slate-50 p-5">
+    <section id="section-account" class="admin-profile-section relative rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div class="mb-4">
         <h2 class="text-lg font-bold text-slate-900">Account Security</h2>
       </div>
-      <form method="post" id="form-account" action="{{ url_for('staff_profile_update') }}" class="space-y-4">
+      <form method="post" id="form-account" action="{{ url_for('admin_settings') }}" class="space-y-4">
         <input type="hidden" name="update_section" value="account" />
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
@@ -98,7 +84,7 @@
             <input
               type="text"
               name="username"
-              value="{{ staff.username }}"
+              value="{{ admin.username }}"
               required
               autocomplete="username"
               class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -109,16 +95,14 @@
             <input
               type="email"
               name="email"
-              value="{{ staff.email }}"
+              value="{{ admin.email }}"
               required
               autocomplete="email"
               class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
         </div>
-        <div
-          class="staff-section-save {% if highlight_section|default('') != 'account' %}hidden{% endif %} mt-6 flex justify-end border-t border-slate-200 pt-4"
-        >
+        <div class="admin-section-save {% if highlight_section|default('') != 'account' %}hidden{% endif %} mt-6 flex justify-end border-t border-slate-200 pt-4">
           <button type="submit" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
             Save changes
           </button>
@@ -129,13 +113,13 @@
 
   <script>
     (function () {
-      var root = document.getElementById("staff-profile-sections");
+      var root = document.getElementById("admin-profile-sections");
       if (!root) return;
 
       function showSaveForSection(sectionEl) {
         if (!sectionEl) return;
-        root.querySelectorAll(".staff-profile-section").forEach(function (s) {
-          var bar = s.querySelector(".staff-section-save");
+        root.querySelectorAll(".admin-profile-section").forEach(function (s) {
+          var bar = s.querySelector(".admin-section-save");
           if (!bar) return;
           if (s === sectionEl) {
             bar.classList.remove("hidden");
@@ -146,14 +130,14 @@
       }
 
       function sectionFromTarget(el) {
-        return el && el.closest ? el.closest(".staff-profile-section") : null;
+        return el && el.closest ? el.closest(".admin-profile-section") : null;
       }
 
       root.addEventListener(
         "focusin",
         function (e) {
           var t = e.target;
-          if (t && t.closest && t.closest(".staff-section-save")) return;
+          if (t && t.closest && t.closest(".admin-section-save")) return;
           var sec = sectionFromTarget(t);
           if (sec) showSaveForSection(sec);
         },

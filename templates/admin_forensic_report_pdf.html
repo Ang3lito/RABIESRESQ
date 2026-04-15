@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Forensic Bite Analytics Report ({{ date_from }} to {{ date_to }})</title>
+    <style>
+      @page { size: A4; margin: 12mm; }
+      body { font-family: Arial, sans-serif; font-size: 10pt; color: #0f172a; }
+      .title { font-size: 14pt; font-weight: bold; margin: 0; }
+      .subtitle { font-size: 9pt; color: #334155; margin: 3px 0 0 0; }
+      .muted { color: #64748b; font-size: 8.5pt; }
+      .box { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-top: 10px; }
+      .kpi { width: 100%; border-collapse: collapse; }
+      .kpi td { padding: 6px 8px; border: 1px solid #e2e8f0; }
+      .kpi .label { background: #f8fafc; color: #475569; font-size: 9pt; }
+      .kpi .value { font-weight: bold; font-size: 11pt; }
+      .section { margin-top: 14px; }
+      .section-title { font-size: 9pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; margin: 0 0 6px 0; }
+      table.data { width: 100%; border-collapse: collapse; }
+      table.data th, table.data td { border: 1px solid #e2e8f0; padding: 5px 6px; font-size: 9pt; }
+      table.data th { background: #f8fafc; text-transform: uppercase; letter-spacing: 0.05em; font-size: 8pt; color: #475569; text-align: left; }
+      .two-col { width: 100%; border-collapse: collapse; }
+      .two-col td { vertical-align: top; width: 50%; padding-right: 8px; }
+      .two-col td:last-child { padding-right: 0; padding-left: 8px; }
+    </style>
+  </head>
+  <body>
+    <p class="title">Forensic Bite Analytics Report</p>
+    <p class="subtitle">
+      {{ clinic.name if clinic else 'Clinic' }} — Period: {{ date_from }} to {{ date_to }}
+    </p>
+    <p class="muted">
+      Decision-support only. This report summarizes historical operational data patterns and does not provide a medical diagnosis.
+      Clinical assessment and treatment decisions remain under licensed clinician authority.
+    </p>
+
+    <div class="box">
+      <p class="section-title">Key indicators</p>
+      <table class="kpi">
+        <tr>
+          <td class="label">Total bite cases</td>
+          <td class="value">{{ kpi.bite_cases }}</td>
+          <td class="label">Completed cases</td>
+          <td class="value">{{ kpi.completed_cases }}</td>
+        </tr>
+        <tr>
+          <td class="label">Ongoing cases</td>
+          <td class="value">{{ kpi.ongoing_cases }}</td>
+          <td class="label">Staff members</td>
+          <td class="value">{{ kpi.staff_count }}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <p class="section-title">Case distributions (selected period)</p>
+      <table class="two-col">
+        <tr>
+          <td>
+            <div class="box">
+              <p class="section-title">WHO category (AI decision-support)</p>
+              <table class="data">
+                <thead><tr><th>Category</th><th>Cases</th><th>%</th></tr></thead>
+                <tbody>
+                  {% for row in who_category_rows %}
+                  <tr><td>{{ row.label }}</td><td>{{ row.count }}</td><td>{{ row.percent }}%</td></tr>
+                  {% else %}
+                  <tr><td colspan="3" class="muted">No data.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </td>
+          <td>
+            <div class="box">
+              <p class="section-title">Animal type (inferred)</p>
+              <table class="data">
+                <thead><tr><th>Animal</th><th>Cases</th><th>%</th></tr></thead>
+                <tbody>
+                  {% for row in animal_type_rows_insights %}
+                  <tr><td>{{ row.label }}</td><td>{{ row.count }}</td><td>{{ row.percent }}%</td></tr>
+                  {% else %}
+                  <tr><td colspan="3" class="muted">No data.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div class="box">
+              <p class="section-title">Victim age groups</p>
+              <table class="data">
+                <thead><tr><th>Age group</th><th>Cases</th><th>%</th></tr></thead>
+                <tbody>
+                  {% for row in age_distribution_rows %}
+                  <tr><td>{{ row.label }}</td><td>{{ row.count }}</td><td>{{ row.percent }}%</td></tr>
+                  {% else %}
+                  <tr><td colspan="3" class="muted">No data.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </td>
+          <td>
+            <div class="box">
+              <p class="section-title">Barangay case distribution</p>
+              <p class="muted">Top barangays based on patient address first segment.</p>
+              <table class="data">
+                <thead><tr><th>Barangay</th><th>Cases</th><th>%</th></tr></thead>
+                <tbody>
+                  {% for row in barangay_table_rows[:12] %}
+                  <tr><td>{{ row.barangay }}</td><td>{{ row.count }}</td><td>{{ row.percent }}%</td></tr>
+                  {% else %}
+                  <tr><td colspan="3" class="muted">No data.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <p class="section-title">Monthly trends (bite cases vs vaccinations)</p>
+      <div class="box">
+        <table class="data">
+          <thead><tr><th>Month</th><th>Bite cases</th><th>Vaccinations administered</th></tr></thead>
+          <tbody>
+            {% for row in monthly_trends_table %}
+            <tr><td>{{ row.month_label }}</td><td>{{ row.bite_cases }}</td><td>{{ row.vaccinations }}</td></tr>
+            {% else %}
+            <tr><td colspan="3" class="muted">No data.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>
+

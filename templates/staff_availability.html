@@ -103,7 +103,7 @@
                   </form>
                 {% endif %}
                 {% if not slot.is_taken %}
-                  <form method="post" action="{{ url_for('staff_availability_delete', slot_id=slot.id) }}" class="inline" onsubmit="return confirm('Delete this slot?');">
+                  <form method="post" action="{{ url_for('staff_availability_delete', slot_id=slot.id) }}" class="inline" data-confirm="Delete this slot?">
                     <button type="submit" class="ml-1 rounded-lg border border-red-200 bg-white px-2 py-1 text-xs text-red-600 hover:bg-red-50">Delete</button>
                   </form>
                 {% endif %}

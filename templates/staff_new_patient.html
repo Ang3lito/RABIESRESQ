@@ -18,115 +18,13 @@
 {% block main_content %}
   <section class="mt-6">
     <h1 class="text-5xl font-bold text-blue-900">New Patient</h1>
-    <p class="mt-1 text-slate-500">Create patient account with victim and bite pre-screening details.</p>
+    <p class="mt-1 max-w-3xl text-slate-500">
+      Use the same pre-screening questionnaire as patients (bite details, victim info, summary).
+      The email entered under Victim Info becomes the patient login; temporary credentials are emailed after submission.
+    </p>
   </section>
 
-  <form method="post" class="mt-6 space-y-5">
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <h2 class="text-3xl font-semibold text-blue-900">Victim Info Pre-screening Form</h2>
-      <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="first_name">First Name</label>
-          <input id="first_name" name="first_name" type="text" value="{{ form.first_name or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="last_name">Last Name</label>
-          <input id="last_name" name="last_name" type="text" value="{{ form.last_name or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="email">Email *</label>
-          <input id="email" name="email" type="email" required value="{{ form.email or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="date_of_birth">Date of Birth</label>
-          <input id="date_of_birth" name="date_of_birth" type="date" value="{{ form.date_of_birth or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="gender">Gender</label>
-          <select id="gender" name="gender" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring">
-            <option value="" {{ "selected" if not form.gender else "" }}>Select (optional)</option>
-            <option value="Male" {{ "selected" if form.gender == "Male" else "" }}>Male</option>
-            <option value="Female" {{ "selected" if form.gender == "Female" else "" }}>Female</option>
-            <option value="Other" {{ "selected" if form.gender == "Other" else "" }}>Other</option>
-          </select>
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="age">Age</label>
-          <input id="age" name="age" type="text" value="{{ form.age or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="address">Barangay (Address)</label>
-          <input id="address" name="address" type="text" value="{{ form.address or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-        <div class="md:col-span-2">
-          <label class="mb-1 block text-sm text-slate-600" for="phone_number">Contact Number</label>
-          <input id="phone_number" name="phone_number" type="text" value="{{ form.phone_number or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-      </div>
-    </article>
-
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <h2 class="text-3xl font-semibold text-blue-900">Bite Details Pre-screening Form</h2>
-      <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="exposure_date">Exposure Date</label>
-          <input id="exposure_date" name="exposure_date" type="date" required value="{{ form.exposure_date or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="type_of_exposure">Type of Exposure</label>
-          <input id="type_of_exposure" name="type_of_exposure" type="text" required value="{{ form.type_of_exposure or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="animal_detail">Animal</label>
-          <input id="animal_detail" name="animal_detail" type="text" required value="{{ form.animal_detail or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="risk_level">Category</label>
-          <select id="risk_level" name="risk_level" required class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring">
-            <option value="" {{ "selected" if not form.risk_level else "" }}>Select category</option>
-            <option value="Category I" {{ "selected" if form.risk_level == "Category I" else "" }}>Category I</option>
-            <option value="Category II" {{ "selected" if form.risk_level == "Category II" else "" }}>Category II</option>
-            <option value="Category III" {{ "selected" if form.risk_level == "Category III" else "" }}>Category III</option>
-          </select>
-        </div>
-        <div class="md:col-span-2">
-          <label class="mb-1 block text-sm text-slate-600" for="wound_description">Wound Description</label>
-          <textarea id="wound_description" name="wound_description" rows="2" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring">{{ form.wound_description or '' }}</textarea>
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="bleeding_type">Bleeding Type</label>
-          <input id="bleeding_type" name="bleeding_type" type="text" value="{{ form.bleeding_type or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="local_treatment">Local Treatment</label>
-          <input id="local_treatment" name="local_treatment" type="text" value="{{ form.local_treatment or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="patient_prev_immunization">Previous Rabies Vaccination</label>
-          <input id="patient_prev_immunization" name="patient_prev_immunization" type="text" value="{{ form.patient_prev_immunization or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="prev_vaccine_date">Previous Vaccine Date</label>
-          <input id="prev_vaccine_date" name="prev_vaccine_date" type="date" value="{{ form.prev_vaccine_date or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="tetanus_date">Tetanus Vaccine Date</label>
-          <input id="tetanus_date" name="tetanus_date" type="date" value="{{ form.tetanus_date or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="hrtig_immunization">HRIG / Immunoglobulin</label>
-          <select id="hrtig_immunization" name="hrtig_immunization" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring">
-            <option value="" {{ "selected" if not form.hrtig_immunization else "" }}>N/A</option>
-            <option value="1" {{ "selected" if form.hrtig_immunization == "1" else "" }}>Yes</option>
-            <option value="0" {{ "selected" if form.hrtig_immunization == "0" else "" }}>No</option>
-          </select>
-        </div>
-      </div>
-    </article>
-
-    <div class="flex items-center gap-3">
-      <button type="submit" class="rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600">Create Patient</button>
-      <a href="{{ url_for('staff_patients') }}" class="text-sm font-medium text-slate-500 hover:text-slate-700">Cancel</a>
-    </div>
-  </form>
+  <div class="mt-6">
+    {% include "pre_screening_form.html" %}
+  </div>
 {% endblock %}

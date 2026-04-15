@@ -102,6 +102,12 @@ def load_logged_in_user():
 
     db = get_db()
     g.user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    if g.user is not None:
+        ia = g.user["is_active"] if "is_active" in g.user.keys() else 1
+        if int(ia or 0) == 0:
+            session.clear()
+            flash("Your account has been deactivated.", "error")
+            return redirect(url_for("auth.login"))
 
 
 @bp.before_app_request
@@ -127,6 +133,29 @@ def enforce_patient_password_change():
     return redirect(url_for("auth.patient_force_password"))
 
 
+@bp.before_app_request
+def enforce_staff_password_change():
+    user_id = session.get("user_id")
+    if not user_id or session.get("role") != "clinic_personnel":
+        return None
+    if g.get("user") is None:
+        return None
+    must_change = g.user["must_change_password"] if "must_change_password" in g.user.keys() else 0
+    if not must_change:
+        return None
+
+    endpoint = request.endpoint or ""
+    allowed_endpoints = {
+        "auth.staff_force_password",
+        "auth.staff_force_password_post",
+        "auth.logout",
+        "static",
+    }
+    if endpoint in allowed_endpoints:
+        return None
+    return redirect(url_for("auth.staff_force_password"))
+
+
 @bp.get("/login")
 def login():
     return render_template("login.html")
@@ -148,6 +177,11 @@ def login_post():
         flash("Invalid credentials.", "error")
         return render_template("login.html", email=email)
 
+    ia = user["is_active"] if "is_active" in user.keys() else 1
+    if int(ia or 0) == 0:
+        flash("This account has been deactivated. Contact your administrator.", "error")
+        return render_template("login.html", email=email)
+
     session.clear()
     session["user_id"] = user["id"]
     session["role"] = user["role"]
@@ -163,9 +197,12 @@ def login_post():
         session["patient_onboarding_done"] = onboarding_done
         return redirect(url_for("patient_dashboard" if onboarding_done else "patient_onboarding"))
     if user["role"] == "clinic_personnel":
+        mc = int(user["must_change_password"] or 0) if "must_change_password" in user.keys() else 0
+        if mc:
+            return redirect(url_for("auth.staff_force_password"))
         return redirect(url_for("staff_dashboard"))
     if user["role"] == "system_admin":
-        return redirect(url_for("admin_dashboard"))
+        return redirect(url_for("admin_analytics", tab="overview", period="30d"))
 
     session.clear()
     flash("Account role is invalid, contact admin.", "error")
@@ -469,6 +506,50 @@ def patient_force_password_post():
     if session.get("patient_onboarding_done"):
         return redirect(url_for("patient_dashboard"))
     return redirect(url_for("patient_onboarding"))
+
+
+@bp.get("/staff/force-password")
+@login_required
+def staff_force_password():
+    if session.get("role") != "clinic_personnel":
+        return redirect(url_for("index"))
+    return render_template("staff_force_password.html")
+
+
+@bp.post("/staff/force-password")
+@login_required
+def staff_force_password_post():
+    if session.get("role") != "clinic_personnel":
+        return redirect(url_for("index"))
+
+    new_password = request.form.get("new_password", "").strip()
+    confirm_password = request.form.get("confirm_password", "").strip()
+
+    if len(new_password) < 8:
+        flash("Password must be at least 8 characters.", "error")
+        return render_template("staff_force_password.html")
+    if new_password != confirm_password:
+        flash("Passwords do not match.", "error")
+        return render_template("staff_force_password.html")
+
+    db = get_db()
+    try:
+        db.execute(
+            """
+            UPDATE users
+            SET password_hash = ?, must_change_password = 0, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            (generate_password_hash(new_password), session["user_id"]),
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+        flash("Failed to update password. Please try again.", "error")
+        return render_template("staff_force_password.html")
+
+    flash("Password updated successfully.", "success")
+    return redirect(url_for("staff_dashboard"))
 
 
 @bp.get("/logout")

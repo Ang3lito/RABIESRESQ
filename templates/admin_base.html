@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Admin - RabiesResQ{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    {% block head_extra %}{% endblock %}
+  </head>
+  <body class="min-h-screen bg-slate-100 text-slate-900">
+    <div class="flex min-h-screen flex-col lg:flex-row">
+      <!-- Mobile overlay -->
+      <div id="admin-sidebar-overlay" class="fixed inset-0 z-40 hidden bg-black/40 lg:hidden" onclick="closeAdminSidebar()"></div>
+
+      <aside id="admin-sidebar" class="fixed inset-y-0 left-0 z-50 w-72 -translate-x-full border-r border-slate-200 bg-white transition-transform duration-200 ease-out lg:fixed lg:inset-y-0 lg:left-0 lg:z-10 lg:h-screen lg:w-64 lg:translate-x-0 lg:overflow-y-auto" aria-hidden="true">
+        <div class="flex h-full flex-col p-6">
+          <a href="{{ url_for('admin_patients') }}" class="text-2xl font-bold text-blue-800">RabiesResQ</a>
+
+          <a
+            href="{{ url_for('admin_settings') }}"
+            class="mt-6 flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3 text-left transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+          >
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-800">
+              {{ admin_initials|default('A') }}
+            </div>
+            <div class="min-w-0 leading-tight">
+              <p class="truncate text-sm font-semibold text-slate-900">{{ admin_display_name }}</p>
+              <p class="truncate text-xs text-slate-500">{{ admin_account_type_label|default('System Administrator') }}</p>
+            </div>
+          </a>
+
+          <nav class="mt-6 space-y-2 text-sm">
+            <a href="{{ url_for('admin_patients') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 {{ 'bg-emerald-100 font-medium text-emerald-700' if (active_page|default('')) == 'patients' else 'text-slate-600 hover:bg-slate-100' }}">
+              <i class="fa-solid fa-folder-open"></i>
+              Cases
+            </a>
+            <a href="{{ url_for('admin_appointments') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 {{ 'bg-emerald-100 font-medium text-emerald-700' if (active_page|default('')) == 'appointments' else 'text-slate-600 hover:bg-slate-100' }}">
+              <i class="fa-regular fa-calendar"></i>
+              Appointments
+            </a>
+            <a href="{{ url_for('admin_analytics', tab='overview', period='30d') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 {{ 'bg-emerald-100 font-medium text-emerald-700' if (active_page|default('')) == 'reporting' else 'text-slate-600 hover:bg-slate-100' }}">
+              <i class="fa-solid fa-chart-line"></i>
+              Reporting
+            </a>
+            <a href="{{ url_for('admin_users') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 {{ 'bg-emerald-100 font-medium text-emerald-700' if (active_page|default('')) == 'users' else 'text-slate-600 hover:bg-slate-100' }}">
+              <i class="fa-solid fa-users-gear"></i>
+              User Management
+            </a>
+          </nav>
+
+          <div class="mt-auto space-y-2 pt-8 text-sm">
+            <a href="{{ url_for('auth.logout') }}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 font-semibold text-white transition hover:bg-red-600">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i>
+              Logout
+            </a>
+          </div>
+        </div>
+      </aside>
+
+      <main class="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6 lg:ml-64 lg:p-8">
+        <div class="min-w-0 rounded-2xl bg-white p-4 shadow-sm sm:p-6">
+          <header class="border-b border-slate-200 pb-5">
+            {% block header_left %}
+              <div class="flex items-center gap-3">
+                <button type="button" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white p-2.5 text-slate-700 shadow-sm hover:bg-slate-50 lg:hidden" onclick="toggleAdminSidebar()" aria-label="Open menu">
+                  <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="hidden lg:block lg:w-8"></div>
+              </div>
+            {% endblock %}
+          </header>
+
+          {% include "_flash.html" %}
+
+          {% if include_notification_strip|default(false) %}
+            {% include "_admin_notifications.html" %}
+          {% endif %}
+
+          {% block main_content %}{% endblock %}
+        </div>
+      </main>
+    </div>
+    {% include "_confirm_modal.html" %}
+    {% block scripts %}
+      <script>
+        function openAdminSidebar() {
+          const el = document.getElementById("admin-sidebar");
+          const ov = document.getElementById("admin-sidebar-overlay");
+          if (!el || !ov) return;
+          el.classList.remove("-translate-x-full");
+          ov.classList.remove("hidden");
+          el.setAttribute("aria-hidden", "false");
+        }
+        function closeAdminSidebar() {
+          const el = document.getElementById("admin-sidebar");
+          const ov = document.getElementById("admin-sidebar-overlay");
+          if (!el || !ov) return;
+          el.classList.add("-translate-x-full");
+          ov.classList.add("hidden");
+          el.setAttribute("aria-hidden", "true");
+        }
+        function toggleAdminSidebar() {
+          const el = document.getElementById("admin-sidebar");
+          if (!el) return;
+          if (el.classList.contains("-translate-x-full")) openAdminSidebar();
+          else closeAdminSidebar();
+        }
+        document.addEventListener("keydown", function(e) {
+          if (e.key === "Escape") closeAdminSidebar();
+        });
+      </script>
+      <script>
+        (function() {
+          const modal = document.getElementById("confirm-modal");
+          const msg = document.getElementById("confirm-modal-message");
+          const ok = modal ? modal.querySelector("[data-confirm-ok]") : null;
+          const cancel = modal ? modal.querySelector("[data-confirm-cancel]") : null;
+          let pendingForm = null;
+
+          function openConfirm(message, formEl) {
+            if (!modal || !msg) return true;
+            msg.textContent = message || "Are you sure?";
+            pendingForm = formEl || null;
+            modal.classList.remove("hidden");
+            modal.setAttribute("aria-hidden", "false");
+            return false;
+          }
+          function closeConfirm() {
+            if (!modal) return;
+            modal.classList.add("hidden");
+            modal.setAttribute("aria-hidden", "true");
+            pendingForm = null;
+          }
+          if (modal) {
+            modal.addEventListener("click", function(e) {
+              const t = e.target;
+              if (t && (t.matches("[data-confirm-close]") || t.closest("[data-confirm-close]"))) closeConfirm();
+            });
+          }
+          if (cancel) cancel.addEventListener("click", closeConfirm);
+          if (ok) ok.addEventListener("click", function() {
+            if (pendingForm) pendingForm.submit();
+            closeConfirm();
+          });
+          document.addEventListener("keydown", function(e) {
+            if (e.key === "Escape") closeConfirm();
+          });
+
+          document.addEventListener("submit", function(e) {
+            const form = e.target;
+            if (!form || !(form instanceof HTMLFormElement)) return;
+            const message = form.getAttribute("data-confirm");
+            if (!message) return;
+            if (form.getAttribute("data-confirm-bypass") === "1") return;
+            e.preventDefault();
+            openConfirm(message, form);
+          }, true);
+        })();
+      </script>
+    {% endblock %}
+  </body>
+</html>
