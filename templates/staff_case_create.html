@@ -23,7 +23,7 @@
     <p class="mt-1 text-slate-500">Create an existing record.</p>
   </section>
 
-  <form method="post" class="mt-6 space-y-5">
+  <form id="case-create-form" method="post" class="mt-6 space-y-5">
     <article class="rounded-2xl border border-slate-200 bg-white p-5">
       <h2 class="text-3xl font-semibold text-blue-900">Victim Info Pre-screening Form</h2>
       <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -35,13 +35,31 @@
           <label class="mb-1 block text-sm text-slate-600" for="last_name">Last Name</label>
           <input id="last_name" name="last_name" type="text" value="{{ form.last_name or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
         </div>
+        {% set _addr = form.address or '' %}
+        {% set _parts = _addr.split(',') %}
+        {% set _barangay_guess = (_parts[0] or '')|trim if _parts else '' %}
+        {% set _street_guess = (_parts[1:]|join(',') if (_parts|length > 1) else '')|trim %}
+        {% set barangay_value = (form.barangay or _barangay_guess or '') %}
+        {% set victim_address_value = (form.victim_address or _street_guess or '') %}
         <div>
           <label class="mb-1 block text-sm text-slate-600" for="age">Age</label>
           <input id="age" name="age" type="text" value="{{ form.age or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
         </div>
         <div>
-          <label class="mb-1 block text-sm text-slate-600" for="address">Barangay (Address)</label>
-          <input id="address" name="address" type="text" value="{{ form.address or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+          <label class="mb-1 block text-sm text-slate-600" for="barangay">Barangay</label>
+          <select id="barangay" name="barangay" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-emerald-300 focus:ring">
+            <option value="">Select barangay...</option>
+            <option value="Adlaon" {{ "selected" if barangay_value == "Adlaon" else "" }}>Adlaon</option>
+            <option value="Agsungot" {{ "selected" if barangay_value == "Agsungot" else "" }}>Agsungot</option>
+            <option value="Apas" {{ "selected" if barangay_value == "Apas" else "" }}>Apas</option>
+            {% for b in ['Babag','Bacayan','Banilad','Basak Pardo','Basak San Nicolas','Binaliw','Bonbon','Budlaan','Buhisan','Bulacao','Buot','Busay','Calamba','Cambinocot','Capitol Site','Carreta','Cogon Pardo','Cogon Ramos','Day-as','Duljo Fatima','Ermita','Guadalupe','Guba','Hipodromo','Inayawan','Kalubihan','Kalunasan','Kamagayan','Kamputhaw','Kasambagan','Kinasang-an Pardo','Labangon','Lahug','Lorega San Miguel','Lusaran','Luz','Mabini','Mabolo','Malubog','Mambaling','Pahina Central','Pahina San Nicolas','Pamutan','Pari-an','Paril','Pasil','Pit-os','Poblacion Pardo','Pulangbato','Pung-ol Sibugay','Punta Princesa','Quiot Pardo','Sambag I','Sambag II','San Antonio','San Jose','San Nicolas Proper','San Roque','Santa Cruz','Santo Niño','Sapangdaku','Sawang Calero','Sinsin','Sirao','Suba','Sudlon I','Sudlon II','T. Padilla','Tabunan','Tagba-o','Talamban','Taptap','Tejero','Tinago','Tisa','To-ong','Zapatera'] %}
+              <option value="{{ b }}" {{ "selected" if barangay_value == b else "" }}>{{ b }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="md:col-span-2">
+          <label class="mb-1 block text-sm text-slate-600" for="victim_address">Street / Sitio / House No.</label>
+          <input id="victim_address" name="victim_address" type="text" value="{{ victim_address_value }}" placeholder="Enter additional address details..." class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
         </div>
         <div class="md:col-span-2">
           <label class="mb-1 block text-sm text-slate-600" for="phone_number">Contact Number</label>
@@ -52,122 +70,219 @@
 
     <article class="rounded-2xl border border-slate-200 bg-white p-5">
       <h2 class="text-3xl font-semibold text-blue-900">Bite Details Pre-screening Form</h2>
-      {% set ad_raw = (form.animal_detail or '')|trim %}
-      {% set animal_type_sel = '' %}
-      {% set other_animal_val = '' %}
-      {% if ad_raw.startswith('Others:') %}
-        {% set animal_type_sel = 'Others' %}
-        {% set other_animal_val = ad_raw[7:]|trim %}
-      {% elif ad_raw in ['Dog', 'Cat', 'Others'] %}
-        {% set animal_type_sel = ad_raw %}
-      {% elif ad_raw %}
-        {% set animal_type_sel = 'Others' %}
-        {% set other_animal_val = ad_raw %}
-      {% endif %}
-      {% set lt_raw = (form.local_treatment or '')|trim %}
-      {% set lt_sel = '' %}
-      {% set other_treatment_val = '' %}
-      {% if lt_raw.startswith('Others:') %}
-        {% set lt_sel = 'Others' %}
-        {% set other_treatment_val = lt_raw[7:]|trim %}
-      {% elif lt_raw in ['Wash with Water Only', 'Washed with Water and Soap', 'Applied Garlic, etc.', 'Others'] %}
-        {% set lt_sel = lt_raw %}
-      {% elif lt_raw %}
-        {% set lt_sel = 'Others' %}
-        {% set other_treatment_val = lt_raw %}
-      {% endif %}
+      {% set selected_areas = form.affected_area_values or [] %}
       <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <label class="mb-1 block text-sm text-slate-600" for="exposure_date">Exposure Date</label>
           <input id="exposure_date" name="exposure_date" type="date" required value="{{ form.exposure_date or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
         </div>
         <div>
+          <label class="mb-1 block text-sm text-slate-600" for="exposure_time">Exposure Time</label>
+          <input id="exposure_time" name="exposure_time" type="time" value="{{ form.exposure_time or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+        </div>
+        <div>
           <label class="mb-1 block text-sm text-slate-600" for="type_of_exposure">Type of Exposure</label>
-          <select id="type_of_exposure" name="type_of_exposure" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-emerald-300 focus:ring">
-            <option value="" {{ "selected" if not form.type_of_exposure else "" }}>Select...</option>
+          <div class="grid grid-cols-2 gap-2 md:grid-cols-3">
             {% for opt in ['Bite','Scratch','Contamination of Mucous Membrane','Non-Bite','Touch only'] %}
-              <option value="{{ opt }}" {{ "selected" if (form.type_of_exposure or '')|trim == opt else "" }}>{{ opt }}</option>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2 text-xs font-medium transition-colors exposure-type {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.type_of_exposure or '') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+                <input type="radio" name="type_of_exposure" value="{{ opt }}" class="sr-only" {{ "checked" if (form.type_of_exposure or '') == opt else "" }} required />
+                <span class="text-center">{{ opt }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div>
+          <label class="mb-1 block text-sm text-slate-600" for="place_of_exposure">Place of Exposure</label>
+          <select id="place_of_exposure" name="place_of_exposure" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-emerald-300 focus:ring">
+            <option value="" {{ "selected" if not form.place_of_exposure else "" }}>Select...</option>
+            {% for opt in ['Inside home','Outside home','Workplace','School','Street/Road','Park','Market/Mall','Farm',"Neighbor's house",'Public transport','Other'] %}
+              <option value="{{ opt }}" {{ "selected" if (form.place_of_exposure or '') == opt else "" }}>{{ opt }}</option>
             {% endfor %}
           </select>
         </div>
         <div>
-          <label class="mb-1 block text-sm text-slate-600" for="animal_type">Animal</label>
-          <select id="animal_type" name="animal_type" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-emerald-300 focus:ring">
-            <option value="" {{ "selected" if not animal_type_sel else "" }}>Select...</option>
+          <label class="mb-1 block text-sm text-slate-600" id="case-create-affected-area-label" for="case-create-affected-area-trigger">Affected Area</label>
+          <div id="case-create-affected-area-group" class="relative">
+            <button type="button" id="case-create-affected-area-trigger" class="flex w-full items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-left text-sm text-slate-900">
+              <span id="case-create-affected-area-trigger-text" class="min-w-0 flex-1 truncate">Select affected areas...</span>
+              <span id="case-create-affected-area-chevron" class="text-slate-500 transition-transform">&#9662;</span>
+            </button>
+            <div id="case-create-affected-area-panel" class="absolute left-0 right-0 top-full z-20 mt-1 hidden max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
+              <p class="mb-2 text-xs text-slate-500">Select all that apply</p>
+              <div class="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                {% for area in ['Head/Face','Neck','Trunk','Right arm','Left arm','Right hand','Left hand','Right leg','Left leg','Right foot','Left foot','Other'] %}
+                  <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 {{ 'sm:col-span-2' if area == 'Other' else '' }}">
+                    <input type="checkbox" name="affected_area" value="{{ area }}" {{ "checked" if area in selected_areas else "" }} id="{{ 'case_create_affected_area_cb_other' if area == 'Other' else '' }}" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                    <span>{{ area }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="place-of-exposure-other-container" class="md:col-span-2 {{ '' if (form.place_of_exposure or '') == 'Other' else 'hidden' }}">
+          <label class="mb-1 block text-sm text-slate-600" for="place_of_exposure_other">Specify other place of exposure</label>
+          <input id="place_of_exposure_other" name="place_of_exposure_other" type="text" value="{{ form.place_of_exposure_other or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+        </div>
+        <div id="case-create-affected-area-other-container" class="md:col-span-2 {{ '' if 'Other' in selected_areas else 'hidden' }}">
+          <label class="mb-1 block text-sm text-slate-600" for="affected_area_other">Specify other affected area</label>
+          <input id="affected_area_other" name="affected_area_other" type="text" value="{{ form.affected_area_other or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="mb-1 block text-sm text-slate-600">Description of Wound</label>
+          <div class="grid grid-cols-2 gap-2 md:grid-cols-5">
+            {% for opt in ['Punctured','Abrasion','Lacerated','Avulsed','None'] %}
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2 text-xs font-medium transition-colors wound-type {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.wound_description or '') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+                <input type="radio" name="wound_description" value="{{ opt }}" class="sr-only" {{ "checked" if (form.wound_description or '') == opt else "" }} />
+                <span>{{ opt }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="mb-1 block text-sm text-slate-600">Bleeding</label>
+          <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div>
+              <p class="mb-2 text-xs font-medium text-slate-500">Spontaneous Bleeding</p>
+              <div class="flex gap-2">
+                {% for opt in ['Yes', 'No'] %}
+                  <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors bleeding-spontaneous {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.spontaneous_bleeding or 'No') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+                    <input type="radio" name="spontaneous_bleeding" value="{{ opt }}" class="sr-only" {{ "checked" if (form.spontaneous_bleeding or 'No') == opt else "" }} />
+                    <span>{{ opt }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
+            <div>
+              <p class="mb-2 text-xs font-medium text-slate-500">Induced Bleeding</p>
+              <div class="flex gap-2">
+                {% for opt in ['Yes', 'No'] %}
+                  <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors bleeding-induced {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.induced_bleeding or 'No') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+                    <input type="radio" name="induced_bleeding" value="{{ opt }}" class="sr-only" {{ "checked" if (form.induced_bleeding or 'No') == opt else "" }} />
+                    <span>{{ opt }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm text-slate-600">Previous Anti-Rabies Immunization of Patient</label>
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {% for opt in ['None','Completed','Incomplete'] %}
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors prev-immunization {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.patient_prev_immunization or '') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+                <input type="radio" name="patient_prev_immunization" value="{{ opt }}" class="sr-only" {{ "checked" if (form.patient_prev_immunization or '') == opt else "" }} />
+                <span>{{ opt }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div id="prev-vaccine-date-container" class="{{ '' if (form.patient_prev_immunization or '') in ['Completed','Incomplete'] else 'hidden' }}">
+          <label class="mb-1 block text-sm text-slate-600" for="prev_vaccine_date">Previous Vaccine Date</label>
+          <input id="prev_vaccine_date" name="prev_vaccine_date" type="date" value="{{ form.prev_vaccine_date or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm text-slate-600">Type of Animal</label>
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {% for opt in ['Dog','Cat','Others'] %}
-              <option value="{{ opt }}" {{ "selected" if animal_type_sel == opt else "" }}>{{ opt }}</option>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors animal-type {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.animal_type or '') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+                <input type="radio" name="animal_type" value="{{ opt }}" class="sr-only" {{ "checked" if (form.animal_type or '') == opt else "" }} />
+                <span>{{ opt }}</span>
+              </label>
             {% endfor %}
-          </select>
+          </div>
         </div>
+        <div id="case-create-other-animal-wrap" class="{{ '' if (form.animal_type or '') == 'Others' else 'hidden' }}">
+          <label class="mb-1 block text-sm text-slate-600" for="other_animal">Specify other animal</label>
+          <input id="other_animal" name="other_animal" type="text" value="{{ form.other_animal or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="mb-1 block text-sm text-slate-600">Animal Status</label>
+          <div class="grid grid-cols-2 gap-2 sm:grid-cols-5">
+            {% for opt in ['Healthy','Killed','Sick','Lost','Died'] %}
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2 text-xs font-medium transition-colors animal-status {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.animal_status or '') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+                <input type="radio" name="animal_status" value="{{ opt }}" class="sr-only" {{ "checked" if (form.animal_status or '') == opt else "" }} />
+                <span>{{ opt }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="mb-1 block text-sm text-slate-600">Anti-Rabies Vaccination of Animal</label>
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {% for opt in ['Updated','None','Not Updated'] %}
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2 text-xs font-medium transition-colors animal-vaccination {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.animal_vaccination or '') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+                <input type="radio" name="animal_vaccination" value="{{ opt }}" class="sr-only" {{ "checked" if (form.animal_vaccination or '') == opt else "" }} />
+                <span>{{ opt }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+
         <div>
-          <label class="mb-1 block text-sm text-slate-600" for="risk_level">Category</label>
-          <select id="risk_level" name="risk_level" required class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring">
-            <option value="" {{ "selected" if not form.risk_level else "" }}>Select category</option>
+          <label class="mb-1 block text-sm text-slate-600">Local Wound Treatment</label>
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {% for opt in ['Wash with Water Only','Washed with Water and Soap','Applied Garlic, etc.','Others'] %}
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2 text-xs font-medium transition-colors local-treatment {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.local_treatment or '') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+                <input type="radio" name="local_treatment" value="{{ opt }}" class="sr-only" {{ "checked" if (form.local_treatment or '') == opt else "" }} />
+                <span class="text-center">{{ opt }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div id="case-create-other-treatment-wrap" class="{{ '' if (form.local_treatment or '') == 'Others' else 'hidden' }}">
+          <label class="mb-1 block text-sm text-slate-600" for="other_treatment">Specify other treatment</label>
+          <input id="other_treatment" name="other_treatment" type="text" value="{{ form.other_treatment or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm text-slate-600">Tetanus Immunization</label>
+          <div class="flex gap-2">
+            {% for opt in ['Yes','No'] %}
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors tetanus-immunization {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.tetanus_immunization or '') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+                <input type="radio" name="tetanus_immunization" value="{{ opt }}" class="sr-only" {{ "checked" if (form.tetanus_immunization or '') == opt else "" }} />
+                <span>{{ opt }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div id="tetanus-date-container" class="{{ '' if (form.tetanus_immunization or '') == 'Yes' else 'hidden' }}">
+          <label class="mb-1 block text-sm text-slate-600" for="tetanus_date">Date (for Tetanus Immunization)</label>
+          <input id="tetanus_date" name="tetanus_date" type="date" value="{{ form.tetanus_date or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm text-slate-600">Human Tetanus Immunoglobulin</label>
+          <div class="flex gap-2">
+            {% for opt in ['Yes','No'] %}
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors hrtig-immunization {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.hrtig_immunization or '') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+                <input type="radio" name="hrtig_immunization" value="{{ opt }}" class="sr-only" {{ "checked" if (form.hrtig_immunization or '') == opt else "" }} />
+                <span>{{ opt }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div id="hrtig-date-container" class="{{ '' if (form.hrtig_immunization or '') == 'Yes' else 'hidden' }}">
+          <label class="mb-1 block text-sm text-slate-600" for="hrtig_date">HRIG Date</label>
+          <input id="hrtig_date" name="hrtig_date" type="date" value="{{ form.hrtig_date or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="mb-1 block text-sm text-slate-600" for="risk_level">Category / Risk (optional manual override)</label>
+          <select id="risk_level" name="risk_level" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-emerald-300 focus:ring">
+            <option value="" {{ "selected" if not form.risk_level else "" }}>Auto (system computes from pre-screening)</option>
             <option value="Category I" {{ "selected" if form.risk_level == "Category I" else "" }}>Category I</option>
             <option value="Category II" {{ "selected" if form.risk_level == "Category II" else "" }}>Category II</option>
             <option value="Category III" {{ "selected" if form.risk_level == "Category III" else "" }}>Category III</option>
             <option value="Unknown" {{ "selected" if form.risk_level == "Unknown" else "" }}>Unknown</option>
           </select>
-        </div>
-        <div id="case-create-other-animal-wrap" class="md:col-span-2 {{ '' if animal_type_sel == 'Others' else 'hidden' }}">
-          <label class="mb-1 block text-sm text-slate-600" for="other_animal">Specify other animal</label>
-          <input id="other_animal" name="other_animal" type="text" value="{{ other_animal_val }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-        <div class="md:col-span-2">
-          <label class="mb-1 block text-sm text-slate-600" for="wound_description">Wound Description</label>
-          <select id="wound_description" name="wound_description" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-emerald-300 focus:ring">
-            <option value="" {{ "selected" if not form.wound_description else "" }}>Select...</option>
-            {% for opt in ['Punctured','Abrasion','Lacerated','Avulsed','None'] %}
-              <option value="{{ opt }}" {{ "selected" if (form.wound_description or '')|trim == opt else "" }}>{{ opt }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="bleeding_type">Bleeding Type</label>
-          <select id="bleeding_type" name="bleeding_type" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-emerald-300 focus:ring">
-            <option value="" {{ "selected" if not form.bleeding_type else "" }}>Select...</option>
-            {% for opt in ['None','Spontaneous','Induced','Both spontaneous and induced'] %}
-              <option value="{{ opt }}" {{ "selected" if (form.bleeding_type or '')|trim == opt else "" }}>{{ opt }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="local_treatment">Local Treatment</label>
-          <select id="local_treatment" name="local_treatment" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-emerald-300 focus:ring">
-            <option value="" {{ "selected" if not lt_sel else "" }}>Select...</option>
-            {% for opt in ['Wash with Water Only','Washed with Water and Soap','Applied Garlic, etc.','Others'] %}
-              <option value="{{ opt }}" {{ "selected" if lt_sel == opt else "" }}>{{ opt }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div id="case-create-other-treatment-wrap" class="md:col-span-2 {{ '' if lt_sel == 'Others' else 'hidden' }}">
-          <label class="mb-1 block text-sm text-slate-600" for="other_treatment">Specify other treatment</label>
-          <input id="other_treatment" name="other_treatment" type="text" value="{{ other_treatment_val }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="patient_prev_immunization">Previous Rabies Vaccination</label>
-          <select id="patient_prev_immunization" name="patient_prev_immunization" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-emerald-300 focus:ring">
-            <option value="" {{ "selected" if not form.patient_prev_immunization else "" }}>Select...</option>
-            {% for opt in ['None','Completed','Incomplete'] %}
-              <option value="{{ opt }}" {{ "selected" if (form.patient_prev_immunization or '')|trim == opt else "" }}>{{ opt }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="prev_vaccine_date">Previous Vaccine Date</label>
-          <input id="prev_vaccine_date" name="prev_vaccine_date" type="date" value="{{ form.prev_vaccine_date or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="tetanus_date">Tetanus Vaccine Date</label>
-          <input id="tetanus_date" name="tetanus_date" type="date" value="{{ form.tetanus_date or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm text-slate-600" for="hrtig_immunization">HRIG / Immunoglobulin</label>
-          <select id="hrtig_immunization" name="hrtig_immunization" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring">
-            <option value="" {{ "selected" if not form.hrtig_immunization else "" }}>N/A</option>
-            <option value="1" {{ "selected" if form.hrtig_immunization == "1" else "" }}>Yes</option>
-            <option value="0" {{ "selected" if form.hrtig_immunization == "0" else "" }}>No</option>
-          </select>
+          <p class="mt-1 text-xs text-slate-500">Leave as Auto to use the same computed category logic as New Patient pre-screening.</p>
         </div>
       </div>
     </article>
@@ -355,22 +470,133 @@
     }
 
     document.addEventListener("DOMContentLoaded", function() {
-      const animalSel = document.getElementById("animal_type");
-      const otherAnimalWrap = document.getElementById("case-create-other-animal-wrap");
-      const localSel = document.getElementById("local_treatment");
-      const otherTreatmentWrap = document.getElementById("case-create-other-treatment-wrap");
-      function syncCreateExtras() {
-        if (animalSel && otherAnimalWrap) {
-          if ((animalSel.value || "") === "Others") otherAnimalWrap.classList.remove("hidden");
-          else otherAnimalWrap.classList.add("hidden");
+      const formRoot = document.getElementById("case-create-form");
+      if (!formRoot) return;
+      function q(selector) { return formRoot.querySelector(selector); }
+      function qa(selector) { return Array.from(formRoot.querySelectorAll(selector)); }
+
+      function wireRadioGroup(className, inputName) {
+        const labels = qa("." + className);
+        function refresh() {
+          labels.forEach((label) => {
+            const input = label.querySelector(`input[name="${inputName}"]`);
+            const checked = !!(input && input.checked);
+            label.classList.toggle("border-emerald-500", checked);
+            label.classList.toggle("bg-emerald-50", checked);
+            label.classList.toggle("text-emerald-700", checked);
+            label.classList.toggle("border-slate-200", !checked);
+            label.classList.toggle("text-slate-700", !checked);
+          });
         }
-        if (localSel && otherTreatmentWrap) {
-          if ((localSel.value || "") === "Others") otherTreatmentWrap.classList.remove("hidden");
-          else otherTreatmentWrap.classList.add("hidden");
+        labels.forEach((label) => {
+          label.addEventListener("click", () => {
+            const input = label.querySelector(`input[name="${inputName}"]`);
+            if (input) {
+              input.checked = true;
+              input.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            refresh();
+          });
+        });
+        refresh();
+      }
+
+      function toggleByValue(sourceName, expectedValue, targetId) {
+        const target = q("#" + targetId);
+        if (!target) return;
+        const source = q(`input[name="${sourceName}"]:checked`) || q("#" + sourceName);
+        const val = source ? source.value : "";
+        target.classList.toggle("hidden", val !== expectedValue);
+      }
+
+      function syncPlaceOther() {
+        const placeSel = q("#place_of_exposure");
+        const wrap = q("#place-of-exposure-other-container");
+        if (!placeSel || !wrap) return;
+        wrap.classList.toggle("hidden", (placeSel.value || "") !== "Other");
+      }
+
+      function updateAffectedAreaUI() {
+        const selected = qa('input[name="affected_area"]:checked').map((i) => i.value);
+        const triggerText = q("#case-create-affected-area-trigger-text");
+        if (triggerText) {
+          triggerText.textContent = selected.length ? selected.join(", ") : "Select affected areas...";
+        }
+        const otherWrap = q("#case-create-affected-area-other-container");
+        if (otherWrap) {
+          otherWrap.classList.toggle("hidden", !selected.includes("Other"));
         }
       }
-      if (animalSel) animalSel.addEventListener("change", syncCreateExtras);
-      if (localSel) localSel.addEventListener("change", syncCreateExtras);
+
+      const affectedTrigger = q("#case-create-affected-area-trigger");
+      const affectedPanel = q("#case-create-affected-area-panel");
+      const affectedChevron = q("#case-create-affected-area-chevron");
+      if (affectedTrigger && affectedPanel) {
+        affectedTrigger.addEventListener("click", function(e) {
+          e.preventDefault();
+          const isHidden = affectedPanel.classList.contains("hidden");
+          affectedPanel.classList.toggle("hidden", !isHidden);
+          if (affectedChevron) affectedChevron.style.transform = isHidden ? "rotate(180deg)" : "rotate(0deg)";
+        });
+        document.addEventListener("click", function(e) {
+          if (!affectedPanel.classList.contains("hidden")) {
+            const group = q("#case-create-affected-area-group");
+            if (group && !group.contains(e.target)) {
+              affectedPanel.classList.add("hidden");
+              if (affectedChevron) affectedChevron.style.transform = "rotate(0deg)";
+            }
+          }
+        });
+      }
+
+      wireRadioGroup("exposure-type", "type_of_exposure");
+      wireRadioGroup("wound-type", "wound_description");
+      wireRadioGroup("bleeding-spontaneous", "spontaneous_bleeding");
+      wireRadioGroup("bleeding-induced", "induced_bleeding");
+      wireRadioGroup("prev-immunization", "patient_prev_immunization");
+      wireRadioGroup("animal-type", "animal_type");
+      wireRadioGroup("animal-status", "animal_status");
+      wireRadioGroup("animal-vaccination", "animal_vaccination");
+      wireRadioGroup("local-treatment", "local_treatment");
+      wireRadioGroup("tetanus-immunization", "tetanus_immunization");
+      wireRadioGroup("hrtig-immunization", "hrtig_immunization");
+
+      qa('input[name="affected_area"]').forEach((cb) => {
+        cb.addEventListener("change", updateAffectedAreaUI);
+      });
+      updateAffectedAreaUI();
+
+      const placeSel = q("#place_of_exposure");
+      if (placeSel) {
+        placeSel.addEventListener("change", syncPlaceOther);
+        syncPlaceOther();
+      }
+
+      function syncConditionalSections() {
+        toggleByValue("animal_type", "Others", "case-create-other-animal-wrap");
+        toggleByValue("local_treatment", "Others", "case-create-other-treatment-wrap");
+        const prev = q('input[name="patient_prev_immunization"]:checked');
+        const prevWrap = q("#prev-vaccine-date-container");
+        if (prevWrap) {
+          const show = prev && (prev.value === "Completed" || prev.value === "Incomplete");
+          prevWrap.classList.toggle("hidden", !show);
+        }
+        toggleByValue("tetanus_immunization", "Yes", "tetanus-date-container");
+        toggleByValue("hrtig_immunization", "Yes", "hrtig-date-container");
+      }
+
+      [
+        "animal_type",
+        "local_treatment",
+        "patient_prev_immunization",
+        "tetanus_immunization",
+        "hrtig_immunization",
+      ].forEach((name) => {
+        qa(`input[name="${name}"]`).forEach((i) => {
+          i.addEventListener("change", syncConditionalSections);
+        });
+      });
+      syncConditionalSections();
 
       const expiryInput = document.getElementById("vc_pcec_expiry");
       if (expiryInput) {

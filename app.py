@@ -327,6 +327,133 @@ def _admin_user_manageable_in_clinic(db, clinic_id: int, target_user_id: int) ->
     )
 
 
+_ADMIN_PAGE_BADGE_KEYS = ("patients", "appointments", "reporting", "users")
+
+
+def _admin_mark_page_seen(db, admin_user_id: int, page_key: str) -> None:
+    if page_key not in _ADMIN_PAGE_BADGE_KEYS:
+        return
+    db.execute(
+        """
+        INSERT INTO admin_page_last_seen (admin_user_id, page_key, last_seen_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(admin_user_id, page_key)
+        DO UPDATE SET last_seen_at = excluded.last_seen_at
+        """,
+        (admin_user_id, page_key),
+    )
+    db.commit()
+
+
+def _admin_nav_badge_counts(db, admin_user_id: int, clinic_id: int | None) -> dict[str, int]:
+    counts = {key: 0 for key in _ADMIN_PAGE_BADGE_KEYS}
+    if clinic_id is None:
+        return counts
+
+    seen_rows = db.execute(
+        """
+        SELECT page_key, last_seen_at
+        FROM admin_page_last_seen
+        WHERE admin_user_id = ?
+        """,
+        (admin_user_id,),
+    ).fetchall()
+    last_seen_by_page = {
+        (row["page_key"] or "").strip(): (row["last_seen_at"] or "").strip()
+        for row in seen_rows
+    }
+    epoch = "1970-01-01 00:00:00"
+
+    counts["patients"] = int(
+        (
+            db.execute(
+                """
+                SELECT COUNT(*) AS n
+                FROM cases c
+                WHERE c.clinic_id = ?
+                  AND datetime(COALESCE(NULLIF(c.created_at, ''), '1970-01-01 00:00:00'))
+                      > datetime(?)
+                """,
+                (clinic_id, last_seen_by_page.get("patients") or epoch),
+            ).fetchone()["n"]
+        )
+        or 0
+    )
+
+    counts["appointments"] = int(
+        (
+            db.execute(
+                """
+                SELECT COUNT(*) AS n
+                FROM appointments a
+                WHERE a.clinic_id = ?
+                  AND datetime(COALESCE(NULLIF(a.created_at, ''), '1970-01-01 00:00:00'))
+                      > datetime(?)
+                """,
+                (clinic_id, last_seen_by_page.get("appointments") or epoch),
+            ).fetchone()["n"]
+        )
+        or 0
+    )
+
+    counts["reporting"] = int(
+        (
+            db.execute(
+                """
+                SELECT COUNT(*) AS n
+                FROM reports r
+                WHERE r.clinic_id = ?
+                  AND datetime(
+                        COALESCE(
+                          NULLIF(r.generation_date, ''),
+                          '1970-01-01 00:00:00'
+                        )
+                      ) > datetime(?)
+                """,
+                (clinic_id, last_seen_by_page.get("reporting") or epoch),
+            ).fetchone()["n"]
+        )
+        or 0
+    )
+
+    counts["users"] = int(
+        (
+            db.execute(
+                """
+                SELECT COUNT(DISTINCT u.id) AS n
+                FROM users u
+                WHERE (
+                    EXISTS (
+                        SELECT 1
+                        FROM clinic_personnel cp
+                        WHERE cp.user_id = u.id
+                          AND cp.clinic_id = ?
+                    )
+                    OR EXISTS (
+                        SELECT 1
+                        FROM patients p
+                        INNER JOIN cases c ON c.patient_id = p.id
+                        WHERE p.user_id = u.id
+                          AND c.clinic_id = ?
+                    )
+                )
+                AND datetime(
+                      COALESCE(
+                        NULLIF(u.updated_at, ''),
+                        NULLIF(u.created_at, ''),
+                        '1970-01-01 00:00:00'
+                      )
+                    ) > datetime(?)
+                """,
+                (clinic_id, clinic_id, last_seen_by_page.get("users") or epoch),
+            ).fetchone()["n"]
+        )
+        or 0
+    )
+
+    return counts
+
+
 def _get_admin_dashboard_notifications(db, clinic_id: int) -> list[dict[str, object]]:
     """Clinic-scoped summary alerts for Reporting overview (read-only)."""
     out: list[dict[str, object]] = []
@@ -1796,7 +1923,9 @@ def _bleeding_type_from_flags(spontaneous: str | None, induced: str | None) -> s
     return "None"
 
 
-def _prescreening_parse_validate_derive(form) -> tuple[list[str], dict | None]:
+def _prescreening_parse_validate_derive(
+    form, *, require_demographics: bool = True
+) -> tuple[list[str], dict | None]:
     """Parse and validate POST data from pre_screening_form.html; add derived fields for DB inserts."""
     form_type = (form.get("form_type") or "case").strip()
     appointment_slot_id_raw = (form.get("appointment_slot_id") or "").strip()
@@ -1882,10 +2011,11 @@ def _prescreening_parse_validate_derive(form) -> tuple[list[str], dict | None]:
         errors.append("Human tetanus immunoglobulin status is required.")
     if hrtig_immunization == "Yes" and not hrtig_date:
         errors.append("HRIG date is required when Human Tetanus Immunoglobulin is Yes.")
-    if not date_of_birth:
-        errors.append("Birthday is required.")
-    if not gender:
-        errors.append("Gender is required.")
+    if require_demographics:
+        if not date_of_birth:
+            errors.append("Birthday is required.")
+        if not gender:
+            errors.append("Gender is required.")
 
     if errors:
         return errors, None
@@ -2391,6 +2521,25 @@ def create_app():
         )
         db.commit()
 
+    def _ensure_admin_page_last_seen_table():
+        db = get_db()
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS admin_page_last_seen (
+                admin_user_id INTEGER NOT NULL,
+                page_key TEXT NOT NULL
+                    CHECK(page_key IN ('patients','appointments','reporting','users')),
+                last_seen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (admin_user_id, page_key),
+                FOREIGN KEY (admin_user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """
+        )
+        db.execute(
+            "CREATE INDEX IF NOT EXISTS idx_admin_page_last_seen_user_key ON admin_page_last_seen(admin_user_id, page_key)"
+        )
+        db.commit()
+
     def _ensure_cases_staff_completed_at_column():
         db = get_db()
         cols = {row["name"] for row in db.execute("PRAGMA table_info(cases)").fetchall()}
@@ -2407,6 +2556,7 @@ def create_app():
         _ensure_user_security_columns()
         _ensure_users_is_active_column()
         _ensure_pending_emails_table()
+        _ensure_admin_page_last_seen_table()
         _ensure_cases_staff_completed_at_column()
 
     # #region agent log helper
@@ -2864,7 +3014,16 @@ def create_app():
         try:
             if session.get("role") != "system_admin":
                 return {}
-            return {"admin_account_type_label": "System Administrator"}
+            user_id = session.get("user_id")
+            if not user_id:
+                return {}
+            db = get_db()
+            clinic = _get_singleton_clinic_row(db)
+            badges = _admin_nav_badge_counts(db, int(user_id), clinic["id"] if clinic else None)
+            return {
+                "admin_account_type_label": "System Administrator",
+                "admin_nav_badges": badges,
+            }
         except Exception:
             return {}
 
@@ -5419,27 +5578,41 @@ def create_app():
             "age": "",
             "phone_number": "",
             "address": "",
+            "barangay": "",
+            "victim_address": "",
             "exposure_date": "",
+            "exposure_time": "",
             "type_of_exposure": "",
             "animal_type": "",
             "other_animal": "",
-            "animal_detail": "",
+            "animal_status": "",
+            "animal_vaccination": "",
+            "place_of_exposure": "",
+            "place_of_exposure_other": "",
+            "affected_area_values": [],
+            "affected_area_other": "",
             "risk_level": "",
             "wound_description": "",
-            "bleeding_type": "",
+            "spontaneous_bleeding": "No",
+            "induced_bleeding": "No",
             "local_treatment": "",
             "other_treatment": "",
             "patient_prev_immunization": "",
             "prev_vaccine_date": "",
+            "tetanus_immunization": "",
             "tetanus_date": "",
             "hrtig_immunization": "",
+            "hrtig_date": "",
         }
         vaccination_card = {}
         card_doses_by_type = {"pre_exposure": {}, "post_exposure": {}, "booster": {}}
 
         if request.method == "POST":
             for key in form_data:
-                form_data[key] = (request.form.get(key) or "").strip()
+                if key == "affected_area_values":
+                    form_data[key] = [v.strip() for v in request.form.getlist("affected_area") if v.strip()]
+                else:
+                    form_data[key] = (request.form.get(key) or "").strip()
             def _v(name: str) -> str:
                 return (request.form.get(name) or "").strip()
 
@@ -5470,48 +5643,93 @@ def create_app():
                         "given_by": _v(f"{prefix}_{day}_given_by"),
                     }
 
-            errors = []
+            class _AddExistingPreScreeningFormProxy:
+                def __init__(self, raw_form):
+                    self.raw_form = raw_form
+
+                def get(self, key, default=None):
+                    mapped = {
+                        "victim_first_name": self.raw_form.get("first_name"),
+                        "victim_last_name": self.raw_form.get("last_name"),
+                        "victim_middle_initial": "",
+                        "date_of_birth": self.raw_form.get("date_of_birth"),
+                        "gender": self.raw_form.get("gender"),
+                        "age": self.raw_form.get("age"),
+                        "barangay": self.raw_form.get("barangay"),
+                        "victim_address": self.raw_form.get("victim_address"),
+                        "contact_number": self.raw_form.get("phone_number"),
+                        "email_address": "",
+                        "relationship_to_user": "Self",
+                    }
+                    if key in mapped:
+                        value = mapped[key]
+                        return value if value is not None else default
+                    return self.raw_form.get(key, default)
+
+                def getlist(self, key):
+                    if key == "affected_area":
+                        return self.raw_form.getlist("affected_area")
+                    return self.raw_form.getlist(key)
+
+            parse_errors, pdata = _prescreening_parse_validate_derive(
+                _AddExistingPreScreeningFormProxy(request.form),
+                require_demographics=False,
+            )
+            errors = list(parse_errors)
             if not form_data["first_name"] and not form_data["last_name"]:
                 errors.append("Patient first name or last name is required.")
-            if not form_data["exposure_date"]:
-                errors.append("Exposure date is required.")
-            if not form_data["type_of_exposure"]:
-                errors.append("Type of exposure is required.")
-            if not form_data["risk_level"]:
-                errors.append("Category / risk level is required.")
+
+            final_risk_level = ""
+            who_category_auto = ""
+            if pdata is not None:
+                who_category_auto = (pdata.get("risk_level") or "").strip()
+                final_risk_level = who_category_auto
+                manual_risk = (form_data.get("risk_level") or "").strip()
+                if manual_risk:
+                    normalized_manual_risk = ""
+                    if manual_risk.lower() in {"category 1", "category i", "1", "i"}:
+                        normalized_manual_risk = "Category I"
+                    elif manual_risk.lower() in {"category 2", "category ii", "2", "ii"}:
+                        normalized_manual_risk = "Category II"
+                    elif manual_risk.lower() in {"category 3", "category iii", "3", "iii"}:
+                        normalized_manual_risk = "Category III"
+                    elif manual_risk.lower() == "unknown":
+                        normalized_manual_risk = "Unknown"
+                    else:
+                        errors.append("Invalid manual Category / risk override.")
+                    if normalized_manual_risk:
+                        final_risk_level = normalized_manual_risk
+                        form_data["risk_level"] = normalized_manual_risk
+                else:
+                    # Keep selector blank for auto mode; backend still persists computed risk.
+                    form_data["risk_level"] = ""
+
+                # Normalize repopulated values from shared parser outputs.
+                form_data["animal_type"] = pdata.get("animal_type") or form_data["animal_type"]
+                form_data["barangay"] = pdata.get("barangay") or form_data["barangay"]
+                form_data["victim_address"] = pdata.get("victim_address") or form_data["victim_address"]
+                form_data["address"] = pdata.get("combined_address") or form_data["address"]
+                form_data["other_animal"] = pdata.get("other_animal") or ""
+                form_data["animal_status"] = pdata.get("animal_status") or ""
+                form_data["animal_vaccination"] = pdata.get("animal_vaccination") or ""
+                form_data["place_of_exposure"] = pdata.get("place_of_exposure") or ""
+                form_data["place_of_exposure_other"] = pdata.get("place_of_exposure_other") or ""
+                form_data["affected_area_values"] = pdata.get("affected_area_values") or form_data["affected_area_values"]
+                form_data["affected_area_other"] = pdata.get("affected_area_other") or ""
+                form_data["spontaneous_bleeding"] = pdata.get("spontaneous_bleeding") or "No"
+                form_data["induced_bleeding"] = pdata.get("induced_bleeding") or "No"
+                form_data["tetanus_immunization"] = pdata.get("tetanus_immunization") or ""
+                form_data["hrtig_immunization"] = pdata.get("hrtig_immunization") or ""
+                form_data["hrtig_date"] = pdata.get("hrtig_date") or ""
+                form_data["exposure_time"] = pdata.get("exposure_time") or ""
+                form_data["wound_description"] = pdata.get("wound_description") or ""
+                form_data["patient_prev_immunization"] = pdata.get("patient_prev_immunization") or ""
+                form_data["local_treatment"] = pdata.get("local_treatment") or ""
+                form_data["other_treatment"] = pdata.get("other_treatment") or ""
             if errors:
                 for err in errors:
                     flash(err, "error")
             else:
-                animal_type = (form_data.get("animal_type") or "").strip()
-                other_animal = (form_data.get("other_animal") or "").strip()
-                if animal_type == "Others" and other_animal:
-                    form_data["animal_detail"] = f"Others: {other_animal}"
-                elif animal_type == "Others":
-                    form_data["animal_detail"] = "Others"
-                elif animal_type:
-                    form_data["animal_detail"] = animal_type
-
-                local_base = (form_data.get("local_treatment") or "").strip()
-                other_treat = (form_data.get("other_treatment") or "").strip()
-                if local_base == "Others" and other_treat:
-                    form_data["local_treatment"] = f"Others: {other_treat}"
-                elif local_base == "Others":
-                    form_data["local_treatment"] = "Others"
-
-                if not form_data["animal_detail"]:
-                    flash("Animal detail is required.", "error")
-                    return redirect(url_for("staff_create_case_record"))
-
-                risk_level = form_data["risk_level"]
-                if risk_level.lower() in {"category 1", "category i", "1", "i"}:
-                    risk_level = "Category I"
-                elif risk_level.lower() in {"category 2", "category ii", "2", "ii"}:
-                    risk_level = "Category II"
-                elif risk_level.lower() in {"category 3", "category iii", "3", "iii"}:
-                    risk_level = "Category III"
-                elif risk_level.lower() == "unknown":
-                    risk_level = "Unknown"
 
                 try:
                     age_value = None
@@ -5534,65 +5752,72 @@ def create_app():
                             form_data["last_name"] or None,
                             age_value,
                             form_data["phone_number"] or None,
-                            form_data["address"] or None,
+                            (pdata.get("combined_address") if pdata else form_data["address"]) or None,
                         ),
                     )
                     patient_id = db.execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
 
-                    who_category_auto = risk_level
+                    who_category_auto = who_category_auto or final_risk_level
                     who_version = WHO_RULES_VERSION + "+doh-risk-v1"
                     who_reasons = _pre_screening_risk_reasons(
-                        type_of_exposure=form_data["type_of_exposure"],
-                        affected_area="",
-                        wound_description=form_data["wound_description"],
-                        bleeding_type=form_data["bleeding_type"],
-                        animal_status="",
+                        type_of_exposure=(pdata.get("type_of_exposure") or ""),
+                        affected_area=(pdata.get("final_affected_area") or ""),
+                        wound_description=(pdata.get("wound_description") or ""),
+                        bleeding_type=(pdata.get("bleeding_type") or "None"),
+                        animal_status=(pdata.get("animal_status") or ""),
                     )
                     who_category_reasons_json = json.dumps(who_reasons, ensure_ascii=False)
                     cur = db.execute(
                         """
                         INSERT INTO cases (
-                          patient_id, clinic_id, exposure_date, type_of_exposure, animal_detail,
-                          animal_vaccination,
+                          patient_id, clinic_id, exposure_date, exposure_time, place_of_exposure,
+                          affected_area, type_of_exposure, animal_detail, animal_condition, animal_vaccination,
+                          tetanus_prophylaxis_status,
                           risk_level, category, case_status,
                           who_category_auto, who_category_final, who_category_reasons_json, who_category_version
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?)
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?)
                         """,
                         (
                             patient_id,
                             staff["clinic_id"],
-                            form_data["exposure_date"],
-                            form_data["type_of_exposure"],
-                            form_data["animal_detail"],
-                            "",
-                            risk_level,
-                            risk_level,
+                            pdata.get("exposure_date"),
+                            pdata.get("exposure_time") or None,
+                            pdata.get("final_place_of_exposure") or None,
+                            pdata.get("final_affected_area") or None,
+                            pdata.get("type_of_exposure"),
+                            pdata.get("animal_detail"),
+                            pdata.get("animal_status") or None,
+                            pdata.get("animal_vaccination") or None,
+                            pdata.get("tetanus_immunization") or None,
+                            final_risk_level,
+                            final_risk_level,
                             who_category_auto,
-                            who_category_auto,
+                            final_risk_level,
                             who_category_reasons_json,
                             who_version,
                         ),
                     )
                     case_id = cur.lastrowid
                     hrtig_value = None
-                    if form_data["hrtig_immunization"] in {"0", "1"}:
-                        hrtig_value = int(form_data["hrtig_immunization"])
+                    if (pdata.get("hrtig_immunization") or "").strip() in {"Yes", "No"}:
+                        hrtig_value = 1 if (pdata.get("hrtig_immunization") or "").strip() == "Yes" else 0
                     db.execute(
                         """
                         INSERT INTO pre_screening_details (
                           case_id, wound_description, bleeding_type, local_treatment,
-                          patient_prev_immunization, prev_vaccine_date, tetanus_date, hrtig_immunization
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                          patient_prev_immunization, prev_vaccine_date, tetanus_date, hrtig_immunization, hrtig_date
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             case_id,
-                            form_data["wound_description"] or None,
-                            form_data["bleeding_type"] or None,
-                            form_data["local_treatment"] or None,
-                            form_data["patient_prev_immunization"] or None,
-                            form_data["prev_vaccine_date"] or None,
-                            form_data["tetanus_date"] or None,
+                            pdata.get("wound_description") or None,
+                            pdata.get("bleeding_type") or None,
+                            pdata.get("final_local_treatment") or None,
+                            pdata.get("patient_prev_immunization") or None,
+                            pdata.get("prev_vaccine_date") or None,
+                            pdata.get("tetanus_date") or None,
                             hrtig_value,
+                            pdata.get("hrtig_date") or None,
                         ),
                     )
 
@@ -7737,14 +7962,54 @@ def create_app():
         daily_labels = []
         daily_case_counts = []
         daily_vaccination_counts = []
+        daily_activity_rows = []
         for day_key in day_keys:
             try:
                 label = datetime.fromisoformat(day_key).strftime("%b %d")
+                full_label = datetime.fromisoformat(day_key).strftime("%b %d, %Y")
             except ValueError:
                 label = day_key
+                full_label = day_key
+            case_count = int(cases_by_day.get(day_key, 0))
+            vaccination_count = int(vaccinations_by_day.get(day_key, 0))
             daily_labels.append(label)
-            daily_case_counts.append(cases_by_day.get(day_key, 0))
-            daily_vaccination_counts.append(vaccinations_by_day.get(day_key, 0))
+            daily_case_counts.append(case_count)
+            daily_vaccination_counts.append(vaccination_count)
+            daily_activity_rows.append(
+                {
+                    "day_iso": day_key,
+                    "day_label": full_label,
+                    "new_cases_count": case_count,
+                    "vaccinations_count": vaccination_count,
+                }
+            )
+
+        daily_cases_total = sum(daily_case_counts)
+        daily_vaccinations_total = sum(daily_vaccination_counts)
+        daily_activity_empty = (daily_cases_total == 0 and daily_vaccinations_total == 0)
+
+        peak_cases_row = (
+            max(daily_activity_rows, key=lambda row: row["new_cases_count"])
+            if daily_activity_rows
+            else None
+        )
+        peak_vax_row = (
+            max(daily_activity_rows, key=lambda row: row["vaccinations_count"])
+            if daily_activity_rows
+            else None
+        )
+        daily_activity_summary = {
+            "total_new_cases": daily_cases_total,
+            "total_vaccinations": daily_vaccinations_total,
+            "peak_cases_count": peak_cases_row["new_cases_count"] if peak_cases_row else 0,
+            "peak_cases_day": (
+                peak_cases_row["day_label"] if peak_cases_row and peak_cases_row["new_cases_count"] > 0 else "N/A"
+            ),
+            "peak_vaccinations_count": peak_vax_row["vaccinations_count"] if peak_vax_row else 0,
+            "peak_vaccinations_day": (
+                peak_vax_row["day_label"] if peak_vax_row and peak_vax_row["vaccinations_count"] > 0 else "N/A"
+            ),
+        }
 
         total_category = sum(int(row["total"] or 0) for row in category_rows)
         category_breakdown = []
@@ -7853,6 +8118,9 @@ def create_app():
             daily_labels=daily_labels,
             daily_case_counts=daily_case_counts,
             daily_vaccination_counts=daily_vaccination_counts,
+            daily_activity_rows=daily_activity_rows,
+            daily_activity_summary=daily_activity_summary,
+            daily_activity_empty=daily_activity_empty,
             recent_cases=recent_cases_pagination,
             breadcrumbs=breadcrumbs,
             active_page="reports",
@@ -9623,6 +9891,7 @@ def create_app():
             session.clear()
             flash("Account profile missing, contact admin.", "error")
             return redirect(url_for("auth.login"))
+        _admin_mark_page_seen(db, session["user_id"], "patients")
         clinic = _get_singleton_clinic_row(db)
         if clinic is None:
             return render_template(
@@ -9880,6 +10149,7 @@ def create_app():
             session.clear()
             flash("Account profile missing, contact admin.", "error")
             return redirect(url_for("auth.login"))
+        _admin_mark_page_seen(db, session["user_id"], "appointments")
         clinic = _get_singleton_clinic_row(db)
         if clinic is None:
             return render_template(
@@ -10034,6 +10304,7 @@ def create_app():
             session.clear()
             flash("Account profile missing, contact admin.", "error")
             return redirect(url_for("auth.login"))
+        _admin_mark_page_seen(db, session["user_id"], "reporting")
 
         raw_tab = (request.args.get("tab") or "overview").strip().lower()
         if raw_tab not in ("overview", "clinic", "insights"):
@@ -10276,6 +10547,7 @@ def create_app():
             session.clear()
             flash("Account profile missing, contact admin.", "error")
             return redirect(url_for("auth.login"))
+        _admin_mark_page_seen(db, session["user_id"], "users")
         clinic = _get_singleton_clinic_row(db)
         search_raw = (request.args.get("search") or "").strip()
         search = search_raw.lower()

@@ -134,7 +134,6 @@
                 <label for="email_address" class="mb-2 block text-sm font-semibold text-slate-900">Email Address</label>
                 {% set _self_email = (session.email or patient.user_email or '') if _ps_email_autofill else '' %}
                 <input type="email" id="email_address" name="email_address" value="{{ _self_email }}" data-self-value="{{ _self_email }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="you@example.com">
-                <p class="mt-1 text-xs text-slate-500">We use email to send appointment updates and instructions.</p>
               </div>
             </div>
           </div>

@@ -334,6 +334,14 @@ CREATE TABLE IF NOT EXISTS pending_emails (
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS admin_page_last_seen (
+  admin_user_id INTEGER NOT NULL,
+  page_key TEXT NOT NULL CHECK(page_key IN ('patients','appointments','reporting','users')),
+  last_seen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (admin_user_id, page_key),
+  FOREIGN KEY (admin_user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- =========================
 -- Required indexes
 -- =========================
@@ -360,6 +368,7 @@ CREATE INDEX IF NOT EXISTS idx_notifications_case_id ON notifications(case_id);
 CREATE INDEX IF NOT EXISTS idx_reports_clinic_id ON reports(clinic_id);
 
 CREATE INDEX IF NOT EXISTS idx_guidance_clinic_id ON patient_guidance(clinic_id);
+CREATE INDEX IF NOT EXISTS idx_admin_page_last_seen_user_key ON admin_page_last_seen(admin_user_id, page_key);
 
 -- medical_audit_logs required indexes
 CREATE INDEX IF NOT EXISTS idx_audit_personnel ON medical_audit_logs(clinic_personnel_id);
