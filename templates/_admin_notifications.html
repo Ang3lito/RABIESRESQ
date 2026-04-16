@@ -14,15 +14,17 @@
             {% endif %}
             {% if n.type == 'appointment' %}
             <span class="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">Appointment</span>
+            {% elif n.type == 'case' %}
+            <span class="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">Case</span>
             {% elif n.type == 'vaccination' %}
             <span class="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700">Vaccination</span>
             {% elif n.type %}
-            <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">{{ n.type }}</span>
+            <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">{{ n.type|title }}</span>
             {% endif %}
           </div>
           <p class="mt-1 text-sm text-slate-700">
             {% if n.count is not none %}
-              <span class="font-semibold text-slate-900">{{ n.count }}</span>
+              <span class="text-base font-extrabold text-slate-900 sm:text-lg">{{ n.count }}</span>
             {% endif %}
             {{ n.message }}
           </p>

@@ -90,7 +90,7 @@
           <th class="px-4 py-3">Date of Exposure</th>
           <th class="px-4 py-3">Category</th>
           <th class="px-4 py-3">Status</th>
-          <th class="px-4 py-3">View Details</th>
+          <th class="px-4 py-3">Action</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-100 bg-white">
@@ -126,13 +126,9 @@
               <td class="px-4 py-3 text-center">
                 <div class="flex flex-wrap justify-center gap-3">
                   <a
-                    href="{{ url_for('admin_case_reporting_summary', case_id=case.id) }}"
-                    class="text-sm font-medium text-emerald-600 hover:text-emerald-700"
-                  >Exposure summary</a>
-                  <a
-                    href="{{ url_for('admin_case_vaccination', case_id=case.id) }}"
-                    class="text-sm font-medium text-blue-700 hover:text-blue-800"
-                  >Vaccination</a>
+                    href="{{ url_for('admin_case_details', case_id=case.id) }}"
+                    class="text-sm font-semibold text-blue-700 hover:text-blue-800"
+                  >View Details</a>
                 </div>
               </td>
             </tr>

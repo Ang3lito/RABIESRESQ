@@ -85,7 +85,6 @@
       <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
         <tr>
           <th class="px-4 py-3">Appointment</th>
-          <th class="px-4 py-3">Patient</th>
           <th class="px-4 py-3">Case</th>
           <th class="px-4 py-3">Exposure date</th>
           <th class="px-4 py-3">Date &amp; time</th>
@@ -97,7 +96,6 @@
           {% for row in appointments.items %}
             <tr class="hover:bg-slate-50/80">
               <td class="px-4 py-3 font-medium text-blue-900">{{ row.display_id }}</td>
-              <td class="px-4 py-3 text-slate-800">{{ row.patient_display_name }}</td>
               <td class="px-4 py-3">
                 <a href="{{ url_for('admin_case_reporting_summary', case_id=row.case_id) }}" class="font-medium text-emerald-600 hover:text-emerald-700">{{ row.case_code }}</a>
               </td>
@@ -108,7 +106,7 @@
           {% endfor %}
         {% else %}
           <tr>
-            <td colspan="6" class="px-4 py-8 text-center text-slate-500">No appointments found.</td>
+            <td colspan="5" class="px-4 py-8 text-center text-slate-500">No appointments found.</td>
           </tr>
         {% endif %}
       </tbody>

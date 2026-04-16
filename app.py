@@ -330,6 +330,62 @@ def _admin_user_manageable_in_clinic(db, clinic_id: int, target_user_id: int) ->
 _ADMIN_PAGE_BADGE_KEYS = ("patients", "appointments", "reporting", "users")
 
 
+_STAFF_PAGE_BADGE_KEYS = ("cases",)
+
+
+def _staff_mark_page_seen(db, staff_user_id: int, page_key: str) -> None:
+    if page_key not in _STAFF_PAGE_BADGE_KEYS:
+        return
+    db.execute(
+        """
+        INSERT INTO staff_page_last_seen (staff_user_id, page_key, last_seen_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(staff_user_id, page_key)
+        DO UPDATE SET last_seen_at = excluded.last_seen_at
+        """,
+        (staff_user_id, page_key),
+    )
+    db.commit()
+
+
+def _staff_nav_badge_counts(db, staff_user_id: int, clinic_id: int | None) -> dict[str, int]:
+    counts = {key: 0 for key in _STAFF_PAGE_BADGE_KEYS}
+    if clinic_id is None:
+        return counts
+
+    seen_rows = db.execute(
+        """
+        SELECT page_key, last_seen_at
+        FROM staff_page_last_seen
+        WHERE staff_user_id = ?
+        """,
+        (staff_user_id,),
+    ).fetchall()
+    last_seen_by_page = {
+        (row["page_key"] or "").strip(): (row["last_seen_at"] or "").strip()
+        for row in seen_rows
+    }
+    epoch = "1970-01-01 00:00:00"
+
+    counts["cases"] = int(
+        (
+            db.execute(
+                """
+                SELECT COUNT(*) AS n
+                FROM cases c
+                WHERE c.clinic_id = ?
+                  AND datetime(COALESCE(NULLIF(c.created_at, ''), '1970-01-01 00:00:00'))
+                      > datetime(?)
+                """,
+                (clinic_id, last_seen_by_page.get("cases") or epoch),
+            ).fetchone()["n"]
+        )
+        or 0
+    )
+
+    return counts
+
+
 def _admin_mark_page_seen(db, admin_user_id: int, page_key: str) -> None:
     if page_key not in _ADMIN_PAGE_BADGE_KEYS:
         return
@@ -472,6 +528,7 @@ def _get_admin_dashboard_notifications(db, clinic_id: int) -> list[dict[str, obj
         out.append(
             {
                 "type": "case",
+                "page_key": "patients",
                 "count": int(pending),
                 "message": "bite case(s) still pending at this clinic.",
                 "link_href": url_for("admin_patients"),
@@ -493,6 +550,7 @@ def _get_admin_dashboard_notifications(db, clinic_id: int) -> list[dict[str, obj
         out.append(
             {
                 "type": "appointment",
+                "page_key": "appointments",
                 "count": int(today_appts),
                 "message": "appointment(s) scheduled for today.",
                 "link_href": url_for("admin_appointments", date_filter="today", page=1),
@@ -525,13 +583,51 @@ def _get_admin_dashboard_notifications(db, clinic_id: int) -> list[dict[str, obj
         out.append(
             {
                 "type": "alert",
+                "page_key": "users",
                 "count": int(inactive),
                 "message": "user account(s) linked to this clinic are deactivated.",
                 "link_href": url_for("admin_users"),
                 "recipient_label": None,
             }
         )
+
+    recent_reports = (
+        db.execute(
+            """
+            SELECT COUNT(*) AS n FROM reports r
+            WHERE r.clinic_id = ?
+              AND datetime(
+                    COALESCE(NULLIF(r.generation_date, ''), '1970-01-01 00:00:00')
+                  ) >= datetime('now', '-7 days')
+            """,
+            (clinic_id,),
+        ).fetchone()["n"]
+        or 0
+    )
+    if recent_reports:
+        out.append(
+            {
+                "type": "report",
+                "page_key": "reporting",
+                "count": int(recent_reports),
+                "message": "report(s) generated in the last 7 days.",
+                "link_href": url_for("admin_analytics", tab="overview", period="30d"),
+                "recipient_label": None,
+            }
+        )
     return out
+
+
+def _admin_notifications_for_page(
+    db, clinic_id: int | None, page_key: str
+) -> list[dict[str, object]]:
+    """Return only the notifications relevant to an admin page."""
+    if clinic_id is None:
+        return []
+    notifs = _get_admin_dashboard_notifications(db, clinic_id)
+    if page_key == "reporting":
+        return notifs
+    return [n for n in notifs if (n.get("page_key") or "") == page_key]
 
 
 def _admin_case_vaccination_context(db, case_id: int, clinic_id: int) -> dict | None:
@@ -2540,6 +2636,24 @@ def create_app():
         )
         db.commit()
 
+    def _ensure_staff_page_last_seen_table():
+        db = get_db()
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS staff_page_last_seen (
+                staff_user_id INTEGER NOT NULL,
+                page_key TEXT NOT NULL CHECK(page_key IN ('cases')),
+                last_seen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (staff_user_id, page_key),
+                FOREIGN KEY (staff_user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """
+        )
+        db.execute(
+            "CREATE INDEX IF NOT EXISTS idx_staff_page_last_seen_user_key ON staff_page_last_seen(staff_user_id, page_key)"
+        )
+        db.commit()
+
     def _ensure_cases_staff_completed_at_column():
         db = get_db()
         cols = {row["name"] for row in db.execute("PRAGMA table_info(cases)").fetchall()}
@@ -2557,6 +2671,7 @@ def create_app():
         _ensure_users_is_active_column()
         _ensure_pending_emails_table()
         _ensure_admin_page_last_seen_table()
+        _ensure_staff_page_last_seen_table()
         _ensure_cases_staff_completed_at_column()
 
     # #region agent log helper
@@ -2715,6 +2830,37 @@ def create_app():
             source_id=appointment_id,
             message=NO_SHOW_APPOINTMENT_NOTIFICATION_MSG,
         )
+
+    def _insert_next_dose_reminder_if_absent(
+        *, patient_id: int, case_id: int, due_date: date
+    ) -> bool:
+        """
+        Insert a one-time (per due_date) vaccination reminder notification.
+        Returns True if a row was inserted.
+        """
+        db = get_db()
+        due_display = due_date.strftime("%b %d, %Y")
+        msg = f"Reminder: your next rabies vaccine dose is due on {due_display}."
+        exists = db.execute(
+            """
+            SELECT 1 FROM patient_notifications
+            WHERE patient_id = ?
+              AND type = 'vaccination'
+              AND source_id = ?
+              AND COALESCE(message, '') = ?
+            LIMIT 1
+            """,
+            (patient_id, case_id, msg),
+        ).fetchone()
+        if exists:
+            return False
+        _insert_patient_notification(
+            patient_id=patient_id,
+            notif_type="vaccination",
+            source_id=case_id,
+            message=msg,
+        )
+        return True
 
     def _get_patient_unread_counts(patient_user_id: int) -> dict[str, int]:
         """
@@ -2953,6 +3099,35 @@ def create_app():
         ).fetchone()
         return int(row["n"] or 0)
 
+    def _get_staff_due_vaccinations_count(clinic_id: int) -> int:
+        """
+        Count distinct cases that have a vaccination card dose row due soon/overdue
+        (scheduled date present but administration fields incomplete).
+
+        Window: due within next 7 days OR overdue up to 7 days.
+        """
+        db = get_db()
+        today = datetime.now().date()
+        start = (today - timedelta(days=7)).isoformat()
+        end = (today + timedelta(days=7)).isoformat()
+        row = db.execute(
+            """
+            SELECT COUNT(DISTINCT vcd.case_id) AS n
+            FROM vaccination_card_doses vcd
+            JOIN cases c ON c.id = vcd.case_id
+            WHERE c.clinic_id = ?
+              AND COALESCE(TRIM(vcd.dose_date), '') <> ''
+              AND DATE(SUBSTR(TRIM(vcd.dose_date), 1, 10)) >= DATE(?)
+              AND DATE(SUBSTR(TRIM(vcd.dose_date), 1, 10)) <= DATE(?)
+              AND (
+                COALESCE(TRIM(vcd.type_of_vaccine), '') = ''
+                OR COALESCE(TRIM(vcd.given_by), '') = ''
+              )
+            """,
+            (clinic_id, start, end),
+        ).fetchone()
+        return int(row["n"] or 0)
+
     @app.context_processor
     def _inject_staff_scheduled_appointments_count():
         try:
@@ -2977,6 +3152,8 @@ def create_app():
                 "scheduled_appointments_count": _get_staff_scheduled_appointments_count(
                     staff["clinic_id"]
                 ),
+                "due_vaccinations_count": _get_staff_due_vaccinations_count(staff["clinic_id"]),
+                "staff_nav_badges": _staff_nav_badge_counts(db, int(user_id), int(staff["clinic_id"])),
                 "staff_initials": _staff_initials(staff),
                 "staff_display_name": _staff_display_name(staff),
                 "staff_account_type_label": _staff_account_type_label(staff),
@@ -3480,6 +3657,8 @@ def create_app():
             return f"{n}{suffix}"
 
         enriched_appointments: list[dict] = []
+        inserted_due_reminders = False
+        today = datetime.now().date()
         for row in filtered_rows:
             appt = dict(row)
 
@@ -3535,7 +3714,28 @@ def create_app():
                 or (cid is not None and cid in highlight_case_ids)
             )
 
+            if next_due_date and cid is not None:
+                # Reminder window: due within the next 7 days or overdue (up to 7 days).
+                days_until = (next_due_date - today).days
+                if days_until <= 7 and days_until >= -7:
+                    if _insert_next_dose_reminder_if_absent(
+                        patient_id=int(appt["patient_id"]),
+                        case_id=int(cid),
+                        due_date=next_due_date,
+                    ):
+                        inserted_due_reminders = True
+
             enriched_appointments.append(appt)
+
+        if inserted_due_reminders:
+            db.commit()
+            # Refresh unread counts + dashboard notification feed so reminders show immediately.
+            unread_counts = _get_patient_unread_counts(session["user_id"])
+            (
+                dashboard_notifications,
+                highlight_appointment_ids,
+                highlight_case_ids,
+            ) = _get_unread_patient_notifications_for_user(session["user_id"])
 
         clinics = db.execute("SELECT id, name FROM clinics ORDER BY name").fetchall()
 
@@ -5946,6 +6146,7 @@ def create_app():
             return redirect(url_for("admin_dashboard"))
 
         db = get_db()
+        _staff_mark_page_seen(db, session["user_id"], "cases")
         staff = db.execute(
             """
             SELECT cp.*, u.username, u.email, c.name AS clinic_name
@@ -9786,6 +9987,56 @@ def create_app():
             headers={"Content-Disposition": f'attachment; filename="{fn}"'},
         )
 
+    @app.get("/admin/clinic/export.pdf")
+    @role_required("system_admin")
+    def admin_clinic_export_pdf():
+        try:
+            from xhtml2pdf import pisa  # type: ignore[import]
+        except Exception:
+            flash("PDF generation is temporarily unavailable. Please contact admin.", "error")
+            return redirect(url_for("admin_analytics", tab="clinic"))
+
+        db = get_db()
+        admin = _admin_fetch_user(db, session["user_id"])
+        if admin is None:
+            session.clear()
+            flash("Account profile missing, contact admin.", "error")
+            return redirect(url_for("auth.login"))
+        period, date_from, date_to, yearly_year = _admin_resolve_period_dates()
+        clinic = _get_singleton_clinic_row(db)
+        if clinic is None:
+            flash("No clinic configured.", "error")
+            return redirect(url_for("admin_analytics", tab="clinic"))
+
+        clinic_id = clinic["id"]
+        clinic_ctx = _admin_reporting_clinic_dict(db, clinic_id, clinic, period, date_from, date_to, yearly_year)
+        html = render_template(
+            "admin_clinic_report_pdf.html",
+            clinic=clinic,
+            period=period,
+            date_from=date_from,
+            date_to=date_to,
+            yearly_year=yearly_year,
+            **clinic_ctx,
+        )
+
+        pdf_io = io.BytesIO()
+        err = pisa.CreatePDF(html, dest=pdf_io, encoding="utf-8")
+        if err.err:
+            flash("PDF generation failed. Please try again.", "error")
+            return redirect(url_for("admin_analytics", tab="clinic", period=period, date_from=date_from, date_to=date_to))
+
+        pdf_data = pdf_io.getvalue()
+        if not pdf_data:
+            flash("PDF generation produced an empty file.", "error")
+            return redirect(url_for("admin_analytics", tab="clinic", period=period, date_from=date_from, date_to=date_to))
+
+        response = make_response(pdf_data)
+        response.headers["Content-Type"] = "application/pdf"
+        fn = f"clinic-performance-{date_from}-to-{date_to}.pdf"
+        response.headers["Content-Disposition"] = f'attachment; filename="{fn}"'
+        return response
+
     @app.get("/admin/analytics/insights/export.csv")
     @role_required("system_admin")
     def admin_insights_export_csv():
@@ -9882,6 +10133,90 @@ def create_app():
         response.headers["Content-Disposition"] = f'attachment; filename="{fn}"'
         return response
 
+    @app.get("/admin/analytics/forensic-report.csv")
+    @role_required("system_admin")
+    def admin_forensic_report_csv():
+        db = get_db()
+        admin = _admin_fetch_user(db, session["user_id"])
+        if admin is None:
+            session.clear()
+            flash("Account profile missing, contact admin.", "error")
+            return redirect(url_for("auth.login"))
+
+        period, date_from, date_to, yearly_year = _admin_resolve_period_dates()
+        filters = _admin_insights_filters_from_request(request.args)
+        clinic = _get_singleton_clinic_row(db)
+        if clinic is None:
+            flash("No clinic configured.", "error")
+            return redirect(url_for("admin_analytics", tab="insights"))
+
+        data = _admin_reporting_insights_dict(db, clinic["id"], date_from, date_to, filters)
+        kpi = data.get("kpi") or {}
+
+        buf = io.StringIO()
+        w = csv.writer(buf)
+
+        w.writerow(["Forensic Bite Analytics Report (CSV)"])
+        w.writerow(["Clinic", clinic["name"] if clinic and clinic["name"] else ""])
+        w.writerow(["Address", clinic["address"] if clinic and clinic["address"] else ""])
+        w.writerow(["Period mode", period])
+        w.writerow(["Date from", date_from])
+        w.writerow(["Date to", date_to])
+        if yearly_year is not None:
+            w.writerow(["Yearly year", yearly_year])
+        if filters:
+            w.writerow(["Filters (insights)"])
+            for k in sorted(filters.keys()):
+                w.writerow([k, filters.get(k) or ""])
+        w.writerow([])
+
+        w.writerow(["Key indicators"])
+        w.writerow(["metric", "value"])
+        w.writerow(["Total bite cases", kpi.get("bite_cases", 0)])
+        w.writerow(["Completed cases (in period)", kpi.get("completed_cases", 0)])
+        w.writerow(["Ongoing cases (all)", kpi.get("ongoing_cases", 0)])
+        w.writerow(["Staff members", kpi.get("staff_count", 0)])
+        w.writerow([])
+
+        def _write_dist_section(title: str, rows: list[dict], key_label: str) -> None:
+            w.writerow([title])
+            w.writerow([key_label, "case_count", "percent"])
+            for r in rows or []:
+                w.writerow([r.get("label"), r.get("count"), r.get("percent")])
+            w.writerow([])
+
+        _write_dist_section("Victim age groups", data.get("age_distribution_rows") or [], "age_group")
+        _write_dist_section("Gender distribution", data.get("gender_distribution_rows") or [], "gender")
+        _write_dist_section("Bite type distribution", data.get("bite_type_rows") or [], "bite_type")
+        _write_dist_section("Animal type distribution", data.get("animal_type_rows_insights") or [], "animal_type")
+        _write_dist_section("Case severity distribution", data.get("severity_rows") or [], "severity_label")
+        _write_dist_section("WHO category distribution", data.get("who_category_rows") or [], "who_category")
+        _write_dist_section("Case status distribution", data.get("case_status_rows") or [], "case_status")
+        _write_dist_section(
+            "Vaccination status distribution",
+            data.get("vaccination_status_rows") or [],
+            "vaccination_status",
+        )
+
+        w.writerow(["Barangay case distribution"])
+        w.writerow(["barangay", "case_count", "percent"])
+        for r in data.get("barangay_table_rows") or []:
+            w.writerow([r.get("barangay"), r.get("count"), r.get("percent")])
+        w.writerow([])
+
+        w.writerow(["Monthly trends"])
+        w.writerow(["month", "bite_cases", "vaccinations_administered"])
+        for r in data.get("monthly_trends_table") or []:
+            w.writerow([r.get("month_label"), r.get("bite_cases"), r.get("vaccinations")])
+        w.writerow([])
+
+        fn = f"forensic-bite-analytics-{date_from}-to-{date_to}.csv"
+        return Response(
+            "\ufeff" + buf.getvalue(),
+            mimetype="text/csv; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{fn}"'},
+        )
+
     @app.get("/admin/patients")
     @role_required("system_admin")
     def admin_patients():
@@ -9905,7 +10240,8 @@ def create_app():
                 selected_category="all",
                 selected_status="all",
                 active_page="patients",
-                include_notification_strip=False,
+                include_notification_strip=True,
+                dashboard_notifications=[],
             )
 
         clinic_id = clinic["id"]
@@ -10014,13 +10350,24 @@ def create_app():
             selected_category=category,
             selected_status=case_status,
             active_page="patients",
-            include_notification_strip=False,
+            include_notification_strip=True,
+            dashboard_notifications=_admin_notifications_for_page(db, clinic_id, "patients"),
         )
 
     @app.get("/admin/cases/<int:case_id>/reporting-summary")
     @role_required("system_admin")
     def admin_case_reporting_summary(case_id: int):
-        """Non-identifiable bite/exposure fields for admin reporting (no patient PII)."""
+        return redirect(url_for("admin_case_details", case_id=case_id) + "#exposure-summary")
+
+    @app.get("/admin/cases/<int:case_id>/vaccination")
+    @role_required("system_admin")
+    def admin_case_vaccination(case_id: int):
+        return redirect(url_for("admin_case_details", case_id=case_id) + "#vaccination-record")
+
+    @app.get("/admin/cases/<int:case_id>/details")
+    @role_required("system_admin")
+    def admin_case_details(case_id: int):
+        """Combined admin view: reporting summary + vaccination record (no patient PII)."""
         db = get_db()
         admin = _admin_fetch_user(db, session["user_id"])
         if admin is None:
@@ -10099,45 +10446,26 @@ def create_app():
             "hrtig_immunization": _yes_no_unknown(row["hrtig_immunization"]),
         }
 
-        return render_template(
-            "admin_case_reporting_summary.html",
-            admin=admin,
-            admin_display_name=_admin_display_name(admin),
-            admin_initials=_admin_initials(admin),
-            clinic=clinic,
-            summary=summary,
-            active_page="patients",
-            include_notification_strip=False,
-        )
-
-    @app.get("/admin/cases/<int:case_id>/vaccination")
-    @role_required("system_admin")
-    def admin_case_vaccination(case_id: int):
-        db = get_db()
-        admin = _admin_fetch_user(db, session["user_id"])
-        if admin is None:
-            session.clear()
-            flash("Account profile missing, contact admin.", "error")
-            return redirect(url_for("auth.login"))
-        clinic = _get_singleton_clinic_row(db)
-        if clinic is None:
-            flash("No clinic configured.", "error")
-            return redirect(url_for("admin_patients"))
-
-        ctx = _admin_case_vaccination_context(db, case_id, clinic["id"])
-        if ctx is None:
+        vacc_ctx = _admin_case_vaccination_context(db, case_id, clinic["id"])
+        if vacc_ctx is None:
             flash("Case not found.", "error")
             return redirect(url_for("admin_patients"))
 
+        vacc_ctx = dict(vacc_ctx)
+        vacc_ctx.pop("case_code", None)
+
         return render_template(
-            "admin_case_vaccination.html",
+            "admin_case_details.html",
             admin=admin,
             admin_display_name=_admin_display_name(admin),
             admin_initials=_admin_initials(admin),
             clinic=clinic,
+            case_code=summary["case_code"],
+            summary=summary,
             active_page="patients",
-            include_notification_strip=False,
-            **ctx,
+            include_notification_strip=True,
+            dashboard_notifications=_admin_notifications_for_page(db, clinic["id"], "patients"),
+            **vacc_ctx,
         )
 
     @app.get("/admin/appointments")
@@ -10163,7 +10491,8 @@ def create_app():
                 date_from="",
                 date_to="",
                 active_page="appointments",
-                include_notification_strip=False,
+                include_notification_strip=True,
+                dashboard_notifications=[],
             )
 
         clinic_id = clinic["id"]
@@ -10290,7 +10619,8 @@ def create_app():
             date_from=date_from,
             date_to=date_to,
             active_page="appointments",
-            include_notification_strip=False,
+            include_notification_strip=True,
+            dashboard_notifications=_admin_notifications_for_page(db, clinic_id, "appointments"),
         )
 
     @app.get("/admin/analytics")
@@ -10328,7 +10658,7 @@ def create_app():
             "yearly_year": yearly_year,
             "admin_year_options": _admin_year_dropdown_options(),
             "active_page": "reporting",
-            "include_notification_strip": tab == "overview",
+            "include_notification_strip": False,
             "dashboard_notifications": [],
             "insights_filters": insights_filters,
             "insights_filter_query_js": _insights_filters_query_string(insights_filters),
@@ -10336,8 +10666,6 @@ def create_app():
 
         if tab == "overview":
             ctx.update(_admin_reporting_overview_dict(db, clinic_id, date_from, date_to))
-            if clinic_id is not None:
-                ctx["dashboard_notifications"] = _get_admin_dashboard_notifications(db, clinic_id)
         elif tab == "clinic":
             ctx.update(_admin_reporting_clinic_dict(db, clinic_id, clinic, period, date_from, date_to, yearly_year))
         else:
@@ -10432,7 +10760,10 @@ def create_app():
                 admin_initials=_admin_initials(admin),
                 clinic=clinic,
                 active_page="users",
-                include_notification_strip=False,
+                include_notification_strip=True,
+                dashboard_notifications=_admin_notifications_for_page(
+                    db, clinic["id"] if clinic else None, "users"
+                ),
             )
 
         username = (request.form.get("username") or "").strip()
@@ -10484,7 +10815,10 @@ def create_app():
                 admin_initials=_admin_initials(admin),
                 clinic=clinic,
                 active_page="users",
-                include_notification_strip=False,
+                include_notification_strip=True,
+                dashboard_notifications=_admin_notifications_for_page(
+                    db, clinic["id"] if clinic else None, "users"
+                ),
                 form_username=username,
                 form_email=email,
                 form_employee_id=employee_id,
@@ -10694,7 +11028,10 @@ def create_app():
             active_users_total=active_users_total,
             current_session_user_id=session["user_id"],
             active_page="users",
-            include_notification_strip=False,
+            include_notification_strip=True,
+            dashboard_notifications=_admin_notifications_for_page(
+                db, clinic["id"] if clinic else None, "users"
+            ),
         )
 
     @app.route("/admin/settings", methods=["GET", "POST"])
@@ -10794,7 +11131,8 @@ def create_app():
             breadcrumbs=_crumbs(),
             highlight_section=highlight_section,
             active_page="settings",
-            include_notification_strip=False,
+            include_notification_strip=True,
+            dashboard_notifications=[],
         )
 
     # =========================

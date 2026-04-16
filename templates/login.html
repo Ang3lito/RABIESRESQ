@@ -92,7 +92,11 @@
               </button>
 
               <div class="pt-1 text-center text-sm font-semibold text-slate-700">
-                <a class="hover:text-slate-900" href="{{ url_for('auth.register') }}">New patient? Create an account</a>
+                <span>New patient?</span>
+                <a
+                  class="font-semibold text-blue-700 hover:text-blue-800"
+                  href="{{ url_for('auth.register') }}"
+                >Create an account</a>
               </div>
             </form>
           </div>
