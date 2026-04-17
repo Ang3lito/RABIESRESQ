@@ -30,7 +30,13 @@
       <div class="mb-4">
         <h2 class="text-lg font-bold text-slate-900">Personal Information</h2>
       </div>
-      <form method="post" id="form-personal" action="{{ url_for('admin_settings') }}" class="space-y-4">
+      <form
+        method="post"
+        id="form-personal"
+        action="{{ url_for('admin_settings') }}"
+        class="space-y-4"
+        data-confirm="Save changes to your personal information?"
+      >
         <input type="hidden" name="update_section" value="personal" />
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
@@ -76,7 +82,13 @@
       <div class="mb-4">
         <h2 class="text-lg font-bold text-slate-900">Account Security</h2>
       </div>
-      <form method="post" id="form-account" action="{{ url_for('admin_settings') }}" class="space-y-4">
+      <form
+        method="post"
+        id="form-account"
+        action="{{ url_for('admin_settings') }}"
+        class="space-y-4"
+        data-confirm="Save changes to your account security settings?"
+      >
         <input type="hidden" name="update_section" value="account" />
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>

@@ -25,7 +25,12 @@
 
   <section class="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
     <h2 class="text-lg font-semibold text-slate-900">Add slots for a date range</h2>
-    <form method="post" action="{{ url_for('staff_availability_post') }}" class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <form
+      method="post"
+      action="{{ url_for('staff_availability_post') }}"
+      class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4"
+      data-confirm="Add these availability slots to your clinic schedule?"
+    >
       <div class="space-y-3">
         <div>
           <label for="slot_date_from" class="mb-1 block text-sm font-medium text-slate-700">From date</label>
@@ -98,7 +103,12 @@
               </td>
               <td class="px-4 py-3">
                 {% if slot.is_active and not slot.is_taken %}
-                  <form method="post" action="{{ url_for('staff_availability_deactivate', slot_id=slot.id) }}" class="inline">
+                  <form
+                    method="post"
+                    action="{{ url_for('staff_availability_deactivate', slot_id=slot.id) }}"
+                    class="inline"
+                    data-confirm="Deactivate this slot? Patients will no longer be able to book it."
+                  >
                     <button type="submit" class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-600 hover:bg-slate-100">Deactivate</button>
                   </form>
                 {% endif %}

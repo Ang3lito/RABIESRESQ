@@ -11,7 +11,12 @@
     <a href="{{ url_for('admin_users') }}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to User Management</a>
   </section>
 
-  <form method="post" action="{{ url_for('admin_new_staff') }}" class="mx-auto mt-6 w-full max-w-2xl space-y-4 rounded-2xl border border-slate-200 bg-white p-6">
+  <form
+    method="post"
+    action="{{ url_for('admin_new_staff') }}"
+    class="mx-auto mt-6 w-full max-w-2xl space-y-4 rounded-2xl border border-slate-200 bg-white p-6"
+    data-confirm="Create this staff account? A temporary password will be generated and emailed if email sending is configured."
+  >
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div>
         <label class="mb-1 block text-sm font-medium text-slate-700">Username <span class="text-red-500">*</span></label>

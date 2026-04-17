@@ -23,7 +23,11 @@
             <p class="mt-1 text-slate-500">Update pre-screening forms for RRQ-{{ case.case_id }}.</p>
           </section>
 
-          <form method="post" class="mt-6 space-y-5 pb-24">
+          <form
+            method="post"
+            class="mt-6 space-y-5 pb-24"
+            data-confirm="Save changes to this case information?"
+          >
             <article class="rounded-2xl border border-slate-200 bg-white p-5">
               <h2 class="text-3xl font-semibold text-blue-900">Victim Info Pre-screening Form</h2>
               <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">

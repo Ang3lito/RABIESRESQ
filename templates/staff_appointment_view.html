@@ -24,7 +24,11 @@
               <p class="mt-1 text-slate-600">Appointment ID: {{ appointment.id }}</p>
             </div>
             <div class="flex flex-wrap gap-2">
-              <form method="post" action="{{ url_for('approve_appointment', appointment_id=appointment.id) }}">
+            <form
+              method="post"
+              action="{{ url_for('approve_appointment', appointment_id=appointment.id) }}"
+              data-confirm="Approve this appointment request?"
+            >
                 <button type="submit" class="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">
                   Approve
                 </button>
@@ -38,7 +42,12 @@
           </section>
 
           <section class="mt-6 grid grid-cols-1 gap-5 xl:grid-cols-3">
-            <form method="post" action="{{ url_for('edit_appointment', appointment_id=appointment.id) }}" class="xl:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+            <form
+              method="post"
+              action="{{ url_for('edit_appointment', appointment_id=appointment.id) }}"
+              class="xl:col-span-2 rounded-2xl border border-slate-200 bg-white p-5"
+              data-confirm="Save changes to this appointment schedule?"
+            >
               <h2 class="text-2xl font-semibold text-blue-900">Appointment Details</h2>
               <p class="mt-2 text-sm font-medium text-slate-700">Currently Requested Schedule: <span class="text-blue-800">{{ requested_schedule_display }}</span></p>
               <div class="mt-2 text-sm text-slate-600">Reschedule using available slots for this clinic.</div>

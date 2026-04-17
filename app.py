@@ -11273,6 +11273,251 @@ def create_app():
 
         click.echo("Staff created.")
 
+    @app.cli.command("seed-demo-reset")
+    @click.option(
+        "--confirm",
+        is_flag=True,
+        help="Required. Wipes all application data except the admin@example.com system admin, then reseeds demo accounts.",
+    )
+    def seed_demo_reset_command(confirm: bool):
+        """Reset DB to a demo dataset (destructive).
+
+        Keeps only users.system_admin with email admin@example.com. Reuses the existing clinic row
+        (creates one clinic only if the table is empty).
+
+        Seeds: 10 patients (patient1@gmail.com ... patient10@gmail.com, password patient123!),
+        15 cases (patients 1-5 have two cases each; 6-10 have one), 2 nurses and 1 doctor
+        (staff123!). Appointments: first 7 cases -> nurse1, remaining 8 -> nurse2.
+        """
+        if not confirm:
+            raise click.UsageError(
+                "Refusing to run without --confirm (this deletes almost all data). "
+                "Example: flask --app app seed-demo-reset --confirm"
+            )
+
+        db = get_db()
+        admin_row = db.execute(
+            """
+            SELECT id FROM users
+            WHERE LOWER(TRIM(COALESCE(email, ''))) = ? AND role = ?
+            LIMIT 1
+            """,
+            ("admin@example.com", "system_admin"),
+        ).fetchone()
+        if not admin_row:
+            raise click.ClickException(
+                "No system_admin user with email admin@example.com. Create one first, e.g.:\n"
+                '  flask --app app create-admin --username admin --email admin@example.com '
+                "--password <secret> --employee-id ADM-001"
+            )
+        admin_id = int(admin_row["id"])
+
+        patient_pw_hash = generate_password_hash("patient123!")
+        staff_pw_hash = generate_password_hash("staff123!")
+        who_ver = f"{WHO_RULES_VERSION}+doh-risk-v1"
+        who_reasons_json = json.dumps([], ensure_ascii=False)
+
+        try:
+            db.execute("BEGIN")
+
+            db.execute("DELETE FROM medical_audit_logs")
+            db.execute("DELETE FROM reports")
+            db.execute("DELETE FROM notifications")
+            db.execute("DELETE FROM cases")
+            db.execute("DELETE FROM availability_slots")
+            db.execute("DELETE FROM password_reset_codes")
+            db.execute("DELETE FROM pending_emails")
+
+            try:
+                db.execute("DELETE FROM staff_page_last_seen")
+            except sqlite3.OperationalError:
+                pass
+            db.execute("DELETE FROM admin_page_last_seen WHERE admin_user_id != ?", (admin_id,))
+
+            db.execute("DELETE FROM users WHERE id != ?", (admin_id,))
+
+            clinic_row = db.execute("SELECT id FROM clinics ORDER BY id LIMIT 1").fetchone()
+            if clinic_row:
+                clinic_id = int(clinic_row["id"])
+            else:
+                cur_clinic = db.execute(
+                    "INSERT INTO clinics (name, address) VALUES (?, ?)",
+                    ("RabiesResQ Clinic", None),
+                )
+                clinic_id = int(cur_clinic.lastrowid)
+
+            patient_ids: list[int] = []
+            patient_usernames = [
+                "juan_dela_cruz",
+                "maria_santos",
+                "jose_reyes",
+                "ana_garcia",
+                "pedro_lopez",
+                "luisa_ramos",
+                "carlos_mendoza",
+                "rosalie_bautista",
+                "miguel_fernandez",
+                "sofia_castillo",
+            ]
+            patient_names = [
+                ("Juan", "Dela Cruz"),
+                ("Maria", "Santos"),
+                ("Jose", "Reyes"),
+                ("Ana", "Garcia"),
+                ("Pedro", "Lopez"),
+                ("Luisa", "Ramos"),
+                ("Carlos", "Mendoza"),
+                ("Rosalie", "Bautista"),
+                ("Miguel", "Fernandez"),
+                ("Sofia", "Castillo"),
+            ]
+            for i in range(10):
+                n = i + 1
+                email = f"patient{n}@gmail.com"
+                username = patient_usernames[i]
+                first_name, last_name = patient_names[i]
+                ucur = db.execute(
+                    """
+                    INSERT INTO users (username, email, password_hash, role, must_change_password, is_active)
+                    VALUES (?, ?, ?, 'patient', 0, 1)
+                    """,
+                    (username, email, patient_pw_hash),
+                )
+                uid = int(ucur.lastrowid)
+                pcur = db.execute(
+                    """
+                    INSERT INTO patients (
+                        user_id, first_name, last_name, relationship_to_user, onboarding_completed
+                    ) VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (uid, first_name, last_name, "Self", 1),
+                )
+                patient_ids.append(int(pcur.lastrowid))
+
+            def _insert_staff(username: str, email: str, title: str, employee_id: str, first: str, last: str) -> int:
+                u = db.execute(
+                    """
+                    INSERT INTO users (username, email, password_hash, role, must_change_password, is_active)
+                    VALUES (?, ?, ?, 'clinic_personnel', 0, 1)
+                    """,
+                    (username, email, staff_pw_hash),
+                )
+                uid = int(u.lastrowid)
+                cp = db.execute(
+                    """
+                    INSERT INTO clinic_personnel (
+                        user_id, clinic_id, first_name, last_name, employee_id, license_number, title
+                    ) VALUES (?, ?, ?, ?, ?, NULL, ?)
+                    """,
+                    (uid, clinic_id, first, last, employee_id, title),
+                )
+                return int(cp.lastrowid)
+
+            nurse1_cp_id = _insert_staff(
+                "clara_delos_reyes", "nurse1@gmail.com", "Nurse", "NURSE-001", "Clara", "Reyes"
+            )
+            nurse2_cp_id = _insert_staff("mark_villanueva", "nurse2@gmail.com", "Nurse", "NURSE-002", "Mark", "Villa")
+            _insert_staff("dr_rafael_torres", "doctor@gmail.com", "Doctor", "DOC-001", "Rafael", "Torres")
+
+            case_patient_index: list[int] = []
+            for pi in range(5):
+                case_patient_index.extend([pi, pi])
+            for pi in range(5, 10):
+                case_patient_index.append(pi)
+
+            base_exposure = date.today() - timedelta(days=30)
+            case_ids: list[int] = []
+            for seq, pat_idx in enumerate(case_patient_index):
+                pid = patient_ids[pat_idx]
+                exposure_d = base_exposure + timedelta(days=seq)
+                exposure_s = exposure_d.isoformat()
+                risk = "Category II"
+                ccur = db.execute(
+                    """
+                    INSERT INTO cases (
+                        patient_id, clinic_id, exposure_date, exposure_time,
+                        place_of_exposure, affected_area,
+                        type_of_exposure, animal_detail, animal_condition, animal_vaccination,
+                        category, risk_level, case_status, tetanus_prophylaxis_status,
+                        who_category_auto, who_category_final, who_category_reasons_json, who_category_version
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        pid,
+                        clinic_id,
+                        exposure_s,
+                        "09:00:00",
+                        "Demo barangay",
+                        "Left hand",
+                        "Scratch",
+                        "Dog",
+                        "alive",
+                        "Unknown",
+                        risk,
+                        risk,
+                        "Pending",
+                        "Unknown",
+                        risk,
+                        risk,
+                        who_reasons_json,
+                        who_ver,
+                    ),
+                )
+                cid = int(ccur.lastrowid)
+                case_ids.append(cid)
+                db.execute(
+                    """
+                    INSERT INTO pre_screening_details (
+                        case_id, wound_description, bleeding_type, local_treatment,
+                        patient_prev_immunization, prev_vaccine_date, tetanus_date,
+                        hrtig_immunization, hrtig_date
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        cid,
+                        "Demo wound (seed)",
+                        "Minor",
+                        None,
+                        None,
+                        None,
+                        None,
+                        0,
+                        None,
+                    ),
+                )
+
+            appt_base = datetime.now(PHILIPPINES_TZ) + timedelta(days=1)
+            for idx, cid in enumerate(case_ids):
+                pat_idx = case_patient_index[idx]
+                pid = patient_ids[pat_idx]
+                nurse_cp = nurse1_cp_id if idx < 7 else nurse2_cp_id
+                appt_dt = (appt_base + timedelta(hours=2 * idx)).replace(tzinfo=None).isoformat(
+                    timespec="seconds"
+                )
+                db.execute(
+                    """
+                    INSERT INTO appointments (
+                        patient_id, clinic_personnel_id, clinic_id, appointment_datetime,
+                        status, type, case_id
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (pid, nurse_cp, clinic_id, appt_dt, "Pending", "Walk-in", cid),
+                )
+
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            raise click.ClickException(f"seed-demo-reset failed: {e}") from e
+
+        click.echo(
+            "seed-demo-reset complete.\n"
+            f"  Preserved admin user id: {admin_id} (admin@example.com)\n"
+            f"  Clinic id: {clinic_id}\n"
+            f"  Patients: 10 (patient1@gmail.com ... patient10@gmail.com) password: patient123!\n"
+            f"  Staff: nurse1@gmail.com, nurse2@gmail.com, doctor@gmail.com password: staff123!\n"
+            f"  Cases: {len(case_ids)} (cases 1-7 -> nurse1 appointments; 8-15 -> nurse2)\n"
+        )
+
     @app.cli.command("retry-pending-emails")
     @click.option("--limit", default=50, show_default=True, type=int)
     def retry_pending_emails_command(limit: int):

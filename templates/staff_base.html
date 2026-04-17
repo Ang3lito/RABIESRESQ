@@ -158,54 +158,9 @@
           if (e.key === "Escape") closeStaffSidebar();
         });
       </script>
-      <script>
-        (function() {
-          const modal = document.getElementById("confirm-modal");
-          const msg = document.getElementById("confirm-modal-message");
-          const ok = modal ? modal.querySelector("[data-confirm-ok]") : null;
-          const cancel = modal ? modal.querySelector("[data-confirm-cancel]") : null;
-          let pendingForm = null;
-
-          function openConfirm(message, formEl) {
-            if (!modal || !msg) return true;
-            msg.textContent = message || "Are you sure?";
-            pendingForm = formEl || null;
-            modal.classList.remove("hidden");
-            modal.setAttribute("aria-hidden", "false");
-            return false;
-          }
-          function closeConfirm() {
-            if (!modal) return;
-            modal.classList.add("hidden");
-            modal.setAttribute("aria-hidden", "true");
-            pendingForm = null;
-          }
-          if (modal) {
-            modal.addEventListener("click", function(e) {
-              const t = e.target;
-              if (t && (t.matches("[data-confirm-close]") || t.closest("[data-confirm-close]"))) closeConfirm();
-            });
-          }
-          if (cancel) cancel.addEventListener("click", closeConfirm);
-          if (ok) ok.addEventListener("click", function() {
-            if (pendingForm) pendingForm.submit();
-            closeConfirm();
-          });
-          document.addEventListener("keydown", function(e) {
-            if (e.key === "Escape") closeConfirm();
-          });
-
-          document.addEventListener("submit", function(e) {
-            const form = e.target;
-            if (!form || !(form instanceof HTMLFormElement)) return;
-            const message = form.getAttribute("data-confirm");
-            if (!message) return;
-            if (form.getAttribute("data-confirm-bypass") === "1") return;
-            e.preventDefault();
-            openConfirm(message, form);
-          }, true);
-        })();
-      </script>
+      {% if not disable_confirm_modal|default(false) %}
+        <script src="{{ url_for('static', filename='js/confirm_modal.js') }}"></script>
+      {% endif %}
     {% endblock %}
   </body>
 </html>

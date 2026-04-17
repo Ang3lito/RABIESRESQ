@@ -27,7 +27,11 @@
               <a href="{{ url_for('edit_patient_case', case_id=case.id) }}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                 <i class="fa-solid fa-pen mr-2"></i>Edit Info
               </a>
-              <form method="post" action="{{ url_for('complete_patient_case', case_id=case.id) }}">
+              <form
+                method="post"
+                action="{{ url_for('complete_patient_case', case_id=case.id) }}"
+                data-confirm="Mark this case as completed?"
+              >
                 <button class="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600" type="submit">
                   <i class="fa-solid fa-check mr-2"></i>Mark Completed
                 </button>
