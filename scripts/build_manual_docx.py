@@ -244,7 +244,7 @@ def main():
         [
             "Patients: dashboard summarizes cases and appointments (including dependents where applicable).",
             "Clinic personnel: operational snapshot for your clinic with indicators where shown.",
-            "System administrators: cases, appointments, reporting, users, session logs, and settings; login may land on reporting/analytics.",
+            "System administrators: cases, appointments, reporting, users, Session Logs, and settings; login may land on reporting/analytics.",
         ],
     )
 
@@ -292,7 +292,7 @@ def main():
             "Cases and appointments: browse and monitor with filters as provided.",
             "Reporting: overview, clinic, and insights tabs; CSV/PDF exports where exposed.",
             "Users: activate or deactivate accounts (with safeguards); create new staff.",
-            "Session logs: review sign-in and sign-out history.",
+            "Session Logs: review sign-in and sign-out history.",
             "Settings: clinic and system options on the settings screen.",
             "Clinic exports: CSV or PDF when offered.",
         ],
@@ -381,7 +381,7 @@ def main():
             "Oversee cases and appointments.",
             "Use reporting and downloads where shown.",
             "Manage users and onboard new clinic staff.",
-            "Review session logs.",
+            "Review Session Logs.",
             "Configure settings.",
             "Use CLI commands for initial clinic creation when IT procedures allow.",
         ],

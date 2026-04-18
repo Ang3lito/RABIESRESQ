@@ -19,6 +19,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from db import get_db
 from email_service import send_email
+from text_utils import normalize_optional
 
 
 bp = Blueprint("auth", __name__)
@@ -216,7 +217,7 @@ def login_post():
             return redirect(url_for("auth.staff_force_password"))
         return redirect(url_for("staff_dashboard"))
     if user["role"] == "system_admin":
-        return redirect(url_for("admin_analytics", tab="overview", period="30d"))
+        return redirect(url_for("admin_patients"))
 
     session.clear()
     flash("Account role is invalid, contact admin.", "error")
@@ -235,18 +236,18 @@ def register_post():
     password = request.form.get("password") or ""
     confirm_password = request.form.get("confirm_password") or ""
 
-    # Patient fields (nullable)
-    first_name = (request.form.get("first_name") or "").strip() or None
-    last_name = (request.form.get("last_name") or "").strip() or None
+    # Patient fields (nullable); title-case prose fields at save (not username/email/phone).
+    first_name = normalize_optional(request.form.get("first_name"))
+    last_name = normalize_optional(request.form.get("last_name"))
     phone_number = (request.form.get("phone_number") or "").strip() or None
-    address = (request.form.get("address") or "").strip() or None
+    address = normalize_optional(request.form.get("address"))
     date_of_birth = (request.form.get("date_of_birth") or "").strip() or None
     age_raw = (request.form.get("age") or "").strip()
-    gender = (request.form.get("gender") or "").strip() or None
-    allergies = (request.form.get("allergies") or "").strip() or None
-    pre_existing_conditions = (request.form.get("pre_existing_conditions") or "").strip() or None
-    current_medications = (request.form.get("current_medications") or "").strip() or None
-    notification_settings = (request.form.get("notification_settings") or "").strip() or None
+    gender = normalize_optional(request.form.get("gender"))
+    allergies = normalize_optional(request.form.get("allergies"))
+    pre_existing_conditions = normalize_optional(request.form.get("pre_existing_conditions"))
+    current_medications = normalize_optional(request.form.get("current_medications"))
+    notification_settings = normalize_optional(request.form.get("notification_settings"))
 
     age = None
     if age_raw:

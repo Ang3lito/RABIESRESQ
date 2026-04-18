@@ -32,6 +32,7 @@ from werkzeug.security import generate_password_hash
 from auth import login_required, role_required
 from db import get_db, init_app as init_db_app
 from email_service import send_email
+from text_utils import normalize_name_case, normalize_optional
 from who_rules import WHO_RULES_VERSION
 
 logger = logging.getLogger(__name__)
@@ -854,6 +855,65 @@ def _admin_nav_badge_counts(db, admin_user_id: int, clinic_id: int | None) -> di
     )
 
     return counts
+
+
+def _admin_session_logs_notifications(db, admin_user_id: int) -> list[dict[str, object]]:
+    """Login-activity alerts for the Session Logs page (same window as the sidebar badge)."""
+    seen_rows = db.execute(
+        """
+        SELECT page_key, last_seen_at
+        FROM admin_page_last_seen
+        WHERE admin_user_id = ?
+        """,
+        (admin_user_id,),
+    ).fetchall()
+    last_seen_by_page = {
+        (row["page_key"] or "").strip(): (row["last_seen_at"] or "").strip()
+        for row in seen_rows
+    }
+    epoch = "1970-01-01 00:00:00"
+    ls_sess = (last_seen_by_page.get("session_logs") or epoch).strip()
+    n = int(
+        (
+            db.execute(
+                """
+                SELECT COUNT(*) AS n
+                FROM user_session_logs
+                WHERE datetime(
+                      REPLACE(
+                        TRIM(COALESCE(NULLIF(logged_in_at, ''), '1970-01-01 00:00:00')),
+                        'T',
+                        ' '
+                      )
+                    )
+                    > datetime(REPLACE(TRIM(?), 'T', ' '))
+                """,
+                (ls_sess,),
+            ).fetchone()["n"]
+        )
+        or 0
+    )
+    if n > 0:
+        return [
+            {
+                "type": "session_logs",
+                "page_key": "session_logs",
+                "count": n,
+                "message": "new login event(s) since you last viewed Session Logs.",
+                "link_href": url_for("admin_session_logs", page=1),
+                "recipient_label": None,
+            }
+        ]
+    return [
+        {
+            "type": "session_logs",
+            "page_key": "session_logs",
+            "count": None,
+            "message": "No new login events since you last viewed Session Logs.",
+            "link_href": None,
+            "recipient_label": None,
+        }
+    ]
 
 
 def _get_admin_dashboard_notifications(db, clinic_id: int) -> list[dict[str, object]]:
@@ -2410,6 +2470,17 @@ def _prescreening_parse_validate_derive(
     email_address = (form.get("email_address") or "").strip().lower()
     relationship_to_user = (form.get("relationship_to_user") or "Self").strip()
 
+    victim_first_name = normalize_name_case(victim_first_name)
+    victim_last_name = normalize_name_case(victim_last_name)
+    victim_middle_initial = normalize_name_case(victim_middle_initial)
+    barangay = normalize_name_case(barangay)
+    victim_address = normalize_name_case(victim_address)
+    place_of_exposure_other = normalize_name_case(place_of_exposure_other)
+    affected_area_other = normalize_name_case(affected_area_other)
+    other_animal = normalize_name_case(other_animal)
+    other_treatment = normalize_name_case(other_treatment)
+    relationship_to_user = normalize_name_case(relationship_to_user)
+
     combined_address = None
     if barangay and victim_address:
         combined_address = f"{barangay}, {victim_address}"
@@ -2857,28 +2928,7 @@ def create_app():
 
     app = Flask(__name__, instance_relative_config=True)
 
-    def _namecase(value: object) -> str:
-        """Display-only name formatting (safe: does not affect stored values)."""
-        if value is None:
-            return ""
-        s = str(value).strip()
-        if not s:
-            return ""
-        # Collapse internal whitespace, lowercase, then capitalize after separators.
-        s = " ".join(s.split()).lower()
-        out: list[str] = []
-        cap_next = True
-        for ch in s:
-            if cap_next and ch.isalpha():
-                out.append(ch.upper())
-                cap_next = False
-            else:
-                out.append(ch)
-            if ch in (" ", "-", "'", "."):
-                cap_next = True
-        return "".join(out)
-
-    app.jinja_env.filters["namecase"] = _namecase
+    app.jinja_env.filters["namecase"] = normalize_name_case
 
     mail_user = os.getenv("MAIL_USERNAME", "").strip()
     mail_pass = os.getenv("MAIL_PASSWORD", "").strip()
@@ -5688,16 +5738,16 @@ def create_app():
             return redirect(url_for("auth.login"))
 
         # Get form data
-        first_name = request.form.get("first_name", "").strip()
-        last_name = request.form.get("last_name", "").strip()
+        first_name = normalize_name_case(request.form.get("first_name", ""))
+        last_name = normalize_name_case(request.form.get("last_name", ""))
         date_of_birth = request.form.get("date_of_birth", "").strip()
-        gender = request.form.get("gender", "").strip()
-        address = request.form.get("address", "").strip()
+        gender = normalize_name_case(request.form.get("gender", ""))
+        address = normalize_name_case(request.form.get("address", ""))
         phone_number = request.form.get("phone_number", "").strip()
         email = request.form.get("email", "").strip().lower()
-        allergies = request.form.get("allergies", "").strip()
-        pre_existing_conditions = request.form.get("pre_existing_conditions", "").strip()
-        current_medications = request.form.get("current_medications", "").strip()
+        allergies = normalize_name_case(request.form.get("allergies", ""))
+        pre_existing_conditions = normalize_name_case(request.form.get("pre_existing_conditions", ""))
+        current_medications = normalize_name_case(request.form.get("current_medications", ""))
         
         # Password change fields (optional)
         new_password = request.form.get("new_password", "").strip()
@@ -6033,10 +6083,10 @@ def create_app():
             ]
 
         if section == "personal":
-            first_name = (request.form.get("first_name") or "").strip()
-            last_name = (request.form.get("last_name") or "").strip()
+            first_name = normalize_name_case(request.form.get("first_name") or "")
+            last_name = normalize_name_case(request.form.get("last_name") or "")
             phone_number = (request.form.get("phone_number") or "").strip()
-            specialty = (request.form.get("specialty") or "").strip()
+            specialty = normalize_name_case(request.form.get("specialty") or "")
 
             db.execute(
                 """
@@ -6445,6 +6495,18 @@ def create_app():
                     form_data[key] = [v.strip() for v in request.form.getlist("affected_area") if v.strip()]
                 else:
                     form_data[key] = (request.form.get(key) or "").strip()
+            for _cap_key in (
+                "first_name",
+                "last_name",
+                "address",
+                "barangay",
+                "victim_address",
+                "other_animal",
+                "place_of_exposure_other",
+                "affected_area_other",
+                "other_treatment",
+            ):
+                form_data[_cap_key] = normalize_name_case(form_data[_cap_key])
             def _v(name: str) -> str:
                 return (request.form.get(name) or "").strip()
 
@@ -6464,7 +6526,7 @@ def create_app():
                 "tetanus_batch": _v("vc_tetanus_batch"),
                 "tetanus_mfg_date": _v("vc_tetanus_mfg_date"),
                 "tetanus_expiry": _v("vc_tetanus_expiry"),
-                "remarks": _v("vc_remarks"),
+                "remarks": normalize_name_case(_v("vc_remarks")),
                 "form_vc_anti_rabies_vaccine": _v("vc_anti_rabies_vaccine"),
                 "form_vc_tetanus_agent": _v("vc_tetanus_agent"),
             }
@@ -6479,8 +6541,8 @@ def create_app():
                         "dose_date": _v(f"{prefix}_{day}_date"),
                         "type_of_vaccine": _v(f"{prefix}_{day}_type"),
                         "dose": dcomb,
-                        "route_site": _v(f"{prefix}_{day}_route_site"),
-                        "given_by": _v(f"{prefix}_{day}_given_by"),
+                        "route_site": normalize_name_case(_v(f"{prefix}_{day}_route_site")),
+                        "given_by": normalize_name_case(_v(f"{prefix}_{day}_given_by")),
                     }
             _owners_sticky = _vaccination_dose_date_owners_from_getter(_v)
             _vaccination_card_doses_apply_resolved_dates(card_doses_by_type, _owners_sticky)
@@ -6713,7 +6775,7 @@ def create_app():
                             _v("vc_tetanus_batch"),
                             vc_tetanus_mfg_date,
                             vc_tetanus_expiry,
-                            _v("vc_remarks"),
+                            normalize_name_case(_v("vc_remarks")),
                         ),
                     )
 
@@ -6735,8 +6797,8 @@ def create_app():
                                 _v(f"{prefix}_{day}_dose_sel"),
                                 _v(f"{prefix}_{day}_dose_other"),
                             )
-                            route_site = _v(f"{prefix}_{day}_route_site")
-                            given_by = _v(f"{prefix}_{day}_given_by")
+                            route_site = normalize_name_case(_v(f"{prefix}_{day}_route_site"))
+                            given_by = normalize_name_case(_v(f"{prefix}_{day}_given_by"))
                             if _vaccination_dose_row_should_insert(
                                 resolved_date_ins,
                                 type_of_vaccine,
@@ -9216,29 +9278,10 @@ def create_app():
         flash(f"Created {created} slot(s) from {slot_date_from} to {slot_date_to}.", "success")
         return redirect(url_for("staff_availability"))
 
-    @app.post("/staff/appointments/availability/<int:slot_id>/delete")
-    @role_required("clinic_personnel", "system_admin")
-    def staff_availability_delete(slot_id: int):
-        if session.get("role") == "system_admin":
-            return redirect(url_for("admin_dashboard"))
-        db, staff = _get_staff_and_clinic()
-        if staff is None:
-            return redirect(url_for("auth.login"))
-        row = db.execute(
-            "SELECT id FROM availability_slots WHERE id = ? AND clinic_id = ?",
-            (slot_id, staff["clinic_id"]),
-        ).fetchone()
-        if row:
-            db.execute("DELETE FROM availability_slots WHERE id = ? AND clinic_id = ?", (slot_id, staff["clinic_id"]))
-            db.commit()
-            flash("Slot deleted.", "success")
-        else:
-            flash("Slot not found.", "error")
-        return redirect(url_for("staff_availability"))
-
     @app.post("/staff/appointments/availability/<int:slot_id>/deactivate")
     @role_required("clinic_personnel", "system_admin")
     def staff_availability_deactivate(slot_id: int):
+        # Staff never physically removes availability_slots rows; only is_active=0 (hidden from booking).
         if session.get("role") == "system_admin":
             return redirect(url_for("admin_dashboard"))
         db, staff = _get_staff_and_clinic()
@@ -9254,7 +9297,7 @@ def create_app():
                 (slot_id, staff["clinic_id"]),
             )
             db.commit()
-            flash("Slot deactivated.", "success")
+            flash("Slot removed from the booking schedule (record kept).", "success")
         else:
             flash("Slot not found.", "error")
         return redirect(url_for("staff_availability"))
@@ -10174,7 +10217,7 @@ def create_app():
         if request.method == "POST":
             full_name = (request.form.get("full_name") or "").strip()
             age_raw = (request.form.get("age") or "").strip()
-            address = (request.form.get("address") or "").strip()
+            address = normalize_name_case((request.form.get("address") or "").strip())
             phone_number = (request.form.get("phone_number") or "").strip()
             email = (request.form.get("email") or "").strip().lower()
             exposure_date = (request.form.get("exposure_date") or "").strip()
@@ -10182,7 +10225,7 @@ def create_app():
             if not type_of_exposure:
                 type_of_exposure = (case_patient.get("type_of_exposure") or "").strip()
             animal_type = (request.form.get("animal_type") or "").strip()
-            other_animal = (request.form.get("other_animal") or "").strip()
+            other_animal = normalize_name_case((request.form.get("other_animal") or "").strip())
             if animal_type == "Others" and other_animal:
                 animal_detail = f"Others: {other_animal}"
             elif animal_type == "Others":
@@ -10198,7 +10241,7 @@ def create_app():
             if not bleeding_type:
                 bleeding_type = (case_patient.get("bleeding_type") or "").strip()
             local_treatment_base = (request.form.get("local_treatment") or "").strip()
-            other_treatment = (request.form.get("other_treatment") or "").strip()
+            other_treatment = normalize_name_case((request.form.get("other_treatment") or "").strip())
             if not local_treatment_base:
                 local_treatment = (case_patient.get("local_treatment") or "").strip()
             elif local_treatment_base == "Others" and other_treatment:
@@ -10218,6 +10261,7 @@ def create_app():
             first_name = None
             last_name = None
             if full_name:
+                full_name = normalize_name_case(full_name)
                 parts = full_name.split(" ", 1)
                 first_name = parts[0]
                 last_name = parts[1] if len(parts) > 1 else ""
@@ -10252,7 +10296,7 @@ def create_app():
             who_ver = WHO_RULES_VERSION + "+doh-risk-v1"
 
             who_final_in = (request.form.get("who_category_final") or "").strip()
-            override_reason_in = (request.form.get("override_reason") or "").strip()
+            override_reason_in = normalize_name_case((request.form.get("override_reason") or "").strip())
             allowed_who = {"Category I", "Category II", "Category III", "Unknown"}
             if who_final_in not in allowed_who:
                 who_final_in = risk_level
@@ -10480,7 +10524,7 @@ def create_app():
                     _v("vc_tetanus_batch"),
                     vc_tetanus_mfg_date,
                     vc_tetanus_expiry,
-                    _v("vc_remarks"),
+                    normalize_name_case(_v("vc_remarks")),
                 ),
             )
 
@@ -10499,8 +10543,8 @@ def create_app():
                         _v(f"{prefix}_{day}_dose_sel"),
                         _v(f"{prefix}_{day}_dose_other"),
                     )
-                    route_site = _v(f"{prefix}_{day}_route_site")
-                    given_by = _v(f"{prefix}_{day}_given_by")
+                    route_site = normalize_name_case(_v(f"{prefix}_{day}_route_site"))
+                    given_by = normalize_name_case(_v(f"{prefix}_{day}_given_by"))
                     if _vaccination_dose_row_should_insert(
                         resolved_date,
                         type_of_vaccine,
@@ -10514,7 +10558,16 @@ def create_app():
                                 case_id, record_type, day_number, dose_date, type_of_vaccine, dose, route_site, given_by
                             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                             """,
-                            (case_id, record_type, day, resolved_date, type_of_vaccine or None, dose or None, route_site or None, given_by or None),
+                            (
+                                case_id,
+                                record_type,
+                                day,
+                                resolved_date,
+                                type_of_vaccine or None,
+                                dose or None,
+                                route_site or None,
+                                given_by or None,
+                            ),
                         )
 
             # Notify the patient that the vaccination record for this case was updated.
@@ -11510,25 +11563,14 @@ def create_app():
             return redirect(url_for("admin_users"))
 
         if request.method == "GET":
-            return render_template(
-                "admin_new_staff.html",
-                admin=admin,
-                admin_display_name=_admin_display_name(admin),
-                admin_initials=_admin_initials(admin),
-                clinic=clinic,
-                active_page="users",
-                include_notification_strip=True,
-                dashboard_notifications=_admin_notifications_for_page(
-                    db, clinic["id"] if clinic else None, "users"
-                ),
-            )
+            return redirect(url_for("admin_users", open_staff_modal="1"))
 
         username = (request.form.get("username") or "").strip()
         email = (request.form.get("email") or "").strip().lower()
         employee_id = (request.form.get("employee_id") or "").strip()
         title = (request.form.get("title") or "").strip()
-        first_name = (request.form.get("first_name") or "").strip() or None
-        last_name = (request.form.get("last_name") or "").strip() or None
+        first_name = normalize_optional(request.form.get("first_name"))
+        last_name = normalize_optional(request.form.get("last_name"))
         license_number = (request.form.get("license_number") or "").strip() or None
 
         errors: list[str] = []
@@ -11565,25 +11607,16 @@ def create_app():
         if errors:
             for e in errors:
                 flash(e, "error")
-            return render_template(
-                "admin_new_staff.html",
-                admin=admin,
-                admin_display_name=_admin_display_name(admin),
-                admin_initials=_admin_initials(admin),
-                clinic=clinic,
-                active_page="users",
-                include_notification_strip=True,
-                dashboard_notifications=_admin_notifications_for_page(
-                    db, clinic["id"] if clinic else None, "users"
-                ),
-                form_username=username,
-                form_email=email,
-                form_employee_id=employee_id,
-                form_title=title,
-                form_first_name=first_name or "",
-                form_last_name=last_name or "",
-                form_license_number=license_number or "",
-            )
+            session["new_staff_form"] = {
+                "username": username,
+                "email": email,
+                "employee_id": employee_id,
+                "title": title,
+                "first_name": first_name or "",
+                "last_name": last_name or "",
+                "license_number": license_number or "",
+            }
+            return redirect(url_for("admin_users", open_staff_modal="1"))
 
         password = _generate_strong_password(14)
         password_hash = generate_password_hash(password)
@@ -11608,7 +11641,7 @@ def create_app():
         except Exception:
             db.rollback()
             flash("Could not create staff account.", "error")
-            return redirect(url_for("admin_new_staff"))
+            return redirect(url_for("admin_users", open_staff_modal="1"))
 
         try:
             send_email(
@@ -11771,6 +11804,11 @@ def create_app():
 
         users_page = SimplePagination(user_rows, page=page, per_page=per_page, total=total)
 
+        new_staff_prefill = session.pop("new_staff_form", None)
+        if new_staff_prefill is None:
+            new_staff_prefill = {}
+        open_staff_modal = (request.args.get("open_staff_modal") == "1") or bool(new_staff_prefill)
+
         return render_template(
             "admin_users.html",
             admin=admin,
@@ -11789,6 +11827,8 @@ def create_app():
             dashboard_notifications=_admin_notifications_for_page(
                 db, clinic["id"] if clinic else None, "users"
             ),
+            open_staff_modal=open_staff_modal,
+            new_staff_prefill=new_staff_prefill,
         )
 
     @app.route("/admin/settings", methods=["GET", "POST"])
@@ -11811,8 +11851,8 @@ def create_app():
             section = (request.form.get("update_section") or "").strip()
 
             if section == "personal":
-                first_name = (request.form.get("first_name") or "").strip() or None
-                last_name = (request.form.get("last_name") or "").strip() or None
+                first_name = normalize_optional(request.form.get("first_name"))
+                last_name = normalize_optional(request.form.get("last_name"))
                 try:
                     db.execute(
                         """
@@ -11874,49 +11914,7 @@ def create_app():
                         return redirect(url_for("admin_settings", highlight="account"))
 
             elif section == "clinic_hours":
-                clinic_row = _get_singleton_clinic_row(db)
-                if clinic_row is None:
-                    flash("No clinic record found.", "error")
-                else:
-                    oh: dict[str, object] = dict(DEFAULT_CLINIC_OPERATING_HOURS)
-                    oh["mon_sat_open"] = (request.form.get("mon_sat_open") or "08:00").strip()
-                    oh["mon_sat_close"] = (request.form.get("mon_sat_close") or "22:00").strip()
-                    oh["sunday_open"] = (request.form.get("sunday_open") or "08:00").strip()
-                    oh["sunday_close"] = (request.form.get("sunday_close") or "18:00").strip()
-                    oh["lunch_start"] = (request.form.get("lunch_start") or "12:00").strip()
-                    oh["lunch_end"] = (request.form.get("lunch_end") or "13:00").strip()
-                    oh["dinner_start"] = (request.form.get("dinner_start") or "18:30").strip()
-                    oh["dinner_end"] = (request.form.get("dinner_end") or "19:30").strip()
-                    try:
-                        oh["slot_interval_minutes"] = max(
-                            5, int((request.form.get("slot_interval_minutes") or "45").strip())
-                        )
-                    except ValueError:
-                        oh["slot_interval_minutes"] = 45
-                    try:
-                        oh["horizon_days"] = min(
-                            365, max(1, int((request.form.get("horizon_days") or "60").strip()))
-                        )
-                    except ValueError:
-                        oh["horizon_days"] = 60
-                    payload = serialize_clinic_operating_hours(oh)
-                    try:
-                        db.execute(
-                            """
-                            UPDATE clinics
-                            SET operating_hours_json = ?
-                            WHERE id = ?
-                            """,
-                            (payload, int(clinic_row["id"])),
-                        )
-                        db.commit()
-                        ensure_availability_from_hours(db, int(clinic_row["id"]))
-                        _notify_patients_clinic_schedule_updated(int(clinic_row["id"]))
-                        flash("Clinic operating hours saved. Availability slots were updated.", "success")
-                        return redirect(url_for("admin_settings", highlight="clinic_hours"))
-                    except Exception:
-                        db.rollback()
-                        flash("Failed to save clinic hours.", "error")
+                return redirect(url_for("admin_clinic_hours"))
             else:
                 flash("Invalid update request.", "error")
 
@@ -11924,21 +11922,104 @@ def create_app():
             admin = _admin_fetch_user(db, session["user_id"])
 
         highlight_section = (request.args.get("highlight") or "").strip()
-        clinic_row = _get_singleton_clinic_row(db)
-        operating_hours = parse_clinic_operating_hours(
-            clinic_row["operating_hours_json"] if clinic_row else None
-        )
         return render_template(
             "admin_settings.html",
             admin=admin,
             admin_display_name=_admin_display_name(admin),
             admin_initials=_admin_initials(admin),
-            clinic=clinic_row,
-            operating_hours=operating_hours,
+            clinic=_get_singleton_clinic_row(db),
             breadcrumbs=_crumbs(),
             highlight_section=highlight_section,
             active_page="settings",
-            include_notification_strip=True,
+            include_notification_strip=False,
+            dashboard_notifications=[],
+        )
+
+    @app.route("/admin/clinic-hours", methods=["GET", "POST"])
+    @role_required("system_admin")
+    def admin_clinic_hours():
+        db = get_db()
+        admin = _admin_fetch_user(db, session["user_id"])
+        if admin is None:
+            session.clear()
+            flash("Account profile missing, contact admin.", "error")
+            return redirect(url_for("auth.login"))
+
+        def _crumbs():
+            return [
+                {"label": "Home", "href": url_for("admin_dashboard")},
+                {"label": "Clinic Hours", "href": None},
+            ]
+
+        clinic_row = _get_singleton_clinic_row(db)
+        if clinic_row is None:
+            flash("No clinic record found.", "error")
+            return render_template(
+                "admin_clinic_hours.html",
+                admin_display_name=_admin_display_name(admin),
+                admin_initials=_admin_initials(admin),
+                clinic=None,
+                operating_hours=dict(DEFAULT_CLINIC_OPERATING_HOURS),
+                breadcrumbs=_crumbs(),
+                active_page="clinic_hours",
+                include_notification_strip=False,
+                dashboard_notifications=[],
+            )
+
+        if request.method == "POST":
+            oh: dict[str, object] = dict(DEFAULT_CLINIC_OPERATING_HOURS)
+            oh["mon_sat_open"] = (request.form.get("mon_sat_open") or "08:00").strip()
+            oh["mon_sat_close"] = (request.form.get("mon_sat_close") or "22:00").strip()
+            oh["sunday_open"] = (request.form.get("sunday_open") or "08:00").strip()
+            oh["sunday_close"] = (request.form.get("sunday_close") or "18:00").strip()
+            oh["lunch_start"] = (request.form.get("lunch_start") or "12:00").strip()
+            oh["lunch_end"] = (request.form.get("lunch_end") or "13:00").strip()
+            oh["dinner_start"] = (request.form.get("dinner_start") or "18:30").strip()
+            oh["dinner_end"] = (request.form.get("dinner_end") or "19:30").strip()
+            try:
+                oh["slot_interval_minutes"] = max(
+                    5, int((request.form.get("slot_interval_minutes") or "45").strip())
+                )
+            except ValueError:
+                oh["slot_interval_minutes"] = 45
+            try:
+                oh["horizon_days"] = min(
+                    365, max(1, int((request.form.get("horizon_days") or "60").strip()))
+                )
+            except ValueError:
+                oh["horizon_days"] = 60
+            payload = serialize_clinic_operating_hours(oh)
+            try:
+                db.execute(
+                    """
+                    UPDATE clinics
+                    SET operating_hours_json = ?
+                    WHERE id = ?
+                    """,
+                    (payload, int(clinic_row["id"])),
+                )
+                db.commit()
+                ensure_availability_from_hours(db, int(clinic_row["id"]))
+                _notify_patients_clinic_schedule_updated(int(clinic_row["id"]))
+                flash(
+                    "Clinic operating hours saved. Availability slots were updated.",
+                    "success",
+                )
+                return redirect(url_for("admin_clinic_hours"))
+            except Exception:
+                db.rollback()
+                flash("Failed to save clinic hours.", "error")
+
+        operating_hours = parse_clinic_operating_hours(clinic_row["operating_hours_json"])
+        return render_template(
+            "admin_clinic_hours.html",
+            admin_display_name=_admin_display_name(admin),
+            admin_initials=_admin_initials(admin),
+            clinic=clinic_row,
+            operating_hours=operating_hours,
+            breadcrumbs=_crumbs(),
+            active_page="clinic_hours",
+            include_notification_strip=False,
             dashboard_notifications=[],
         )
 
@@ -11952,6 +12033,7 @@ def create_app():
             flash("Account profile missing, contact admin.", "error")
             return redirect(url_for("auth.login"))
 
+        strip_notifications = _admin_session_logs_notifications(db, session["user_id"])
         _admin_mark_page_seen(db, session["user_id"], "session_logs")
 
         page = request.args.get("page", 1, type=int) or 1
@@ -11997,7 +12079,7 @@ def create_app():
 
         breadcrumbs = [
             {"label": "Home", "href": url_for("admin_dashboard")},
-            {"label": "Session logs", "href": None},
+            {"label": "Session Logs", "href": None},
         ]
         return render_template(
             "admin_session_logs.html",
@@ -12008,8 +12090,8 @@ def create_app():
             breadcrumbs=breadcrumbs,
             logs=pagination,
             active_page="session_logs",
-            include_notification_strip=False,
-            dashboard_notifications=[],
+            include_notification_strip=True,
+            dashboard_notifications=strip_notifications,
         )
 
     # =========================
@@ -12022,7 +12104,10 @@ def create_app():
     def create_clinic_command(name, address):
         db = get_db()
         try:
-            db.execute("INSERT INTO clinics (name, address) VALUES (?, ?)", (name, address))
+            db.execute(
+                "INSERT INTO clinics (name, address) VALUES (?, ?)",
+                (normalize_name_case(name), normalize_optional(address)),
+            )
             db.commit()
         except Exception as e:
             db.rollback()
@@ -12058,6 +12143,9 @@ def create_app():
         if dup_emp:
             raise click.ClickException("Employee ID already exists.")
 
+        first_name_n = normalize_optional(first_name)
+        last_name_n = normalize_optional(last_name)
+
         try:
             cur = db.execute(
                 "INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)",
@@ -12066,7 +12154,7 @@ def create_app():
             user_id = cur.lastrowid
             db.execute(
                 "INSERT INTO system_admins (user_id, first_name, last_name, employee_id) VALUES (?, ?, ?, ?)",
-                (user_id, first_name, last_name, employee_id),
+                (user_id, first_name_n, last_name_n, employee_id),
             )
             db.commit()
         except Exception as e:
@@ -12129,6 +12217,9 @@ def create_app():
             if dup_lic:
                 raise click.ClickException("License number already exists.")
 
+        first_name_n = normalize_optional(first_name)
+        last_name_n = normalize_optional(last_name)
+
         try:
             cur = db.execute(
                 "INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)",
@@ -12141,7 +12232,7 @@ def create_app():
                   user_id, clinic_id, first_name, last_name, employee_id, license_number, title
                 ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
-                (user_id, clinic_id, first_name, last_name, employee_id, license_number, title),
+                (user_id, clinic_id, first_name_n, last_name_n, employee_id, license_number, title),
             )
             db.commit()
         except Exception as e:

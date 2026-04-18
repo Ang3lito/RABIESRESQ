@@ -19,8 +19,8 @@
 
 {% block main_content %}
   <section class="mt-6">
-    <h1 class="text-4xl font-bold text-blue-900">Manage availability</h1>
-    <p class="mt-1 text-slate-600">Add or remove appointment slots for your clinic (45-minute intervals; lunch break excluded).</p>
+    <h1 class="text-2xl font-bold text-blue-900 sm:text-3xl lg:text-4xl">Manage availability</h1>
+    <p class="mt-1 text-slate-600">Add slots or remove them from the booking schedule for your clinic (45-minute intervals; lunch break excluded). Removed slots stay in the system as inactive and are not offered for booking.</p>
   </section>
 
   <section class="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -108,16 +108,13 @@
                     method="post"
                     action="{{ url_for('staff_availability_deactivate', slot_id=slot.id) }}"
                     class="inline"
-                    data-confirm="Deactivate this slot? Patients will no longer be able to book it."
+                    data-confirm="Remove this slot from the booking schedule? The record will be kept but patients can no longer book it."
                     data-confirm-variant="danger"
                   >
-                    <button type="submit" class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-600 hover:bg-slate-100">Deactivate</button>
+                    <button type="submit" class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">Remove from schedule</button>
                   </form>
-                {% endif %}
-                {% if not slot.is_taken %}
-                  <form method="post" action="{{ url_for('staff_availability_delete', slot_id=slot.id) }}" class="inline" data-confirm="Delete this slot?" data-confirm-variant="danger">
-                    <button type="submit" class="ml-1 rounded-lg border border-red-200 bg-white px-2 py-1 text-xs text-red-600 hover:bg-red-50">Delete</button>
-                  </form>
+                {% else %}
+                  <span class="text-xs text-slate-400">—</span>
                 {% endif %}
               </td>
             </tr>

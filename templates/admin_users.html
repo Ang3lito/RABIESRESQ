@@ -13,10 +13,14 @@
       <p class="mt-1 text-slate-500">{{ clinic.name if clinic else '—' }}</p>
     </div>
     <div class="flex flex-wrap gap-2">
-      <a href="{{ url_for('admin_new_staff') }}" class="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600">
-        <i class="fa-solid fa-user-plus"></i>
-        Add clinic staff
-      </a>
+      <button
+        type="button"
+        onclick="openAdminNewStaffModal()"
+        class="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600"
+      >
+        <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+        Add Clinic Staff
+      </button>
     </div>
   </section>
 
@@ -141,4 +145,214 @@
   {% if users and users.total %}
     {{ admin.pagination_users(users, search, role_filter) }}
   {% endif %}
+
+  {% set sf = new_staff_prefill|default({}) %}
+  <div
+    id="admin-new-staff-modal"
+    class="fixed inset-0 z-[70] hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="admin-new-staff-title"
+  >
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px]" onclick="closeAdminNewStaffModal()" aria-hidden="true"></div>
+    <div class="fixed inset-0 flex items-end justify-center p-4 sm:items-center sm:p-6">
+      <div
+        class="relative flex max-h-[min(90vh,720px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+        onclick="event.stopPropagation()"
+      >
+        <div class="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-emerald-50/80 to-white px-5 py-4">
+          <div class="flex min-w-0 flex-1 items-center gap-3">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+              <i class="fa-solid fa-user-nurse text-xl" aria-hidden="true"></i>
+            </div>
+            <h2 id="admin-new-staff-title" class="text-xl font-bold leading-tight tracking-tight text-slate-900 sm:text-2xl">
+              Add Clinic Staff
+            </h2>
+          </div>
+          <button
+            type="button"
+            onclick="closeAdminNewStaffModal()"
+            class="shrink-0 rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+            aria-label="Close"
+          >
+            <i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <form
+          method="post"
+          action="{{ url_for('admin_new_staff') }}"
+          class="flex min-h-0 flex-1 flex-col"
+          data-confirm="Create this staff account? A temporary password will be generated and emailed if email sending is configured."
+          data-confirm-variant="primary"
+        >
+          <div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div class="sm:col-span-2">
+                <label class="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700" for="ns-username">
+                  <i class="fa-solid fa-at text-slate-400" aria-hidden="true"></i>
+                  Username <span class="text-red-500">*</span>
+                </label>
+                <input
+                  id="ns-username"
+                  type="text"
+                  name="username"
+                  value="{{ sf.username|default('', true) }}"
+                  required
+                  autocomplete="username"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
+                />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700" for="ns-email">
+                  <i class="fa-solid fa-envelope text-slate-400" aria-hidden="true"></i>
+                  Email <span class="text-red-500">*</span>
+                </label>
+                <input
+                  id="ns-email"
+                  type="email"
+                  name="email"
+                  value="{{ sf.email|default('', true) }}"
+                  required
+                  autocomplete="email"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
+                />
+              </div>
+              <div>
+                <label class="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700" for="ns-employee-id">
+                  <i class="fa-solid fa-id-card text-slate-400" aria-hidden="true"></i>
+                  Employee ID <span class="text-red-500">*</span>
+                </label>
+                <input
+                  id="ns-employee-id"
+                  type="text"
+                  name="employee_id"
+                  value="{{ sf.employee_id|default('', true) }}"
+                  required
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
+                />
+              </div>
+              <div>
+                <label class="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700" for="ns-title">
+                  <i class="fa-solid fa-stethoscope text-slate-400" aria-hidden="true"></i>
+                  Title <span class="text-red-500">*</span>
+                </label>
+                <select
+                  id="ns-title"
+                  name="title"
+                  required
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
+                >
+                  <option value="">— Select —</option>
+                  <option value="Doctor" {% if (sf.title|default('')) == 'Doctor' %}selected{% endif %}>Doctor</option>
+                  <option value="Nurse" {% if (sf.title|default('')) == 'Nurse' %}selected{% endif %}>Nurse</option>
+                </select>
+              </div>
+              <div>
+                <label class="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700" for="ns-first">
+                  <i class="fa-regular fa-user text-slate-400" aria-hidden="true"></i>
+                  First Name
+                </label>
+                <input
+                  id="ns-first"
+                  type="text"
+                  name="first_name"
+                  value="{{ sf.first_name|default('', true) }}"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
+                />
+              </div>
+              <div>
+                <label class="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700" for="ns-last">
+                  <i class="fa-regular fa-user text-slate-400" aria-hidden="true"></i>
+                  Last Name
+                </label>
+                <input
+                  id="ns-last"
+                  type="text"
+                  name="last_name"
+                  value="{{ sf.last_name|default('', true) }}"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
+                />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700" for="ns-license">
+                  <i class="fa-solid fa-file-medical text-slate-400" aria-hidden="true"></i>
+                  License Number <span class="text-slate-400">(Optional)</span>
+                </label>
+                <input
+                  id="ns-license"
+                  type="text"
+                  name="license_number"
+                  value="{{ sf.license_number|default('', true) }}"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
+                />
+              </div>
+            </div>
+            <p class="flex items-start gap-2 text-xs text-slate-500">
+              <i class="fa-solid fa-paper-plane mt-0.5 shrink-0 text-emerald-600" aria-hidden="true"></i>
+              <span>Credentials are sent by email when outgoing mail is configured. The user must change the temporary password at first login.</span>
+            </p>
+          </div>
+          <div class="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onclick="closeAdminNewStaffModal()"
+              class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 sm:w-auto"
+            >
+              <i class="fa-solid fa-user-check" aria-hidden="true"></i>
+              Create Staff Account
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    (function () {
+      function modalEl() {
+        return document.getElementById("admin-new-staff-modal");
+      }
+      window.openAdminNewStaffModal = function () {
+        var m = modalEl();
+        if (!m) return;
+        m.classList.remove("hidden");
+        document.body.classList.add("overflow-hidden");
+        var u = document.getElementById("ns-username");
+        if (u) setTimeout(function () { u.focus(); }, 50);
+      };
+      window.closeAdminNewStaffModal = function () {
+        var m = modalEl();
+        if (!m) return;
+        m.classList.add("hidden");
+        document.body.classList.remove("overflow-hidden");
+      };
+      {% if open_staff_modal|default(false) %}
+      document.addEventListener("DOMContentLoaded", function () {
+        openAdminNewStaffModal();
+      });
+      {% endif %}
+      document.addEventListener(
+        "keydown",
+        function (e) {
+          if (e.key !== "Escape") return;
+          var m = modalEl();
+          if (!m || m.classList.contains("hidden")) return;
+          e.preventDefault();
+          e.stopPropagation();
+          closeAdminNewStaffModal();
+        },
+        true
+      );
+    })();
+  </script>
 {% endblock %}
