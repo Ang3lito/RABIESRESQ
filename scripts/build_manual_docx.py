@@ -50,16 +50,18 @@ def main():
         "vaccination-related information, lets clinic personnel manage cases, appointments, "
         "availability, and vaccination records, and gives system administrators oversight "
         "of users, operational data, reporting, and settings. The software runs as a Python "
-        "Flask server and stores data in SQLite.",
+        "Flask application behind a WSGI server and stores data in SQLite. "
+        "This guide assumes production hosting on PythonAnywhere.",
     )
 
     add_h(doc, "2. Basic system requirements", 2)
     add_num_steps(
         doc,
         [
-            "A server or workstation capable of running Python 3 with the packages listed in requirements.txt.",
-            "Disk space for the SQLite database file and generated content.",
-            "Network access if the application is used from multiple devices; production deployments should use a proper WSGI server and HTTPS per IT policy.",
+            "Python 3 and the packages listed in requirements.txt (install inside a virtual environment on the host).",
+            "A PythonAnywhere account for production deployment (paid plans add custom domains, scheduled tasks, and other options per PythonAnywhere documentation).",
+            "Disk space for the SQLite database file and generated content on the host.",
+            "Stable internet access for users; HTTPS is provided by PythonAnywhere for the default site URL and can be configured for custom domains on supported plans.",
         ],
     )
 
@@ -78,7 +80,7 @@ def main():
         [
             "Internet access is required when users reach the application over the internet or when email-based password recovery is used.",
             "Use a current version of a major browser (Chrome, Edge, Firefox, or Safari). JavaScript should be enabled.",
-            "For password reset email: configure SMTP (MAIL_USERNAME and MAIL_PASSWORD). If SMTP is not configured, email may be logged to the console in development.",
+            "For password reset email: configure SMTP (MAIL_USERNAME and MAIL_PASSWORD). The application uses Gmail SMTP on port 587 when those variables are set. On PythonAnywhere, confirm that your account tier allows outbound SMTP and follow PythonAnywhere’s email and security guidance; if SMTP is not configured, password reset emails will not be delivered.",
         ],
     )
 
@@ -86,19 +88,21 @@ def main():
     add_num_steps(
         doc,
         [
-            "Open RabiesResQ using the URL from your administrator (for example http://localhost:5000 in development, or your HTTPS URL in production).",
+            "Production: open RabiesResQ at your PythonAnywhere URL (for example https://yourusername.pythonanywhere.com) or your custom domain if configured.",
+            "Local testing: use http://127.0.0.1:5000 (or the host and port you choose) when running the development server.",
             "Unauthenticated visitors are directed to the login page. After authentication, users are routed by role (patient, clinic personnel, system administrator).",
         ],
     )
 
-    add_h(doc, "6. General steps for opening and using the system", 2)
+    add_h(doc, "6. Installation and deployment", 2)
 
     add_h(doc, "6.1 Prepare the environment", 3)
     add_num_steps(
         doc,
         [
-            "Install Python 3 and ensure pip is available.",
-            "Create and activate a virtual environment (recommended).",
+            "On PythonAnywhere, open a Bash console. On a local machine, use a terminal with Python 3 and pip available.",
+            "Clone or upload the RabiesResQ project into a directory under your home folder (for example /home/yourusername/RABIESRESQ).",
+            "Create a virtual environment and activate it. On PythonAnywhere, use the same Python version you will select for the web app.",
             "Install dependencies: pip install -r requirements.txt",
         ],
     )
@@ -107,10 +111,11 @@ def main():
     add_num_steps(
         doc,
         [
-            "Create a .env file in the project directory.",
+            "Create a .env file in the project root (the folder that contains app.py). The application loads this file automatically.",
             "Set SECRET_KEY to a strong random value (required for sessions and security tokens).",
-            "Optionally set DATABASE to the full path of your SQLite file; otherwise the app uses a default under the Flask instance folder.",
-            "For outbound email, set MAIL_USERNAME and MAIL_PASSWORD (Gmail SMTP on port 587 when configured).",
+            "Optionally set DATABASE to the full absolute path of your SQLite file; otherwise the app uses the default under the Flask instance folder (ensure this path is writable on PythonAnywhere).",
+            "For outbound email, set MAIL_USERNAME and MAIL_PASSWORD when using Gmail SMTP as implemented in the application.",
+            "Alternatively, you may define the same variables in the PythonAnywhere Web tab under Environment variables, if you prefer not to rely on a .env file on the server.",
         ],
     )
 
@@ -118,13 +123,17 @@ def main():
     add_num_steps(
         doc,
         [
-            "Apply schema.sql to your SQLite database using your standard tooling.",
+            "Apply schema.sql to your SQLite database using the sqlite3 command line or another SQLite tool, targeting the same path the application will use (including under instance/ if you use the default).",
             "Ensure at least one clinic exists and provision administrative accounts before go-live.",
         ],
     )
 
     add_h(doc, "6.4 Create initial clinic and privileged accounts", 3)
-    add_p(doc, "Use Flask CLI (flask --app app:create_app):")
+    add_p(
+        doc,
+        "With the virtual environment activated, change to the project directory and run Flask CLI commands "
+        "(flask --app app:create_app …). On PythonAnywhere, run these from a Bash console, not from the PythonAnywhere Python REPL.",
+    )
     add_num_steps(
         doc,
         [
@@ -133,19 +142,39 @@ def main():
             "create-staff — username, email, password, clinic ID, employee ID, title (Doctor or Nurse), optional license and names.",
         ],
     )
-    add_p(doc, "Additional staff may be created from the administrator user interface.")
+    add_p(doc, "Additional staff may be created from the administrator user interface after deployment.")
 
-    add_h(doc, "6.5 Run the application", 3)
+    add_h(doc, "6.5 Production deployment on PythonAnywhere", 3)
+    add_p(
+        doc,
+        "These steps follow the usual PythonAnywhere workflow for a Flask WSGI application. "
+        "Exact labels may vary slightly as the PythonAnywhere dashboard is updated; use their documentation for the current Web configuration screens.",
+    )
     add_num_steps(
         doc,
         [
-            "Start the server, for example: flask --app app:create_app run",
-            "Optionally specify host and port, e.g. --host 0.0.0.0 --port 5000",
-            "Open a browser to the server URL and sign in.",
+            "In the PythonAnywhere Dashboard, open the Web tab and create a web app if you have not already. Choose Manual configuration and select the Python version that matches your virtual environment.",
+            "Set the virtual environment path on the Web tab to the virtualenv you created for RabiesResQ.",
+            "Set the working directory (if the Web UI offers it) to your project folder, or rely on sys.path in the WSGI file as below.",
+            "Edit the WSGI configuration file that PythonAnywhere provides for your site. Add your project directory to sys.path at the top of the file, then import the WSGI application object. For example, if the project lives at /home/yourusername/RABIESRESQ, add that path to sys.path, then use: from wsgi import application (the repository includes wsgi.py exposing application = create_app()).",
+            "Ensure the WSGI file does not call app.run(); the web server invokes application directly.",
+            "Optional: map the URL path /static/ to your project’s static/ folder in the Static files section of the Web tab so the web server can serve static assets efficiently.",
+            "Click Reload to load configuration changes. Visit your site URL and confirm the login page loads.",
+            "After each code update (for example git pull), reload the web app again so changes take effect.",
         ],
     )
 
-    add_h(doc, "6.6 Day-to-day use (all roles)", 3)
+    add_h(doc, "6.6 Local development (optional)", 3)
+    add_num_steps(
+        doc,
+        [
+            "For quick testing on your own computer, with .env and the database in place: flask --app app:create_app run",
+            "Optionally bind to all interfaces: --host 0.0.0.0 --port 5000",
+            "Do not use the Flask development server for production; use the PythonAnywhere WSGI deployment above for live hosting.",
+        ],
+    )
+
+    add_h(doc, "6.7 Day-to-day use (all roles)", 3)
     add_num_steps(
         doc,
         [
