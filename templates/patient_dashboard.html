@@ -18,6 +18,8 @@
                 <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">{{ n.recipient_label }}</span>
                 {% if n.type == 'appointment' %}
                 <span class="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">Appointment</span>
+                {% elif n.type == 'schedule' %}
+                <span class="inline-flex rounded-full bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-800">Schedule update</span>
                 {% elif n.type == 'vaccination' %}
                 <span class="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700">Vaccination</span>
                 {% endif %}
@@ -81,6 +83,12 @@
             >
               Missed
             </a>
+            <a
+              href="{{ url_for('patient_dashboard', status='expired') }}"
+              class="rounded-full border px-3 py-1 font-medium {% if current_status == 'expired' %}border-emerald-500 bg-emerald-500 text-white{% else %}border-slate-200 bg-white text-slate-700 hover:bg-slate-50{% endif %}"
+            >
+              Expired
+            </a>
           </div>
         </div>
         <div class="mt-2 space-y-3">
@@ -100,6 +108,8 @@
                     {% set display_status = 'Cancelled' if raw_status in ['Removed', 'Cancelled'] else 'Scheduled' if raw_status == 'Approved' else raw_status %}
                     {% if display_status == 'Cancelled' %}
                     <span class="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-700">{{ display_status }}</span>
+                    {% elif display_status == 'Expired' %}
+                    <span class="rounded-full bg-slate-300 px-2.5 py-0.5 text-xs font-medium text-slate-800">Expired</span>
                     {% else %}
                     <span class="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">{{ display_status }}</span>
                     {% if appointment.risk_level %}

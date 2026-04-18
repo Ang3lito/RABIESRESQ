@@ -1,5 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html
+  lang="en"
+  data-notification-sound-role="clinic"
+  data-play-notification-sound="{% if play_notification_sound|default(false) %}1{% else %}0{% endif %}"
+  data-sound-base="{{ url_for('static', filename='sounds/') }}"
+>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -161,6 +166,7 @@
       {% if not disable_confirm_modal|default(false) %}
         <script src="{{ url_for('static', filename='js/confirm_modal.js') }}"></script>
       {% endif %}
+      <script src="{{ url_for('static', filename='js/notification_sound.js') }}"></script>
     {% endblock %}
   </body>
 </html>

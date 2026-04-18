@@ -2,6 +2,7 @@
 // Usage:
 // - Include `_confirm_modal.html` somewhere in the page (it is already included in the main bases).
 // - Add `data-confirm="Custom message"` for better copy (optional).
+// - Add `data-confirm-variant="primary"` (green OK) or `data-confirm-variant="danger"` (red OK). Default: primary.
 // - Add `data-confirm-bypass="1"` to opt out.
 
 (function () {
@@ -12,12 +13,27 @@
 
   if (!modal || !msg || !ok || !cancel) return;
 
+  const OK_PRIMARY_CLASSES =
+    "rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600";
+  const OK_DANGER_CLASSES =
+    "rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600";
+
   let pendingForm = null;
   const fallbackMessage = "Are you sure you want to continue?";
+
+  function applyOkButtonVariant(formEl) {
+    if (!formEl) {
+      ok.setAttribute("class", OK_PRIMARY_CLASSES);
+      return;
+    }
+    const v = (formEl.getAttribute("data-confirm-variant") || "primary").trim().toLowerCase();
+    ok.setAttribute("class", v === "danger" ? OK_DANGER_CLASSES : OK_PRIMARY_CLASSES);
+  }
 
   function openConfirm(message, formEl) {
     msg.textContent = (message || "").trim() || fallbackMessage;
     pendingForm = formEl || null;
+    applyOkButtonVariant(formEl);
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
   }
@@ -26,6 +42,7 @@
     modal.classList.add("hidden");
     modal.setAttribute("aria-hidden", "true");
     pendingForm = null;
+    applyOkButtonVariant(null);
   }
 
   modal.addEventListener("click", function (e) {
@@ -59,4 +76,3 @@
     true
   );
 })();
-

@@ -36,6 +36,7 @@
         action="{{ url_for('admin_settings') }}"
         class="space-y-4"
         data-confirm="Save changes to your personal information?"
+        data-confirm-variant="primary"
       >
         <input type="hidden" name="update_section" value="personal" />
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -78,6 +79,73 @@
       </form>
     </section>
 
+    <section id="section-clinic_hours" class="admin-profile-section relative rounded-lg border border-slate-200 bg-slate-50 p-5">
+      <div class="mb-4">
+        <h2 class="text-lg font-bold text-slate-900">Clinic operating hours</h2>
+        <p class="mt-1 text-sm text-slate-600">
+          Used to auto-generate appointment availability. Staff can block individual slots on the Manage availability page.
+        </p>
+      </div>
+      {% set oh = operating_hours|default({}) %}
+      <form
+        method="post"
+        id="form-clinic_hours"
+        action="{{ url_for('admin_settings') }}"
+        class="space-y-4"
+        data-confirm="Save clinic hours and refresh generated slots? Patients with upcoming visits will be notified."
+        data-confirm-variant="primary"
+      >
+        <input type="hidden" name="update_section" value="clinic_hours" />
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Mon–Sat open</label>
+            <input type="time" name="mon_sat_open" value="{{ oh.get('mon_sat_open', '08:00') }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Mon–Sat close</label>
+            <input type="time" name="mon_sat_close" value="{{ oh.get('mon_sat_close', '22:00') }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Sunday open</label>
+            <input type="time" name="sunday_open" value="{{ oh.get('sunday_open', '08:00') }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Sunday close</label>
+            <input type="time" name="sunday_close" value="{{ oh.get('sunday_close', '18:00') }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Lunch start</label>
+            <input type="time" name="lunch_start" value="{{ oh.get('lunch_start', '12:00') }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Lunch end</label>
+            <input type="time" name="lunch_end" value="{{ oh.get('lunch_end', '13:00') }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Dinner start</label>
+            <input type="time" name="dinner_start" value="{{ oh.get('dinner_start', '18:30') }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Dinner end</label>
+            <input type="time" name="dinner_end" value="{{ oh.get('dinner_end', '19:30') }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Slot interval (minutes)</label>
+            <input type="number" name="slot_interval_minutes" min="5" max="120" value="{{ oh.get('slot_interval_minutes', 45) }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Days ahead to generate</label>
+            <input type="number" name="horizon_days" min="1" max="365" value="{{ oh.get('horizon_days', 60) }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+          </div>
+        </div>
+        <div class="admin-section-save {% if highlight_section|default('') != 'clinic_hours' %}hidden{% endif %} mt-6 flex justify-end border-t border-slate-200 pt-4">
+          <button type="submit" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
+            Save clinic hours
+          </button>
+        </div>
+      </form>
+    </section>
+
     <section id="section-account" class="admin-profile-section relative rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div class="mb-4">
         <h2 class="text-lg font-bold text-slate-900">Account Security</h2>
@@ -88,6 +156,7 @@
         action="{{ url_for('admin_settings') }}"
         class="space-y-4"
         data-confirm="Save changes to your account security settings?"
+        data-confirm-variant="primary"
       >
         <input type="hidden" name="update_section" value="account" />
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">

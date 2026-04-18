@@ -244,24 +244,26 @@
               <div class="field-label" style="margin-bottom: 4px;">Anti-Rabies Details</div>
               <table style="width: 100%;" cellpadding="0" cellspacing="0">
                 <tr><td class="field-label">ANTI-RABIES</td><td class="field-value" style="text-align: right;">{{ vaccination_card.anti_rabies or '—' }}</td></tr>
-                <tr><td class="field-label">PVRV</td><td class="field-value" style="text-align: right;">{{ vaccination_card.pvrv or '—' }}</td></tr>
-                <tr><td class="field-label">PCEC Batch</td><td class="field-value" style="text-align: right;">{{ vaccination_card.pcec_batch or '—' }}</td></tr>
+                <tr><td class="field-label">Vaccine</td><td class="field-value" style="text-align: right;">{{ vaccination_card.get('form_vc_anti_rabies_vaccine') or '—' }}</td></tr>
+                <tr><td class="field-label">Batch No.</td><td class="field-value" style="text-align: right;">{{ vaccination_card.pcec_batch or '—' }}</td></tr>
                 <tr>
-                  <td class="field-label">PCEC Mfg / Expiry</td>
+                  <td class="field-label">Mfg / Expiry</td>
                   <td class="field-value" style="text-align: right;">
                     {{ vaccination_card.pcec_mfg_date or '—' }} / {{ vaccination_card.pcec_expiry or '—' }}
                   </td>
                 </tr>
-                <tr><td class="field-label">ERIG / HRIG</td><td class="field-value" style="text-align: right;">{{ vaccination_card.erig_hrig or '—' }}</td></tr>
               </table>
             </td>
             <td>
               <div class="field-label" style="margin-bottom: 4px;">Other Prophylaxis Given</div>
               <table style="width: 100%;" cellpadding="0" cellspacing="0">
                 <tr><td class="field-label">Tetanus Prophylaxis</td><td class="field-value" style="text-align: right;">{{ vaccination_card.tetanus_prophylaxis or '—' }}</td></tr>
-                <tr><td class="field-label">Tetanus Toxoid</td><td class="field-value" style="text-align: right;">{{ vaccination_card.tetanus_toxoid or '—' }}</td></tr>
-                <tr><td class="field-label">ATS</td><td class="field-value" style="text-align: right;">{{ vaccination_card.ats or '—' }}</td></tr>
-                <tr><td class="field-label">HTIG</td><td class="field-value" style="text-align: right;">{{ vaccination_card.htig or '—' }}</td></tr>
+                <tr><td class="field-label">Tetanus Toxoid / ATS / HTIG</td><td class="field-value" style="text-align: right;">{{ vaccination_card.tetanus_toxoid or vaccination_card.ats or vaccination_card.htig or '—' }}</td></tr>
+                <tr><td class="field-label">Tetanus Batch</td><td class="field-value" style="text-align: right;">{{ vaccination_card.tetanus_batch or '—' }}</td></tr>
+                <tr>
+                  <td class="field-label">Tetanus Mfg / Expiry</td>
+                  <td class="field-value" style="text-align: right;">{{ vaccination_card.tetanus_mfg_date or '—' }} / {{ vaccination_card.tetanus_expiry or '—' }}</td>
+                </tr>
               </table>
             </td>
           </tr>

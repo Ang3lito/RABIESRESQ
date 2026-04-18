@@ -1,0 +1,29 @@
+{# Styled like Route & Site: button + panel; hidden input keeps POST name vc_*_*_dose_sel #}
+{% macro vc_dose_dropdown(name_prefix, day, dose_sel, dose_other_val) -%}
+{% if not dose_sel %}
+  {% set dose_btn_label = '—' %}
+{% elif dose_sel == 'Others' %}
+  {% set dose_btn_label = ('Others: ' ~ dose_other_val) if dose_other_val else 'Others (specify…)' %}
+{% else %}
+  {% set dose_btn_label = dose_sel %}
+{% endif %}
+{% set panel_id = (name_prefix ~ '-dose-' ~ day ~ '-panel') | replace('_', '-') %}
+<div class="relative min-w-[6rem]" data-vc-dose-widget>
+  <input type="hidden" name="{{ name_prefix }}_{{ day }}_dose_sel" value="{{ dose_sel }}" data-vc-dose-sel />
+  <button type="button" class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-left text-xs text-slate-900 hover:border-emerald-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" data-vc-dose-trigger aria-haspopup="listbox" aria-expanded="false" aria-controls="{{ panel_id }}">
+    <span class="min-w-0 flex-1 truncate" data-vc-dose-trigger-text>{{ dose_btn_label }}</span>
+    <svg class="h-4 w-4 shrink-0 text-slate-500 transition-transform" data-vc-dose-chevron fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+  </button>
+  <div id="{{ panel_id }}" role="group" class="hidden min-w-[14rem] max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white p-3 shadow-lg" data-vc-dose-panel>
+    <p class="mb-2 text-xs text-slate-500">Select dose</p>
+    <div class="grid grid-cols-1 gap-1 text-xs">
+      <button type="button" class="w-full rounded bg-slate-50 px-2 py-1.5 text-left text-slate-800 hover:bg-emerald-50 hover:text-emerald-900" data-vc-dose-option value="">—</button>
+      {% for opt in ['0.1 mL', '0.5 mL', '1.0 mL'] %}
+      <button type="button" class="w-full rounded bg-slate-50 px-2 py-1.5 text-left text-slate-800 hover:bg-emerald-50 hover:text-emerald-900" data-vc-dose-option value="{{ opt }}">{{ opt }}</button>
+      {% endfor %}
+      <button type="button" class="w-full rounded bg-slate-50 px-2 py-1.5 text-left text-slate-800 hover:bg-emerald-50 hover:text-emerald-900" data-vc-dose-option value="Others">Others</button>
+    </div>
+    <input name="{{ name_prefix }}_{{ day }}_dose_other" type="text" value="{{ dose_other_val }}" placeholder="Specify dose…" autocomplete="off" class="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs {{ 'hidden' if dose_sel != 'Others' else '' }}" data-vc-dose-other />
+  </div>
+</div>
+{%- endmacro %}

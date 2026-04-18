@@ -23,8 +23,10 @@
     <a href="{{ url_for('staff_availability') }}" class="rounded-lg border border-emerald-500 bg-white px-4 py-2 text-sm font-medium text-emerald-600 hover:bg-emerald-50">Manage availability</a>
   </section>
 
-  <section class="mt-4">
+  {% set f = appt_filter|default('active') %}
+  <section class="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
     <form method="get" action="{{ url_for('staff_appointments') }}" class="w-full lg:max-w-xl">
+      <input type="hidden" name="filter" value="{{ f }}" />
       <div class="relative">
         <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
         <input
@@ -36,6 +38,20 @@
         />
       </div>
     </form>
+    <div class="flex flex-wrap gap-2 text-xs">
+      <a
+        href="{{ url_for('staff_appointments', search=search, filter='active', page=1) }}"
+        class="rounded-full border px-3 py-1.5 font-medium {% if f == 'active' %}border-emerald-500 bg-emerald-500 text-white{% else %}border-slate-200 bg-white text-slate-700 hover:bg-slate-50{% endif %}"
+      >Active</a>
+      <a
+        href="{{ url_for('staff_appointments', search=search, filter='expired', page=1) }}"
+        class="rounded-full border px-3 py-1.5 font-medium {% if f == 'expired' %}border-emerald-500 bg-emerald-500 text-white{% else %}border-slate-200 bg-white text-slate-700 hover:bg-slate-50{% endif %}"
+      >Expired</a>
+      <a
+        href="{{ url_for('staff_appointments', search=search, filter='all', page=1) }}"
+        class="rounded-full border px-3 py-1.5 font-medium {% if f == 'all' %}border-emerald-500 bg-emerald-500 text-white{% else %}border-slate-200 bg-white text-slate-700 hover:bg-slate-50{% endif %}"
+      >All</a>
+    </div>
   </section>
 
   <section class="mt-4 overflow-x-auto rounded-2xl border border-slate-200">
@@ -45,6 +61,7 @@
           <th class="px-4 py-3">Appointment ID</th>
           <th class="px-4 py-3">Patient Name</th>
           <th class="px-4 py-3">Date &amp; Time</th>
+          <th class="px-4 py-3">Status</th>
           <th class="px-4 py-3">Category</th>
         </tr>
       </thead>
@@ -52,13 +69,27 @@
         {% if appointments.items %}
           {% for appt in appointments.items %}
             <tr
-              class="cursor-pointer hover:bg-slate-50"
+              class="cursor-pointer hover:bg-slate-50/90 {% if appt.is_expired %}bg-slate-100/90 text-slate-600{% endif %}"
               data-href="{{ url_for('view_appointment', appointment_id=appt.id) }}"
               onclick="window.location.href=this.dataset.href"
             >
-              <td class="px-4 py-3 font-medium text-slate-700">{{ appt.appointment_code }}</td>
+              <td class="px-4 py-3 font-medium text-slate-700">
+                <span class="inline-flex items-center gap-2">
+                  {% if appt.is_expired %}<i class="fa-solid fa-clock text-red-500" title="Expired"></i>{% endif %}
+                  {{ appt.appointment_code }}
+                </span>
+              </td>
               <td class="px-4 py-3 text-blue-700">{{ appt.patient_name|namecase }}</td>
               <td class="px-4 py-3 text-slate-700">{{ appt.appointment_datetime }}</td>
+              <td class="px-4 py-3">
+                {% if appt.is_expired %}
+                  <span class="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">Expired</span>
+                {% elif appt.status_key|default('') == 'rescheduled' %}
+                  <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900">Rescheduled</span>
+                {% else %}
+                  <span class="rounded-full bg-sky-100 px-2.5 py-1 text-xs font-semibold text-sky-800">Open</span>
+                {% endif %}
+              </td>
               <td class="px-4 py-3">
                 {% set category_lower = (appt.category or '')|lower %}
                 {% if category_lower == 'category i' %}
@@ -75,7 +106,7 @@
           {% endfor %}
         {% else %}
           <tr>
-            <td colspan="4" class="px-4 py-8 text-center text-slate-500">No pending or queued appointments found.</td>
+            <td colspan="5" class="px-4 py-8 text-center text-slate-500">No appointments found for this filter.</td>
           </tr>
         {% endif %}
       </tbody>
@@ -86,21 +117,21 @@
     <p>Showing {{ appointments.first }} to {{ appointments.last }} of {{ appointments.total }} results</p>
     <div class="flex items-center gap-2">
       <a
-        href="{{ url_for('staff_appointments', search=search, page=appointments.prev_num or 1) }}"
+        href="{{ url_for('staff_appointments', search=search, filter=f, page=appointments.prev_num or 1) }}"
         class="rounded-lg px-2 py-1 {{ 'text-slate-400 pointer-events-none' if not appointments.has_prev else 'hover:bg-slate-100 text-slate-700' }}"
       >
         <i class="fa-solid fa-chevron-left"></i>
       </a>
       {% for p in appointments.iter_pages() %}
         <a
-          href="{{ url_for('staff_appointments', search=search, page=p) }}"
+          href="{{ url_for('staff_appointments', search=search, filter=f, page=p) }}"
           class="rounded-lg px-3 py-1 {{ 'bg-emerald-500 text-white' if p == appointments.page else 'text-slate-700 hover:bg-slate-100' }}"
         >
           {{ p }}
         </a>
       {% endfor %}
       <a
-        href="{{ url_for('staff_appointments', search=search, page=appointments.next_num or appointments.pages) }}"
+        href="{{ url_for('staff_appointments', search=search, filter=f, page=appointments.next_num or appointments.pages) }}"
         class="rounded-lg px-2 py-1 {{ 'text-slate-400 pointer-events-none' if not appointments.has_next else 'hover:bg-slate-100 text-slate-700' }}"
       >
         <i class="fa-solid fa-chevron-right"></i>

@@ -110,6 +110,9 @@ def init_app(app):
 
         # Ensure cases.animal_vaccination exists (for analytics/filtering parity with pre-screening form).
         _ensure_cases_animal_vaccination_column(conn)
+
+        _ensure_clinics_operating_hours_column(conn)
+        _ensure_user_session_logs_table(conn)
     finally:
         conn.close()
 
@@ -123,4 +126,40 @@ def _ensure_cases_animal_vaccination_column(conn: sqlite3.Connection) -> None:
             conn.commit()
         except sqlite3.OperationalError:
             pass
+
+
+def _ensure_clinics_operating_hours_column(conn: sqlite3.Connection) -> None:
+    try:
+        conn.execute("SELECT operating_hours_json FROM clinics LIMIT 1")
+    except sqlite3.OperationalError:
+        try:
+            conn.execute("ALTER TABLE clinics ADD COLUMN operating_hours_json TEXT")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass
+
+
+def _ensure_user_session_logs_table(conn: sqlite3.Connection) -> None:
+    try:
+        conn.execute("SELECT 1 FROM user_session_logs LIMIT 1")
+    except sqlite3.OperationalError:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS user_session_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                role_at_login TEXT NOT NULL,
+                logged_in_at TEXT NOT NULL,
+                logged_out_at TEXT,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_user_session_logs_user_id ON user_session_logs(user_id)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_user_session_logs_logged_in ON user_session_logs(logged_in_at DESC)"
+        )
+        conn.commit()
 

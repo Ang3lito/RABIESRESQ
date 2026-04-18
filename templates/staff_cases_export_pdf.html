@@ -67,12 +67,12 @@
             <th>Vaccination card</th>
             <td>
               Anti-rabies: {{ r.anti_rabies or 'N/A' }}<br/>
-              PVRV: {{ r.pvrv or 'N/A' }}<br/>
-              PCEC batch: {{ r.pcec_batch or 'N/A' }}<br/>
-              PCEC mfg/expiry: {{ r.pcec_mfg_date or 'N/A' }} / {{ r.pcec_expiry or 'N/A' }}<br/>
-              ERIG/HRIG: {{ r.erig_hrig or 'N/A' }}<br/>
-              Tetanus prophylaxis/toxoid/ATS: {{ r.tetanus_prophylaxis or 'N/A' }} / {{ r.tetanus_toxoid or 'N/A' }} / {{ r.ats or 'N/A' }}<br/>
-              HTIG: {{ r.htig or 'N/A' }}<br/>
+              Vaccine: {{ (r.pvrv or r.erig_hrig) or 'N/A' }}<br/>
+              Batch: {{ r.pcec_batch or 'N/A' }}<br/>
+              Mfg/expiry: {{ r.pcec_mfg_date or 'N/A' }} / {{ r.pcec_expiry or 'N/A' }}<br/>
+              Tetanus prophylaxis: {{ r.tetanus_prophylaxis or 'N/A' }}<br/>
+              Tetanus agent: {{ r.tetanus_toxoid or r.ats or r.htig or 'N/A' }}<br/>
+              Tetanus batch / mfg / expiry: {{ r.tetanus_batch or 'N/A' }} / {{ r.tetanus_mfg_date or 'N/A' }} / {{ r.tetanus_expiry or 'N/A' }}<br/>
               Remarks: {{ r.remarks or '' }}
             </td>
           </tr>

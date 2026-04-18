@@ -18,6 +18,12 @@
 {% endblock %}
 
 {% block main_content %}
+  {% if appointment_is_expired|default(false) %}
+  <div class="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+    <p class="font-semibold"><i class="fa-solid fa-clock mr-2 text-red-600"></i>Booking request expired</p>
+    <p class="mt-1 text-amber-900/90">The scheduled time passed before this request could be approved. Select a new slot below and save changes, then approve.</p>
+  </div>
+  {% endif %}
   <section class="mt-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h1 class="text-4xl font-bold text-blue-900">{{ patient_name|namecase }}</h1>
@@ -28,12 +34,13 @@
               method="post"
               action="{{ url_for('approve_appointment', appointment_id=appointment.id) }}"
               data-confirm="Approve this appointment request?"
+              data-confirm-variant="primary"
             >
-                <button type="submit" class="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">
+                <button type="submit" class="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50" {% if appointment_is_expired|default(false) %}disabled title="Reschedule to a future slot first"{% endif %}>
                   Approve
                 </button>
               </form>
-              <form method="post" action="{{ url_for('remove_appointment', appointment_id=appointment.id) }}" data-confirm="Are you sure you want to remove this appointment request?">
+              <form method="post" action="{{ url_for('remove_appointment', appointment_id=appointment.id) }}" data-confirm="Are you sure you want to remove this appointment request?" data-confirm-variant="danger">
                 <button type="submit" class="rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600">
                   Remove
                 </button>
@@ -47,6 +54,7 @@
               action="{{ url_for('edit_appointment', appointment_id=appointment.id) }}"
               class="xl:col-span-2 rounded-2xl border border-slate-200 bg-white p-5"
               data-confirm="Save changes to this appointment schedule?"
+              data-confirm-variant="primary"
             >
               <h2 class="text-2xl font-semibold text-blue-900">Appointment Details</h2>
               <p class="mt-2 text-sm font-medium text-slate-700">Currently Requested Schedule: <span class="text-blue-800">{{ requested_schedule_display }}</span></p>

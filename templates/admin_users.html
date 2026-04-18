@@ -96,6 +96,7 @@
                       action="{{ url_for('admin_user_set_active', user_id=row.user_id) }}"
                       class="inline"
                       data-confirm="Deactivate {{ row.name|e }}? They will be signed out and blocked from signing in until reactivated."
+                      data-confirm-variant="danger"
                     >
                       <input type="hidden" name="active" value="0" />
                       <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-700">
@@ -110,6 +111,7 @@
                         action="{{ url_for('admin_user_set_active', user_id=row.user_id) }}"
                         class="inline"
                         data-confirm="Activate {{ row.name|e }}? They will be able to sign in again with their existing credentials."
+                        data-confirm-variant="primary"
                       >
                         <input type="hidden" name="active" value="1" />
                         <button

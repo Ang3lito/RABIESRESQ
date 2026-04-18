@@ -1,0 +1,76 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Session logs - RabiesResQ{% endblock %}
+
+{% block header_left %}
+  <nav class="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+    {% for crumb in breadcrumbs|default([]) %}
+      {% if crumb.href %}
+        <a href="{{ crumb.href }}" class="hover:text-slate-700">{{ crumb.label }}</a>
+      {% else %}
+        <span class="font-bold text-blue-600">{{ crumb.label }}</span>
+      {% endif %}
+      {% if not loop.last %}
+        <span>/</span>
+      {% endif %}
+    {% endfor %}
+  </nav>
+{% endblock %}
+
+{% block main_content %}
+  <div class="mb-6 border-b border-slate-200 pb-4">
+    <h1 class="text-2xl font-bold text-slate-900">Audit log / session logs</h1>
+    <p class="mt-1 text-sm text-slate-500">
+      Login and logout activity for monitoring purposes only{% if clinic %} ({{ clinic.name }}){% endif %}.
+    </p>
+  </div>
+
+  <div class="w-full overflow-x-auto rounded-xl border border-slate-200">
+    <table class="min-w-[640px] w-full divide-y divide-slate-200 text-left text-sm">
+      <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-600">
+        <tr>
+          <th class="px-4 py-3">User</th>
+          <th class="px-4 py-3">Role</th>
+          <th class="px-4 py-3 whitespace-nowrap">Logged in</th>
+          <th class="px-4 py-3 whitespace-nowrap">Logged out</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 bg-white text-slate-800">
+        {% if logs.items %}
+          {% for row in logs.items %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-3 font-medium">{{ row.username }}</td>
+              <td class="px-4 py-3">{{ row.role_label }}</td>
+              <td class="px-4 py-3 font-mono text-xs">{{ row.logged_in_at }}</td>
+              <td class="px-4 py-3 font-mono text-xs">{{ row.logged_out_display }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="4" class="px-4 py-8 text-center text-slate-500">No session records yet.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if logs.pages > 1 %}
+    <nav class="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600" aria-label="Pagination">
+      <span>Showing {{ logs.first }}–{{ logs.last }} of {{ logs.total }}</span>
+      <div class="flex flex-wrap gap-2">
+        {% if logs.has_prev %}
+          <a
+            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 hover:bg-slate-50"
+            href="{{ url_for('admin_session_logs', page=logs.prev_num) }}"
+          >Previous</a>
+        {% endif %}
+        {% if logs.has_next %}
+          <a
+            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 hover:bg-slate-50"
+            href="{{ url_for('admin_session_logs', page=logs.next_num) }}"
+          >Next</a>
+        {% endif %}
+      </div>
+    </nav>
+  {% endif %}
+{% endblock %}

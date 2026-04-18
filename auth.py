@@ -188,6 +188,20 @@ def login_post():
     session["username"] = user["username"]
     session["email"] = user["email"]
 
+    logged_at = datetime.now().isoformat(timespec="seconds")
+    try:
+        cur = db.execute(
+            """
+            INSERT INTO user_session_logs (user_id, role_at_login, logged_in_at)
+            VALUES (?, ?, ?)
+            """,
+            (user["id"], user["role"], logged_at),
+        )
+        db.commit()
+        session["session_log_id"] = cur.lastrowid
+    except Exception:
+        db.rollback()
+
     if user["role"] == "patient":
         patient = db.execute(
             "SELECT onboarding_completed FROM patients WHERE user_id = ?",
@@ -305,6 +319,20 @@ def register_post():
     session["role"] = "patient"
     session["username"] = username
     session["email"] = email
+
+    logged_at = datetime.now().isoformat(timespec="seconds")
+    try:
+        cur = db.execute(
+            """
+            INSERT INTO user_session_logs (user_id, role_at_login, logged_in_at)
+            VALUES (?, ?, ?)
+            """,
+            (user_id, "patient", logged_at),
+        )
+        db.commit()
+        session["session_log_id"] = cur.lastrowid
+    except Exception:
+        db.rollback()
 
     flash("Registration successful. Welcome!", "success")
     return redirect(url_for("patient_dashboard"))
@@ -554,6 +582,21 @@ def staff_force_password_post():
 
 @bp.get("/logout")
 def logout():
+    log_id = session.get("session_log_id")
+    if log_id:
+        db = get_db()
+        try:
+            db.execute(
+                """
+                UPDATE user_session_logs
+                SET logged_out_at = ?
+                WHERE id = ?
+                """,
+                (datetime.now().isoformat(timespec="seconds"), log_id),
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
     session.clear()
     return redirect(url_for("auth.login"))
 

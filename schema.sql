@@ -16,7 +16,8 @@ BEGIN;
 CREATE TABLE IF NOT EXISTS clinics (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  address TEXT
+  address TEXT,
+  operating_hours_json TEXT
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -30,6 +31,18 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS user_session_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  role_at_login TEXT NOT NULL,
+  logged_in_at TEXT NOT NULL,
+  logged_out_at TEXT,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_session_logs_user_id ON user_session_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_session_logs_logged_in ON user_session_logs(logged_in_at DESC);
 
 -- =========================
 -- Role tables
@@ -336,7 +349,7 @@ CREATE TABLE IF NOT EXISTS pending_emails (
 
 CREATE TABLE IF NOT EXISTS admin_page_last_seen (
   admin_user_id INTEGER NOT NULL,
-  page_key TEXT NOT NULL CHECK(page_key IN ('patients','appointments','reporting','users')),
+  page_key TEXT NOT NULL CHECK(page_key IN ('patients','appointments','reporting','users','session_logs')),
   last_seen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (admin_user_id, page_key),
   FOREIGN KEY (admin_user_id) REFERENCES users(id) ON DELETE CASCADE

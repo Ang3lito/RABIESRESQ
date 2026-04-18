@@ -16,6 +16,8 @@
           <span class="inline-flex items-center rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-700">
             {{ display_status }}
           </span>
+          {% elif display_status == 'Expired' %}
+          <span class="inline-flex items-center rounded-full bg-slate-300 px-2.5 py-0.5 text-xs font-medium text-slate-800">Expired</span>
           {% else %}
           <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
             {{ display_status }}
@@ -64,6 +66,7 @@
               method="post"
               action="{{ url_for('patient_hide_appointment', appointment_id=appointment.id) }}"
               data-confirm="Remove this appointment from your list?"
+              data-confirm-variant="danger"
             >
               <button
                 type="submit"
@@ -96,6 +99,7 @@
               method="post"
               action="{{ url_for('patient_cancel_appointment', appointment_id=appointment.id) }}"
               data-confirm="Cancel this appointment?"
+              data-confirm-variant="danger"
             >
               <button
                 type="submit"
@@ -112,6 +116,7 @@
               method="post"
               action="{{ url_for('patient_cancel_appointment', appointment_id=appointment.id) }}"
               data-confirm="Cancel this appointment?"
+              data-confirm-variant="danger"
             >
               <button
                 type="submit"
@@ -242,20 +247,19 @@
                 <h3 class="text-sm font-semibold uppercase text-slate-500">Anti-Rabies Details</h3>
                 <dl class="mt-2 space-y-1 text-sm">
                   <div><span class="text-slate-500">ANTI-RABIES:</span> <span class="font-medium">{{ vaccination_card.anti_rabies or '—' }}</span></div>
-                  <div><span class="text-slate-500">PVRV:</span> <span class="font-medium">{{ vaccination_card.pvrv or '—' }}</span></div>
-                  <div><span class="text-slate-500">PCEC Batch:</span> <span class="font-medium">{{ vaccination_card.pcec_batch or '—' }}</span></div>
-                  <div><span class="text-slate-500">PCEC Mfg Date:</span> <span class="font-medium">{{ vaccination_card.pcec_mfg_date or '—' }}</span></div>
-                  <div><span class="text-slate-500">PCEC Expiry:</span> <span class="font-medium">{{ vaccination_card.pcec_expiry or '—' }}</span></div>
-                  <div><span class="text-slate-500">ERIG/HRIG:</span> <span class="font-medium">{{ vaccination_card.erig_hrig or '—' }}</span></div>
+                  <div><span class="text-slate-500">Vaccine (PVRV / PCEC / ERIG / HRIG):</span> <span class="font-medium">{{ vaccination_card.get('form_vc_anti_rabies_vaccine') or '—' }}</span></div>
+                  <div><span class="text-slate-500">Batch No.:</span> <span class="font-medium">{{ vaccination_card.pcec_batch or '—' }}</span></div>
+                  <div><span class="text-slate-500">Mfg. Date:</span> <span class="font-medium">{{ vaccination_card.pcec_mfg_date or '—' }}</span></div>
+                  <div><span class="text-slate-500">Expiry:</span> <span class="font-medium">{{ vaccination_card.pcec_expiry or '—' }}</span></div>
                 </dl>
               </div>
               <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
                 <h3 class="text-sm font-semibold uppercase text-slate-500">Other Prophylaxis Given</h3>
                 <dl class="mt-2 space-y-1 text-sm">
                   <div><span class="text-slate-500">Tetanus Prophylaxis:</span> <span class="font-medium">{{ vaccination_card.tetanus_prophylaxis or '—' }}</span></div>
-                  <div><span class="text-slate-500">Tetanus Toxoid:</span> <span class="font-medium">{{ vaccination_card.tetanus_toxoid or '—' }}</span></div>
-                  <div><span class="text-slate-500">ATS:</span> <span class="font-medium">{{ vaccination_card.ats or '—' }}</span></div>
-                  <div><span class="text-slate-500">HTIG:</span> <span class="font-medium">{{ vaccination_card.htig or '—' }}</span></div>
+                  <div><span class="text-slate-500">Tetanus Toxoid / ATS / HTIG:</span> <span class="font-medium">{{ vaccination_card.tetanus_toxoid or vaccination_card.ats or vaccination_card.htig or '—' }}</span></div>
+                  <div><span class="text-slate-500">Tetanus Batch:</span> <span class="font-medium">{{ vaccination_card.tetanus_batch or '—' }}</span></div>
+                  <div><span class="text-slate-500">Tetanus Mfg / Expiry:</span> <span class="font-medium">{{ vaccination_card.tetanus_mfg_date or '—' }} / {{ vaccination_card.tetanus_expiry or '—' }}</span></div>
                 </dl>
               </div>
             </div>

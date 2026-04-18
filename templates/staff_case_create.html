@@ -1,4 +1,5 @@
 {% extends "staff_base.html" %}
+{% from '_vc_dose_dropdown.html' import vc_dose_dropdown %}
 
 {% block title %}Add Existing Record - RabiesResQ{% endblock %}
 
@@ -290,56 +291,84 @@
     <article class="rounded-2xl border border-slate-200 bg-white p-5">
       <h2 class="text-3xl font-semibold text-blue-900">Vaccination Record Card</h2>
       <div class="mt-4 space-y-5">
+        {% set ar_sel = (vaccination_card.get('form_vc_anti_rabies_vaccine') or '') %}
+        {% set ta_sel = (vaccination_card.get('form_vc_tetanus_agent') or '') %}
+        {% set ar_known = ['Verorab', 'Rabipur', 'Speeda', 'Abhayrab', 'Vaxirab N', 'ChiroRab', 'PCEC', 'ERIG', 'HRIG'] %}
+        {% set ta_known = ['Abhay-TOX', 'T-Vac', 'Tetavax', 'Generic Tetanus Toxoid', 'Antitet', 'Sharjvax', 'Tetagam P', 'Sero-Tet', 'Generic HTIG'] %}
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
             <h3 class="mb-3 text-sm font-semibold uppercase text-slate-600">Anti-Rabies Details</h3>
             <div class="space-y-3">
               <div>
-                <label class="mb-1 block text-xs text-slate-500" for="vc_anti_rabies">ANTI-RABIES</label>
-                <input id="vc_anti_rabies" name="vc_anti_rabies" type="text" value="{{ vaccination_card.anti_rabies or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                <label class="mb-1 block text-xs font-semibold uppercase text-slate-600" for="vc_anti_rabies_vaccine">PVRV/PCEC/ERIG/HRIG</label>
+                <select id="vc_anti_rabies_vaccine" name="vc_anti_rabies_vaccine" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none ring-emerald-300 focus:ring">
+                  <option value="">—</option>
+                  {% for o in ar_known %}
+                  <option value="{{ o }}" {{ 'selected' if ar_sel == o else '' }}>{{ o }}</option>
+                  {% endfor %}
+                  {% if ar_sel and ar_sel not in ar_known %}
+                  <option value="{{ ar_sel }}" selected>{{ ar_sel }} (saved)</option>
+                  {% endif %}
+                </select>
+                <p class="mt-1 text-xs text-slate-500">This selection fills <strong>Type of Vaccine</strong> on each dose row that has a <strong>date</strong> (rows without a date stay blank).</p>
               </div>
-              <div>
-                <label class="mb-1 block text-xs text-slate-500" for="vc_pvrv">PVRV</label>
-                <input id="vc_pvrv" name="vc_pvrv" type="text" value="{{ vaccination_card.pvrv or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
-              </div>
-              <div class="grid grid-cols-3 gap-2">
+              <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <div>
-                  <label class="mb-1 block text-xs text-slate-500" for="vc_pcec_batch">PCEC Batch</label>
+                  <label class="mb-1 block text-xs text-slate-500" for="vc_pcec_batch">Batch No.</label>
                   <input id="vc_pcec_batch" name="vc_pcec_batch" type="text" value="{{ vaccination_card.pcec_batch or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
                 </div>
                 <div>
-                  <label class="mb-1 block text-xs text-slate-500" for="vc_pcec_mfg_date">Mfg Date</label>
+                  <label class="mb-1 block text-xs text-slate-500" for="vc_pcec_mfg_date">Mfg. Date</label>
                   <input id="vc_pcec_mfg_date" name="vc_pcec_mfg_date" type="date" value="{{ vaccination_card.pcec_mfg_date or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
                 </div>
                 <div>
-                  <label class="mb-1 block text-xs text-slate-500" for="vc_pcec_expiry">Expiry</label>
+                  <label class="mb-1 block text-xs text-slate-500" for="vc_pcec_expiry">Expiry Date</label>
                   <input id="vc_pcec_expiry" name="vc_pcec_expiry" type="date" min="{{ expiry_min_date }}" value="{{ vaccination_card.pcec_expiry or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
                 </div>
-              </div>
-              <div>
-                <label class="mb-1 block text-xs text-slate-500" for="vc_erig_hrig">ERIG/HRIG</label>
-                <input id="vc_erig_hrig" name="vc_erig_hrig" type="text" value="{{ vaccination_card.erig_hrig or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
               </div>
             </div>
           </div>
           <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
             <h3 class="mb-3 text-sm font-semibold uppercase text-slate-600">Other Prophylaxis Given</h3>
             <div class="space-y-3">
+              <p class="text-xs text-slate-500">Tetanus product and batch details are saved when you create the record.</p>
               <div>
-                <label class="mb-1 block text-xs text-slate-500" for="vc_tetanus_prophylaxis">Tetanus Prophylaxis</label>
-                <input id="vc_tetanus_prophylaxis" name="vc_tetanus_prophylaxis" type="text" value="{{ vaccination_card.tetanus_prophylaxis or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                <label class="mb-1 block text-xs font-semibold uppercase text-slate-600" for="vc_tetanus_agent">Tetanus toxoid/ATS/HTIG</label>
+                <select id="vc_tetanus_agent" name="vc_tetanus_agent" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none ring-emerald-300 focus:ring">
+                  <option value="">—</option>
+                  <optgroup label="TETANUS TOXOID:">
+                    <option value="Abhay-TOX" {{ 'selected' if ta_sel == 'Abhay-TOX' else '' }}>Abhay-TOX</option>
+                    <option value="T-Vac" {{ 'selected' if ta_sel == 'T-Vac' else '' }}>T-Vac</option>
+                    <option value="Tetavax" {{ 'selected' if ta_sel == 'Tetavax' else '' }}>Tetavax</option>
+                    <option value="Generic Tetanus Toxoid" {{ 'selected' if ta_sel == 'Generic Tetanus Toxoid' else '' }}>Generic Tetanus Toxoid</option>
+                  </optgroup>
+                  <optgroup label="ATS:">
+                    <option value="Antitet" {{ 'selected' if ta_sel == 'Antitet' else '' }}>Antitet</option>
+                    <option value="Sharjvax" {{ 'selected' if ta_sel == 'Sharjvax' else '' }}>Sharjvax</option>
+                  </optgroup>
+                  <optgroup label="HTIG:">
+                    <option value="Tetagam P" {{ 'selected' if ta_sel == 'Tetagam P' else '' }}>Tetagam P</option>
+                    <option value="Sero-Tet" {{ 'selected' if ta_sel == 'Sero-Tet' else '' }}>Sero-Tet</option>
+                    <option value="Generic HTIG" {{ 'selected' if ta_sel == 'Generic HTIG' else '' }}>Generic HTIG</option>
+                  </optgroup>
+                  {% if ta_sel and ta_sel not in ta_known %}
+                  <option value="{{ ta_sel }}" selected>{{ ta_sel }} (saved)</option>
+                  {% endif %}
+                </select>
               </div>
-              <div>
-                <label class="mb-1 block text-xs text-slate-500" for="vc_tetanus_toxoid">Tetanus Toxoid</label>
-                <input id="vc_tetanus_toxoid" name="vc_tetanus_toxoid" type="text" value="{{ vaccination_card.tetanus_toxoid or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
-              </div>
-              <div>
-                <label class="mb-1 block text-xs text-slate-500" for="vc_ats">ATS</label>
-                <input id="vc_ats" name="vc_ats" type="text" value="{{ vaccination_card.ats or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
-              </div>
-              <div>
-                <label class="mb-1 block text-xs text-slate-500" for="vc_htig">HTIG</label>
-                <input id="vc_htig" name="vc_htig" type="text" value="{{ vaccination_card.htig or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+              <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <div>
+                  <label class="mb-1 block text-xs text-slate-500" for="vc_tetanus_batch">Batch No.</label>
+                  <input id="vc_tetanus_batch" name="vc_tetanus_batch" type="text" value="{{ vaccination_card.tetanus_batch or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs text-slate-500" for="vc_tetanus_mfg_date">Mfg. Date</label>
+                  <input id="vc_tetanus_mfg_date" name="vc_tetanus_mfg_date" type="date" value="{{ vaccination_card.tetanus_mfg_date or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs text-slate-500" for="vc_tetanus_expiry">Expiry Date</label>
+                  <input id="vc_tetanus_expiry" name="vc_tetanus_expiry" type="date" min="{{ expiry_min_date }}" value="{{ vaccination_card.tetanus_expiry or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                </div>
               </div>
             </div>
           </div>
@@ -347,7 +376,7 @@
 
         <div>
           <h3 class="text-sm font-semibold text-slate-700">Pre-Exposure Vaccination Record</h3>
-          <div class="mt-2 overflow-x-auto rounded-xl border border-slate-200">
+          <div class="vc-dose-table-scroll mt-2 overflow-x-auto rounded-xl border border-slate-200">
             <table class="min-w-full divide-y divide-slate-200 text-sm">
               <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
                 <tr><th class="px-2 py-2">Day</th><th class="px-2 py-2">Date</th><th class="px-2 py-2">Type of Vaccine</th><th class="px-2 py-2">Dose</th><th class="px-2 py-2">Route &amp; Site</th><th class="px-2 py-2">Given By</th></tr>
@@ -355,12 +384,51 @@
               <tbody class="divide-y divide-slate-100 bg-white">
                 {% for day in [0, 7, 28] %}
                   {% set row = card_doses_by_type.pre_exposure[day] %}
+                  {% set dv = (row.dose if row and row.dose else '')|trim %}
+                  {% if dv in ['0.1 mL', '0.5 mL', '1.0 mL'] %}
+                    {% set dose_sel = dv %}{% set dose_other_val = '' %}
+                  {% elif dv %}
+                    {% set dose_sel = 'Others' %}{% set dose_other_val = dv %}
+                  {% else %}
+                    {% set dose_sel = '' %}{% set dose_other_val = '' %}
+                  {% endif %}
+                  {% set rs_val = (row.route_site if row and row.route_site else '') %}
                   <tr>
                     <td class="px-2 py-1.5 font-medium">DAY {{ day }}</td>
                     <td class="px-2 py-1"><input name="vc_pre_{{ day }}_date" type="date" value="{{ row.dose_date if row and row.dose_date else suggested_dates_by_type.pre_exposure.get(day, '') }}" class="w-full min-w-[7rem] cursor-pointer rounded border border-slate-300 px-2 py-1 text-sm outline-none ring-emerald-300 focus:ring" /></td>
-                    <td class="px-2 py-1"><input name="vc_pre_{{ day }}_type" type="text" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" class="w-full min-w-[6rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
-                    <td class="px-2 py-1"><input name="vc_pre_{{ day }}_dose" type="text" value="{{ row.dose if row and row.dose else '' }}" class="w-full min-w-[4rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
-                    <td class="px-2 py-1"><input name="vc_pre_{{ day }}_route_site" type="text" value="{{ row.route_site if row and row.route_site else '' }}" class="w-full min-w-[5rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
+                    <td class="px-2 py-1">
+                      <input type="hidden" name="vc_pre_{{ day }}_type" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" data-vc-type />
+                      <input type="text" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" readonly class="w-full min-w-[6rem] rounded border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-700" data-vc-type-display />
+                    </td>
+                    <td class="px-2 py-1">
+                      {{ vc_dose_dropdown('vc_pre', day, dose_sel, dose_other_val) }}
+                    </td>
+                    <td class="px-2 py-1">
+                      <input type="hidden" name="vc_pre_{{ day }}_route_site" value="{{ rs_val }}" data-vc-route-site />
+                      <div class="relative min-w-[11rem]" data-vc-route-site-widget>
+                        <button type="button" class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-left text-xs text-slate-900 hover:border-emerald-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" data-vc-rs-trigger aria-haspopup="true" aria-expanded="false" aria-controls="vc-create-rs-pre-{{ day }}-panel">
+                          <span class="min-w-0 flex-1 truncate" data-vc-rs-trigger-text>Select route &amp; site…</span>
+                          <svg class="h-4 w-4 shrink-0 text-slate-500 transition-transform" data-vc-rs-chevron fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div id="vc-create-rs-pre-{{ day }}-panel" role="group" class="hidden min-w-[14rem] max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white p-3 shadow-lg" data-vc-rs-panel>
+                          <p class="mb-2 text-xs text-slate-500">Select all that apply</p>
+                          <p class="mb-1 text-xs font-semibold text-slate-600">Route</p>
+                          <div class="mb-2 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="ID" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route> ID (Intradermal)</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="IM" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route> IM (Intramuscular)</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route-other-toggle /> Others</label>
+                          </div>
+                          <input type="text" value="" placeholder="Specify other route…" autocomplete="off" class="mb-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs hidden" data-vc-route-other-input />
+                          <p class="mb-1 text-xs font-semibold text-slate-600">Site</p>
+                          <div class="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="upper arm" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site> upper arm</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="Anterolateral thigh" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site> Anterolateral thigh</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" value="Others" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site-other-toggle> Others</label>
+                          </div>
+                          <input type="text" value="" placeholder="Specify other site…" autocomplete="off" class="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs hidden" data-vc-site-other-input />
+                        </div>
+                      </div>
+                    </td>
                     <td class="px-2 py-1"><input name="vc_pre_{{ day }}_given_by" type="text" list="clinic-personnel-options" value="{{ row.given_by if row and row.given_by else '' }}" class="w-full min-w-[8rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
                   </tr>
                 {% endfor %}
@@ -371,7 +439,7 @@
 
         <div>
           <h3 class="text-sm font-semibold text-slate-700">Post-Exposure Vaccination Record</h3>
-          <div class="mt-2 overflow-x-auto rounded-xl border border-slate-200">
+          <div class="vc-dose-table-scroll mt-2 overflow-x-auto rounded-xl border border-slate-200">
             <table class="min-w-full divide-y divide-slate-200 text-sm">
               <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
                 <tr><th class="px-2 py-2">Day</th><th class="px-2 py-2">Date</th><th class="px-2 py-2">Type of Vaccine</th><th class="px-2 py-2">Dose</th><th class="px-2 py-2">Route &amp; Site</th><th class="px-2 py-2">Given By</th></tr>
@@ -379,12 +447,51 @@
               <tbody class="divide-y divide-slate-100 bg-white">
                 {% for day in [0, 3, 7, 14, 28] %}
                   {% set row = card_doses_by_type.post_exposure[day] %}
+                  {% set dv = (row.dose if row and row.dose else '')|trim %}
+                  {% if dv in ['0.1 mL', '0.5 mL', '1.0 mL'] %}
+                    {% set dose_sel = dv %}{% set dose_other_val = '' %}
+                  {% elif dv %}
+                    {% set dose_sel = 'Others' %}{% set dose_other_val = dv %}
+                  {% else %}
+                    {% set dose_sel = '' %}{% set dose_other_val = '' %}
+                  {% endif %}
+                  {% set rs_val = (row.route_site if row and row.route_site else '') %}
                   <tr>
                     <td class="px-2 py-1.5 font-medium">DAY {{ day }}</td>
                     <td class="px-2 py-1"><input name="vc_post_{{ day }}_date" type="date" value="{{ row.dose_date if row and row.dose_date else suggested_dates_by_type.post_exposure.get(day, '') }}" class="w-full min-w-[7rem] cursor-pointer rounded border border-slate-300 px-2 py-1 text-sm outline-none ring-emerald-300 focus:ring" /></td>
-                    <td class="px-2 py-1"><input name="vc_post_{{ day }}_type" type="text" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" class="w-full min-w-[6rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
-                    <td class="px-2 py-1"><input name="vc_post_{{ day }}_dose" type="text" value="{{ row.dose if row and row.dose else '' }}" class="w-full min-w-[4rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
-                    <td class="px-2 py-1"><input name="vc_post_{{ day }}_route_site" type="text" value="{{ row.route_site if row and row.route_site else '' }}" class="w-full min-w-[5rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
+                    <td class="px-2 py-1">
+                      <input type="hidden" name="vc_post_{{ day }}_type" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" data-vc-type />
+                      <input type="text" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" readonly class="w-full min-w-[6rem] rounded border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-700" data-vc-type-display />
+                    </td>
+                    <td class="px-2 py-1">
+                      {{ vc_dose_dropdown('vc_post', day, dose_sel, dose_other_val) }}
+                    </td>
+                    <td class="px-2 py-1">
+                      <input type="hidden" name="vc_post_{{ day }}_route_site" value="{{ rs_val }}" data-vc-route-site />
+                      <div class="relative min-w-[11rem]" data-vc-route-site-widget>
+                        <button type="button" class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-left text-xs text-slate-900 hover:border-emerald-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" data-vc-rs-trigger aria-haspopup="true" aria-expanded="false" aria-controls="vc-create-rs-post-{{ day }}-panel">
+                          <span class="min-w-0 flex-1 truncate" data-vc-rs-trigger-text>Select route &amp; site…</span>
+                          <svg class="h-4 w-4 shrink-0 text-slate-500 transition-transform" data-vc-rs-chevron fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div id="vc-create-rs-post-{{ day }}-panel" role="group" class="hidden min-w-[14rem] max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white p-3 shadow-lg" data-vc-rs-panel>
+                          <p class="mb-2 text-xs text-slate-500">Select all that apply</p>
+                          <p class="mb-1 text-xs font-semibold text-slate-600">Route</p>
+                          <div class="mb-2 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="ID" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route> ID (Intradermal)</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="IM" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route> IM (Intramuscular)</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route-other-toggle /> Others</label>
+                          </div>
+                          <input type="text" value="" placeholder="Specify other route…" autocomplete="off" class="mb-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs hidden" data-vc-route-other-input />
+                          <p class="mb-1 text-xs font-semibold text-slate-600">Site</p>
+                          <div class="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="upper arm" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site> upper arm</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="Anterolateral thigh" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site> Anterolateral thigh</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" value="Others" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site-other-toggle> Others</label>
+                          </div>
+                          <input type="text" value="" placeholder="Specify other site…" autocomplete="off" class="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs hidden" data-vc-site-other-input />
+                        </div>
+                      </div>
+                    </td>
                     <td class="px-2 py-1"><input name="vc_post_{{ day }}_given_by" type="text" list="clinic-personnel-options" value="{{ row.given_by if row and row.given_by else '' }}" class="w-full min-w-[8rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
                   </tr>
                 {% endfor %}
@@ -395,7 +502,7 @@
 
         <div>
           <h3 class="text-sm font-semibold text-slate-700">Booster Vaccination Record</h3>
-          <div class="mt-2 overflow-x-auto rounded-xl border border-slate-200">
+          <div class="vc-dose-table-scroll mt-2 overflow-x-auto rounded-xl border border-slate-200">
             <table class="min-w-full divide-y divide-slate-200 text-sm">
               <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
                 <tr><th class="px-2 py-2">Day</th><th class="px-2 py-2">Date</th><th class="px-2 py-2">Type of Vaccine</th><th class="px-2 py-2">Dose</th><th class="px-2 py-2">Route &amp; Site</th><th class="px-2 py-2">Given By</th></tr>
@@ -403,12 +510,51 @@
               <tbody class="divide-y divide-slate-100 bg-white">
                 {% for day in [0, 3] %}
                   {% set row = card_doses_by_type.booster[day] %}
+                  {% set dv = (row.dose if row and row.dose else '')|trim %}
+                  {% if dv in ['0.1 mL', '0.5 mL', '1.0 mL'] %}
+                    {% set dose_sel = dv %}{% set dose_other_val = '' %}
+                  {% elif dv %}
+                    {% set dose_sel = 'Others' %}{% set dose_other_val = dv %}
+                  {% else %}
+                    {% set dose_sel = '' %}{% set dose_other_val = '' %}
+                  {% endif %}
+                  {% set rs_val = (row.route_site if row and row.route_site else '') %}
                   <tr>
                     <td class="px-2 py-1.5 font-medium">DAY {{ day }}</td>
                     <td class="px-2 py-1"><input name="vc_booster_{{ day }}_date" type="date" value="{{ row.dose_date if row and row.dose_date else suggested_dates_by_type.booster.get(day, '') }}" class="w-full min-w-[7rem] cursor-pointer rounded border border-slate-300 px-2 py-1 text-sm outline-none ring-emerald-300 focus:ring" /></td>
-                    <td class="px-2 py-1"><input name="vc_booster_{{ day }}_type" type="text" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" class="w-full min-w-[6rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
-                    <td class="px-2 py-1"><input name="vc_booster_{{ day }}_dose" type="text" value="{{ row.dose if row and row.dose else '' }}" class="w-full min-w-[4rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
-                    <td class="px-2 py-1"><input name="vc_booster_{{ day }}_route_site" type="text" value="{{ row.route_site if row and row.route_site else '' }}" class="w-full min-w-[5rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
+                    <td class="px-2 py-1">
+                      <input type="hidden" name="vc_booster_{{ day }}_type" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" data-vc-type />
+                      <input type="text" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" readonly class="w-full min-w-[6rem] rounded border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-700" data-vc-type-display />
+                    </td>
+                    <td class="px-2 py-1">
+                      {{ vc_dose_dropdown('vc_booster', day, dose_sel, dose_other_val) }}
+                    </td>
+                    <td class="px-2 py-1">
+                      <input type="hidden" name="vc_booster_{{ day }}_route_site" value="{{ rs_val }}" data-vc-route-site />
+                      <div class="relative min-w-[11rem]" data-vc-route-site-widget>
+                        <button type="button" class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-left text-xs text-slate-900 hover:border-emerald-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" data-vc-rs-trigger aria-haspopup="true" aria-expanded="false" aria-controls="vc-create-rs-booster-{{ day }}-panel">
+                          <span class="min-w-0 flex-1 truncate" data-vc-rs-trigger-text>Select route &amp; site…</span>
+                          <svg class="h-4 w-4 shrink-0 text-slate-500 transition-transform" data-vc-rs-chevron fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div id="vc-create-rs-booster-{{ day }}-panel" role="group" class="hidden min-w-[14rem] max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white p-3 shadow-lg" data-vc-rs-panel>
+                          <p class="mb-2 text-xs text-slate-500">Select all that apply</p>
+                          <p class="mb-1 text-xs font-semibold text-slate-600">Route</p>
+                          <div class="mb-2 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="ID" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route> ID (Intradermal)</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="IM" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route> IM (Intramuscular)</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route-other-toggle /> Others</label>
+                          </div>
+                          <input type="text" value="" placeholder="Specify other route…" autocomplete="off" class="mb-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs hidden" data-vc-route-other-input />
+                          <p class="mb-1 text-xs font-semibold text-slate-600">Site</p>
+                          <div class="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="upper arm" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site> upper arm</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="Anterolateral thigh" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site> Anterolateral thigh</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" value="Others" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site-other-toggle> Others</label>
+                          </div>
+                          <input type="text" value="" placeholder="Specify other site…" autocomplete="off" class="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs hidden" data-vc-site-other-input />
+                        </div>
+                      </div>
+                    </td>
                     <td class="px-2 py-1"><input name="vc_booster_{{ day }}_given_by" type="text" list="clinic-personnel-options" value="{{ row.given_by if row and row.given_by else '' }}" class="w-full min-w-[8rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
                   </tr>
                 {% endfor %}
@@ -451,8 +597,56 @@
       return `${y}-${m}-${d}`;
     }
 
-    function applyDoseDateSuggestions(prefix, dayOffsets) {
-      const day0Input = document.querySelector(`input[name="${prefix}_0_date"]`);
+    const VC_DOSE_DATE_SECTIONS = [
+      { prefix: "vc_pre", days: [0, 7, 28] },
+      { prefix: "vc_post", days: [0, 3, 7, 14, 28] },
+      { prefix: "vc_booster", days: [0, 3] }
+    ];
+
+    function vcDoseDateOwners(scopeRoot) {
+      const root = scopeRoot || document;
+      const owners = {};
+      VC_DOSE_DATE_SECTIONS.forEach(function(sec) {
+        sec.days.forEach(function(day) {
+          const el = root.querySelector(`input[name="${sec.prefix}_${day}_date"]`);
+          const v = el ? (el.value || "").trim() : "";
+          if (v && !Object.prototype.hasOwnProperty.call(owners, v)) owners[v] = sec.prefix;
+        });
+      });
+      return owners;
+    }
+
+    function applyVcDoseDateExclusivity(scopeRoot) {
+      const root = scopeRoot || document;
+      const owners = vcDoseDateOwners(root);
+      VC_DOSE_DATE_SECTIONS.forEach(function(sec) {
+        sec.days.forEach(function(day) {
+          const el = root.querySelector(`input[name="${sec.prefix}_${day}_date"]`);
+          if (!el) return;
+          const v = (el.value || "").trim();
+          if (v && owners[v] !== sec.prefix) el.value = "";
+        });
+      });
+    }
+
+    function syncVcTypesFromAntiRabiesSelect(scopeRoot) {
+      const root = scopeRoot || document;
+      const sel = document.getElementById("vc_anti_rabies_vaccine");
+      const master = sel ? (sel.value || "").trim() : "";
+      root.querySelectorAll("input[data-vc-type]").forEach(function(h) {
+        const tr = h.closest("tr");
+        const dateInp = tr ? tr.querySelector('input[type="date"][name^="vc_"]') : null;
+        const hasDate = dateInp && (dateInp.value || "").trim();
+        const v = hasDate ? master : "";
+        h.value = v;
+        const cell = h.closest("td");
+        const disp = cell ? cell.querySelector("input[data-vc-type-display]") : null;
+        if (disp) disp.value = v;
+      });
+    }
+
+    function applyDoseDateSuggestions(formRoot, prefix, dayOffsets) {
+      const day0Input = formRoot.querySelector(`input[name="${prefix}_0_date"]`);
       if (!day0Input) return;
       const day0Value = (day0Input.value || "").trim();
       if (!day0Value) return;
@@ -461,12 +655,14 @@
 
       dayOffsets.forEach(function(day) {
         if (day === 0) return;
-        const target = document.querySelector(`input[name="${prefix}_${day}_date"]`);
+        const target = formRoot.querySelector(`input[name="${prefix}_${day}_date"]`);
         if (!target || (target.value || "").trim()) return;
         const d = new Date(baseDate);
         d.setDate(baseDate.getDate() + day);
         target.value = formatLocalYMD(d);
       });
+      applyVcDoseDateExclusivity(formRoot);
+      syncVcTypesFromAntiRabiesSelect(formRoot);
     }
 
     document.addEventListener("DOMContentLoaded", function() {
@@ -598,11 +794,359 @@
       });
       syncConditionalSections();
 
-      const expiryInput = document.getElementById("vc_pcec_expiry");
-      if (expiryInput) {
+      function wireMinExpiryDateInput(inputId, message) {
+        const el = document.getElementById(inputId);
+        if (!el) return;
         const today = formatLocalYMD(new Date());
-        expiryInput.min = today;
+        el.min = today;
+        const validateExpiry = function() {
+          const value = (el.value || "").trim();
+          if (value && value < today) {
+            el.setCustomValidity(message);
+          } else {
+            el.setCustomValidity("");
+          }
+        };
+        validateExpiry();
+        el.addEventListener("input", validateExpiry);
+        el.addEventListener("change", validateExpiry);
       }
+      wireMinExpiryDateInput("vc_pcec_expiry", "Expiry date cannot be before today.");
+      wireMinExpiryDateInput("vc_tetanus_expiry", "Tetanus expiry date cannot be before today.");
+
+      const arVaccineSel = q("#vc_anti_rabies_vaccine");
+      if (arVaccineSel) {
+        arVaccineSel.addEventListener("change", function() { syncVcTypesFromAntiRabiesSelect(formRoot); });
+        syncVcTypesFromAntiRabiesSelect(formRoot);
+      }
+
+      function doseTriggerLabel(hidden, otherInput) {
+        var v = (hidden.value || "").trim();
+        if (!v) return "—";
+        if (v === "Others") {
+          var o = otherInput && (otherInput.value || "").trim();
+          return o ? ("Others: " + o) : "Others (specify…)";
+        }
+        return v;
+      }
+
+      function wireDoseDropdowns(scopeRoot) {
+        var root = scopeRoot || document;
+        root.querySelectorAll("[data-vc-dose-widget]").forEach(function(widget) {
+          var hidden = widget.querySelector("input[data-vc-dose-sel]");
+          var trigger = widget.querySelector("[data-vc-dose-trigger]");
+          var panel = widget.querySelector("[data-vc-dose-panel]");
+          var chevron = widget.querySelector("[data-vc-dose-chevron]");
+          var triggerText = widget.querySelector("[data-vc-dose-trigger-text]");
+          var otherInput = widget.querySelector("input[data-vc-dose-other]");
+          if (!hidden || !trigger || !panel) return;
+
+          function syncLabel() {
+            if (triggerText) triggerText.textContent = doseTriggerLabel(hidden, otherInput);
+          }
+          function setOthersVisible(show) {
+            if (otherInput) otherInput.classList.toggle("hidden", !show);
+            if (!show && otherInput) otherInput.value = "";
+          }
+          function selectValue(val) {
+            hidden.value = val;
+            setOthersVisible(val === "Others");
+            syncLabel();
+          }
+
+          widget.querySelectorAll("[data-vc-dose-option]").forEach(function(btn) {
+            btn.addEventListener("click", function(e) {
+              e.stopPropagation();
+              var val = btn.getAttribute("value") || "";
+              selectValue(val);
+              if (val !== "Others") {
+                closeDosePanel(widget);
+              } else {
+                requestAnimationFrame(function() {
+                  positionVcFixedDropdown(trigger, panel);
+                  if (otherInput) otherInput.focus();
+                });
+              }
+            });
+          });
+          if (otherInput) {
+            otherInput.addEventListener("input", function() {
+              if ((hidden.value || "") === "Others") syncLabel();
+            });
+          }
+          trigger.addEventListener("click", function(e) {
+            e.stopPropagation();
+            var open = panel.classList.contains("hidden");
+            root.querySelectorAll("[data-vc-route-site-widget]").forEach(closeRouteSitePanel);
+            root.querySelectorAll("[data-vc-dose-widget]").forEach(function(w) {
+              if (w !== widget) closeDosePanel(w);
+            });
+            if (open) {
+              positionVcFixedDropdown(trigger, panel);
+              panel.classList.remove("hidden");
+              trigger.setAttribute("aria-expanded", "true");
+              if (chevron) chevron.classList.add("rotate-180");
+            } else {
+              closeDosePanel(widget);
+            }
+          });
+          syncLabel();
+        });
+
+        document.addEventListener("click", function(ev) {
+          root.querySelectorAll("[data-vc-dose-widget]").forEach(function(w) {
+            var p = w.querySelector("[data-vc-dose-panel]");
+            if (!p || p.classList.contains("hidden")) return;
+            if (!w.contains(ev.target)) closeDosePanel(w);
+          });
+        });
+      }
+
+      function parseRouteSiteTokens(value) {
+        const raw = (value || "").trim();
+        const route = new Set();
+        const site = new Set();
+        let routeOtherText = "";
+        let siteOtherText = "";
+        if (!raw) return { route: route, site: site, routeOtherText: routeOtherText, siteOtherText: siteOtherText };
+        let segmented = false;
+        raw.split("|").forEach(function(seg) {
+          const part = seg.trim();
+          const pl = part.toLowerCase();
+          if (pl.startsWith("route:")) {
+            segmented = true;
+            const rest = part.slice(6).toLowerCase();
+            if (rest.includes("id")) route.add("ID");
+            if (rest.includes("im")) route.add("IM");
+          } else if (pl.startsWith("route other:")) {
+            segmented = true;
+            routeOtherText = part.slice(12).trim();
+          } else if (pl.startsWith("site:")) {
+            segmented = true;
+            const rest = part.slice(5).toLowerCase();
+            if (rest.includes("upper arm")) site.add("upper arm");
+            if (rest.includes("anterolateral thigh")) site.add("Anterolateral thigh");
+          } else if (pl.startsWith("other:")) {
+            segmented = true;
+            siteOtherText = part.slice(part.indexOf(":") + 1).trim();
+          }
+        });
+        if (!segmented) {
+          const v = raw.toLowerCase();
+          if (/\bid\b/.test(v) || v.includes("intradermal")) route.add("ID");
+          if (/\bim\b/.test(v) || v.includes("intramuscular")) route.add("IM");
+          if (v.includes("upper arm")) site.add("upper arm");
+          if (v.includes("anterolateral thigh")) site.add("Anterolateral thigh");
+          const om = raw.match(/other:\s*([^|]+)/i);
+          if (om) siteOtherText = om[1].trim();
+          const rom = raw.match(/route other:\s*([^|]+)/i);
+          if (rom) routeOtherText = rom[1].trim();
+        }
+        return { route: route, site: site, routeOtherText: routeOtherText, siteOtherText: siteOtherText };
+      }
+
+      function buildRouteSiteValue(routeSet, siteSet, routeOtherText, siteOtherText) {
+        const route = Array.from(routeSet);
+        const site = Array.from(siteSet);
+        const parts = [];
+        if (route.length) parts.push("Route: " + route.join(", "));
+        if ((routeOtherText || "").trim()) parts.push("Route other: " + routeOtherText.trim());
+        if (site.length) parts.push("Site: " + site.join(", "));
+        if ((siteOtherText || "").trim()) parts.push("Other: " + siteOtherText.trim());
+        return parts.join(" | ");
+      }
+
+      function routeSiteTriggerSummary(routeCbs, siteCbs, routeOtherInput, siteOtherInput) {
+        const routeSet = new Set(routeCbs.filter(function(cb) { return cb.checked; }).map(function(cb) { return cb.value; }));
+        const siteSet = new Set(siteCbs.filter(function(cb) { return cb.checked; }).map(function(cb) { return cb.value; }));
+        const rot = routeOtherInput ? String(routeOtherInput.value || "").trim() : "";
+        const sot = siteOtherInput ? String(siteOtherInput.value || "").trim() : "";
+        const parts = [];
+        if (routeSet.size) parts.push("Route: " + Array.from(routeSet).join(", "));
+        if (rot) parts.push("Route other: " + rot);
+        if (siteSet.size) parts.push("Site: " + Array.from(siteSet).join(", "));
+        if (sot) parts.push("Other: " + sot);
+        return parts.length ? parts.join(" | ") : "Select route & site…";
+      }
+
+      function resetVcFixedDropdownPosition(panel) {
+        if (!panel) return;
+        ["position", "left", "top", "width", "right", "bottom", "zIndex", "maxHeight"].forEach(function(k) {
+          panel.style[k] = "";
+        });
+      }
+
+      function positionVcFixedDropdown(trigger, panel) {
+        if (!trigger || !panel) return;
+        var minW = 224;
+        var r = trigger.getBoundingClientRect();
+        var w = Math.max(r.width, minW);
+        var left = r.left;
+        if (left + w > window.innerWidth - 8) left = Math.max(8, window.innerWidth - 8 - w);
+        var margin = 4;
+        var spaceBelow = window.innerHeight - r.bottom - margin - 8;
+        var maxH = Math.min(256, Math.max(120, spaceBelow));
+        panel.style.position = "fixed";
+        panel.style.left = left + "px";
+        panel.style.width = w + "px";
+        panel.style.right = "auto";
+        panel.style.bottom = "auto";
+        panel.style.zIndex = "10000";
+        panel.style.top = (r.bottom + margin) + "px";
+        panel.style.maxHeight = maxH + "px";
+        requestAnimationFrame(function() {
+          var pr = panel.getBoundingClientRect();
+          if (pr.bottom <= window.innerHeight - 4) return;
+          var spaceAbove = r.top - 8;
+          var hCap = Math.min(256, Math.max(120, spaceAbove - margin));
+          panel.style.maxHeight = hCap + "px";
+          var ph = panel.getBoundingClientRect().height;
+          panel.style.top = Math.max(8, r.top - ph - margin) + "px";
+        });
+      }
+
+      function repositionOpenVcFixedDropdowns(scopeRoot) {
+        var root = scopeRoot || document;
+        root.querySelectorAll("[data-vc-route-site-widget]").forEach(function(w) {
+          var panel = w.querySelector("[data-vc-rs-panel]");
+          var trigger = w.querySelector("[data-vc-rs-trigger]");
+          if (!panel || !trigger || panel.classList.contains("hidden")) return;
+          positionVcFixedDropdown(trigger, panel);
+        });
+        root.querySelectorAll("[data-vc-dose-widget]").forEach(function(w) {
+          var panel = w.querySelector("[data-vc-dose-panel]");
+          var trigger = w.querySelector("[data-vc-dose-trigger]");
+          if (!panel || !trigger || panel.classList.contains("hidden")) return;
+          positionVcFixedDropdown(trigger, panel);
+        });
+      }
+
+      function closeRouteSitePanel(widget) {
+        if (!widget) return;
+        const panel = widget.querySelector("[data-vc-rs-panel]");
+        const trigger = widget.querySelector("[data-vc-rs-trigger]");
+        const chevron = widget.querySelector("[data-vc-rs-chevron]");
+        if (panel) {
+          panel.classList.add("hidden");
+          resetVcFixedDropdownPosition(panel);
+        }
+        if (trigger) trigger.setAttribute("aria-expanded", "false");
+        if (chevron) chevron.classList.remove("rotate-180");
+      }
+
+      function closeDosePanel(widget) {
+        if (!widget) return;
+        var panel = widget.querySelector("[data-vc-dose-panel]");
+        var trigger = widget.querySelector("[data-vc-dose-trigger]");
+        var chevron = widget.querySelector("[data-vc-dose-chevron]");
+        if (panel) {
+          panel.classList.add("hidden");
+          resetVcFixedDropdownPosition(panel);
+        }
+        if (trigger) trigger.setAttribute("aria-expanded", "false");
+        if (chevron) chevron.classList.remove("rotate-180");
+      }
+
+      function wireRouteSiteChecklists() {
+        qa("input[data-vc-route-site]").forEach(function(hidden) {
+          const cell = hidden.closest("td");
+          if (!cell) return;
+          const widget = cell.querySelector("[data-vc-route-site-widget]");
+          const routeOtherToggle = cell.querySelector("input[data-vc-route-other-toggle]");
+          const routeOtherInput = cell.querySelector("input[data-vc-route-other-input]");
+          const siteOtherToggle = cell.querySelector("input[data-vc-site-other-toggle]");
+          const siteOtherInput = cell.querySelector("input[data-vc-site-other-input]");
+          const routeCbs = Array.from(cell.querySelectorAll("input[data-vc-route]"));
+          const siteCbs = Array.from(cell.querySelectorAll("input[data-vc-site]"));
+          const triggerText = widget ? widget.querySelector("[data-vc-rs-trigger-text]") : null;
+          const trigger = widget ? widget.querySelector("[data-vc-rs-trigger]") : null;
+          const panel = widget ? widget.querySelector("[data-vc-rs-panel]") : null;
+          const chevron = widget ? widget.querySelector("[data-vc-rs-chevron]") : null;
+
+          const initial = parseRouteSiteTokens(hidden.value);
+          routeCbs.forEach(function(cb) { cb.checked = initial.route.has(cb.value); });
+          siteCbs.forEach(function(cb) { cb.checked = initial.site.has(cb.value); });
+          const initRouteOther = (initial.routeOtherText || "").trim();
+          const initSiteOther = (initial.siteOtherText || "").trim();
+          if (routeOtherInput) routeOtherInput.value = initRouteOther;
+          if (routeOtherToggle) routeOtherToggle.checked = !!initRouteOther;
+          if (routeOtherInput) routeOtherInput.classList.toggle("hidden", !initRouteOther);
+          if (siteOtherInput) siteOtherInput.value = initSiteOther;
+          if (siteOtherToggle) siteOtherToggle.checked = !!initSiteOther;
+          if (siteOtherInput) siteOtherInput.classList.toggle("hidden", !initSiteOther);
+
+          const sync = function() {
+            const routeSet = new Set(routeCbs.filter(function(cb) { return cb.checked; }).map(function(cb) { return cb.value; }));
+            const siteSet = new Set(siteCbs.filter(function(cb) { return cb.checked; }).map(function(cb) { return cb.value; }));
+            const rot = routeOtherInput ? (routeOtherInput.value || "").trim() : "";
+            const sot = siteOtherInput ? (siteOtherInput.value || "").trim() : "";
+            hidden.value = buildRouteSiteValue(routeSet, siteSet, rot, sot);
+            if (triggerText) triggerText.textContent = routeSiteTriggerSummary(routeCbs, siteCbs, routeOtherInput, siteOtherInput);
+          };
+
+          routeCbs.forEach(function(cb) { cb.addEventListener("change", sync); });
+          siteCbs.forEach(function(cb) { cb.addEventListener("change", sync); });
+          if (routeOtherToggle && routeOtherInput) {
+            routeOtherToggle.addEventListener("change", function() {
+              const show = !!routeOtherToggle.checked;
+              routeOtherInput.classList.toggle("hidden", !show);
+              if (!show) routeOtherInput.value = "";
+              sync();
+            });
+          }
+          if (routeOtherInput) routeOtherInput.addEventListener("input", sync);
+          if (siteOtherToggle && siteOtherInput) {
+            siteOtherToggle.addEventListener("change", function() {
+              const show = !!siteOtherToggle.checked;
+              siteOtherInput.classList.toggle("hidden", !show);
+              if (!show) siteOtherInput.value = "";
+              sync();
+            });
+          }
+          if (siteOtherInput) siteOtherInput.addEventListener("input", sync);
+
+          if (widget && trigger && panel) {
+            trigger.addEventListener("click", function(e) {
+              e.stopPropagation();
+              const open = panel.classList.contains("hidden");
+              qa("[data-vc-dose-widget]").forEach(closeDosePanel);
+              qa("[data-vc-route-site-widget]").forEach(function(w) {
+                if (w !== widget) closeRouteSitePanel(w);
+              });
+              if (open) {
+                positionVcFixedDropdown(trigger, panel);
+                panel.classList.remove("hidden");
+                trigger.setAttribute("aria-expanded", "true");
+                if (chevron) chevron.classList.add("rotate-180");
+              } else {
+                closeRouteSitePanel(widget);
+              }
+            });
+          }
+          sync();
+        });
+
+        document.addEventListener("click", function(ev) {
+          formRoot.querySelectorAll("[data-vc-route-site-widget]").forEach(function(w) {
+            const p = w.querySelector("[data-vc-rs-panel]");
+            if (!p || p.classList.contains("hidden")) return;
+            if (!w.contains(ev.target)) closeRouteSitePanel(w);
+          });
+        });
+        document.addEventListener("keydown", function(ev) {
+          if (ev.key !== "Escape") return;
+          formRoot.querySelectorAll("[data-vc-route-site-widget]").forEach(closeRouteSitePanel);
+          formRoot.querySelectorAll("[data-vc-dose-widget]").forEach(closeDosePanel);
+        });
+        window.addEventListener("resize", function() { repositionOpenVcFixedDropdowns(formRoot); });
+        window.addEventListener("scroll", function() { repositionOpenVcFixedDropdowns(formRoot); }, true);
+        formRoot.querySelectorAll(".vc-dose-table-scroll").forEach(function(el) {
+          el.addEventListener("scroll", function() { repositionOpenVcFixedDropdowns(formRoot); }, { passive: true });
+        });
+      }
+
+      wireDoseDropdowns(formRoot);
+      wireRouteSiteChecklists();
 
       const schedules = [
         { prefix: "vc_pre", days: [0, 7, 28] },
@@ -610,13 +1154,27 @@
         { prefix: "vc_booster", days: [0, 3] }
       ];
       schedules.forEach(function(schedule) {
-        applyDoseDateSuggestions(schedule.prefix, schedule.days);
-        const day0 = document.querySelector(`input[name="${schedule.prefix}_0_date"]`);
+        applyDoseDateSuggestions(formRoot, schedule.prefix, schedule.days);
+        const day0 = formRoot.querySelector(`input[name="${schedule.prefix}_0_date"]`);
         if (!day0) return;
         day0.addEventListener("change", function() {
-          applyDoseDateSuggestions(schedule.prefix, schedule.days);
+          applyDoseDateSuggestions(formRoot, schedule.prefix, schedule.days);
+          applyVcDoseDateExclusivity(formRoot);
         });
       });
+      VC_DOSE_DATE_SECTIONS.forEach(function(sec) {
+        sec.days.forEach(function(day) {
+          const el = formRoot.querySelector(`input[name="${sec.prefix}_${day}_date"]`);
+          if (el) {
+            el.addEventListener("change", function() {
+              applyVcDoseDateExclusivity(formRoot);
+              syncVcTypesFromAntiRabiesSelect(formRoot);
+            });
+          }
+        });
+      });
+      applyVcDoseDateExclusivity(formRoot);
+      syncVcTypesFromAntiRabiesSelect(formRoot);
     });
   </script>
 {% endblock %}
