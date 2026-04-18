@@ -23,3 +23,6 @@ instance/*.db
 *.swp
 .DS_Store
 Thumbs.db
+
+# Local debug logs
+debug-*.log
