@@ -30,16 +30,17 @@
           <input type="text" id="last_name" name="last_name" value="{{ patient.last_name or '' }}" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
         </div>
         <div>
-          <label for="date_of_birth" class="mb-1 block text-sm font-medium text-slate-700">Date of Birth</label>
-          <input type="date" id="date_of_birth" name="date_of_birth" value="{{ patient.date_of_birth or '' }}" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <label for="profile_date_of_birth" class="mb-1 block text-sm font-medium text-slate-700">Date of Birth</label>
+          <input type="date" id="profile_date_of_birth" name="date_of_birth" value="{{ (patient.date_of_birth or '')[:10] }}" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
         </div>
         <div>
-          <label for="gender" class="mb-1 block text-sm font-medium text-slate-700">Gender</label>
-          <select id="gender" name="gender" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <label for="profile_gender" class="mb-1 block text-sm font-medium text-slate-700">Gender</label>
+          {% set patient_gender = (patient.gender or '')|trim|lower %}
+          <select id="profile_gender" name="gender" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
             <option value="">Select</option>
-            <option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
-            <option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
-            <option value="Other" {% if patient.gender == 'Other' %}selected{% endif %}>Other</option>
+            <option value="Male" {% if patient_gender == 'male' %}selected{% endif %}>Male</option>
+            <option value="Female" {% if patient_gender == 'female' %}selected{% endif %}>Female</option>
+            <option value="Other" {% if patient_gender == 'other' %}selected{% endif %}>Other</option>
           </select>
         </div>
         <div class="md:col-span-2">
@@ -88,7 +89,14 @@
           </div>
         </div>
       </div>
-      <div class="profile-section-save hidden mt-6 flex justify-end border-t border-slate-200 pt-4">
+      <div class="profile-section-save hidden mt-6 flex justify-end gap-2 border-t border-slate-200 pt-4">
+        <button
+          type="button"
+          id="cancel-password-btn"
+          class="hidden rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+          Cancel
+        </button>
         <button type="submit" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
           Save Changes
         </button>
@@ -167,13 +175,26 @@
 
       var changeBtn = document.getElementById('change-password-btn');
       var passwordFields = document.getElementById('password-change-fields');
+      var cancelPwdBtn = document.getElementById('cancel-password-btn');
+      var accountSection = passwordFields ? passwordFields.closest('.profile-section') : null;
       if (changeBtn && passwordFields) {
         changeBtn.addEventListener('click', function () {
-          passwordFields.classList.toggle('hidden');
-          if (!passwordFields.classList.contains('hidden')) {
-            var np = document.getElementById('new_password');
-            if (np) np.focus();
-          }
+          passwordFields.classList.remove('hidden');
+          if (cancelPwdBtn) cancelPwdBtn.classList.remove('hidden');
+          var np = document.getElementById('new_password');
+          if (np) np.focus();
+          if (accountSection) showSaveForSection(accountSection);
+        });
+      }
+      if (cancelPwdBtn && passwordFields) {
+        cancelPwdBtn.addEventListener('click', function () {
+          passwordFields.classList.add('hidden');
+          var np = document.getElementById('new_password');
+          var cp = document.getElementById('confirm_password');
+          if (np) np.value = '';
+          if (cp) cp.value = '';
+          cancelPwdBtn.classList.add('hidden');
+          if (accountSection) showSaveForSection(accountSection);
         });
       }
     })();

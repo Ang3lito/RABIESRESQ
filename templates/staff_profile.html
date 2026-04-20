@@ -65,6 +65,28 @@
               class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Date of Birth</label>
+            <input
+              type="date"
+              name="date_of_birth"
+              value="{{ (staff.date_of_birth or '')[:10] }}"
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Gender</label>
+            {% set staff_gender = (staff.gender or '')|trim|lower %}
+            <select
+              name="gender"
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="">Select</option>
+              <option value="Male" {% if staff_gender == 'male' %}selected{% endif %}>Male</option>
+              <option value="Female" {% if staff_gender == 'female' %}selected{% endif %}>Female</option>
+              <option value="Other" {% if staff_gender == 'other' %}selected{% endif %}>Other</option>
+            </select>
+          </div>
           <div class="md:col-span-2">
             <label class="mb-1 block text-sm font-medium text-slate-700">Specialty</label>
             <input
@@ -115,10 +137,46 @@
               class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Password</label>
+            <div class="flex items-center gap-2">
+              <input type="text" value="••••••••" disabled class="flex-1 rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-slate-500 cursor-not-allowed" />
+              <button type="button" id="change-staff-password-btn" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">Change password</button>
+            </div>
+          </div>
+          <div id="staff-password-change-fields" class="{% if not show_staff_password_fields|default(false) %}hidden {% endif %}md:col-span-2">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">New Password</label>
+                <input
+                  type="password"
+                  name="new_password"
+                  placeholder="Leave empty to keep current password"
+                  class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">Confirm Password</label>
+                <input
+                  type="password"
+                  name="confirm_password"
+                  placeholder="Confirm new password"
+                  class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+          </div>
         </div>
         <div
-          class="staff-section-save {% if highlight_section|default('') != 'account' %}hidden{% endif %} mt-6 flex justify-end border-t border-slate-200 pt-4"
+          class="staff-section-save {% if highlight_section|default('') != 'account' %}hidden{% endif %} mt-6 flex justify-end gap-2 border-t border-slate-200 pt-4"
         >
+          <button
+            type="button"
+            id="cancel-staff-password-btn"
+            class="{% if not show_staff_password_fields|default(false) %}hidden {% endif %}rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Cancel
+          </button>
           <button type="submit" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
             Save changes
           </button>
@@ -168,6 +226,32 @@
         },
         true
       );
+
+      var changePwdBtn = document.getElementById("change-staff-password-btn");
+      var pwdFields = document.getElementById("staff-password-change-fields");
+      var cancelPwdBtn = document.getElementById("cancel-staff-password-btn");
+      if (changePwdBtn && pwdFields) {
+        changePwdBtn.addEventListener("click", function () {
+          pwdFields.classList.remove("hidden");
+          if (cancelPwdBtn) cancelPwdBtn.classList.remove("hidden");
+          var firstPwdInput = pwdFields.querySelector('input[name="new_password"]');
+          if (firstPwdInput) firstPwdInput.focus();
+          var accountSection = document.getElementById("section-account");
+          if (accountSection) showSaveForSection(accountSection);
+        });
+      }
+      if (cancelPwdBtn && pwdFields) {
+        cancelPwdBtn.addEventListener("click", function () {
+          pwdFields.classList.add("hidden");
+          var newPwdInput = pwdFields.querySelector('input[name="new_password"]');
+          var confirmPwdInput = pwdFields.querySelector('input[name="confirm_password"]');
+          if (newPwdInput) newPwdInput.value = "";
+          if (confirmPwdInput) confirmPwdInput.value = "";
+          cancelPwdBtn.classList.add("hidden");
+          var accountSection = document.getElementById("section-account");
+          if (accountSection) showSaveForSection(accountSection);
+        });
+      }
     })();
   </script>
 {% endblock %}

@@ -22,6 +22,15 @@ def add_num_steps(doc: Document, items: list[str]):
         p.paragraph_format.space_after = Pt(3)
 
 
+def add_bullets_black(doc: Document, items: list[str]):
+    """Bullet list using ⚫ to match organization style guides."""
+    for t in items:
+        p = doc.add_paragraph()
+        p.paragraph_format.space_after = Pt(3)
+        p.add_run("⚫ ")
+        p.add_run(t)
+
+
 def main():
     out = Path(__file__).resolve().parent.parent / "RabiesResQ_Installation_and_User_Guide.docx"
     doc = Document()
@@ -35,68 +44,48 @@ def main():
 
     add_p(
         doc,
-        "This manual describes how to install and operate the RabiesResQ web application "
-        "and how end users work with its features.",
+        "This manual describes how to access and use RabiesResQ, and includes technical "
+        "notes for system administrators who host the application.",
     )
 
     # --- Part 1 ---
     add_h(doc, "Part 1 — Installation Guide", 1)
 
-    add_h(doc, "1. Brief system overview", 2)
+    add_h(doc, "What You Need", 2)
+    add_bullets_black(
+        doc,
+        [
+            "A device (computer, laptop, tablet, or smartphone)",
+            "Stable internet connection",
+            "A modern web browser (Chrome, Firefox, Edge, or Safari)",
+        ],
+    )
+
+    add_h(doc, "How to Access", 2)
+    add_num_steps(
+        doc,
+        [
+            "Open your web browser.",
+            "Go to: https://yourusername.pythonanywhere.com/ (replace yourusername with your PythonAnywhere username, or use the exact URL your organization provides if you have a custom domain).",
+            "The system will automatically load and adjust to your screen size.",
+        ],
+    )
     add_p(
         doc,
-        "RabiesResQ is a browser-based application used to support rabies post-exposure "
-        "workflows in a clinic setting. It lets patients manage appointments and view "
-        "vaccination-related information, lets clinic personnel manage cases, appointments, "
-        "availability, and vaccination records, and gives system administrators oversight "
-        "of users, operational data, reporting, and settings. The software runs as a Python "
-        "Flask application behind a WSGI server and stores data in SQLite. "
-        "This guide assumes production hosting on PythonAnywhere.",
+        "If you do not know the correct address, ask your clinic or system administrator.",
     )
 
-    add_h(doc, "2. Basic system requirements", 2)
-    add_num_steps(
+    add_h(doc, "For system administrators: hosting and deployment", 2)
+    add_p(
         doc,
-        [
-            "Python 3 and the packages listed in requirements.txt (install inside a virtual environment on the host).",
-            "A PythonAnywhere account for production deployment (paid plans add custom domains, scheduled tasks, and other options per PythonAnywhere documentation).",
-            "Disk space for the SQLite database file and generated content on the host.",
-            "Stable internet access for users; HTTPS is provided by PythonAnywhere for the default site URL and can be configured for custom domains on supported plans.",
-        ],
+        "RabiesResQ is a browser-based application for rabies post-exposure workflows: "
+        "patients, clinic personnel, and system administrators use roles to access cases, "
+        "appointments, vaccination records, and reporting. The application is built with "
+        "Python Flask, served via WSGI, and uses SQLite. The following steps describe "
+        "deployment on PythonAnywhere.",
     )
 
-    add_h(doc, "3. Supported devices", 2)
-    add_num_steps(
-        doc,
-        [
-            "Desktop and laptop computers with a modern web browser (primary intended use).",
-            "Tablets and smartphones may be used where the responsive layout fits your workflow.",
-        ],
-    )
-
-    add_h(doc, "4. Internet and browser requirements", 2)
-    add_num_steps(
-        doc,
-        [
-            "Internet access is required when users reach the application over the internet or when email-based password recovery is used.",
-            "Use a current version of a major browser (Chrome, Edge, Firefox, or Safari). JavaScript should be enabled.",
-            "For password reset email: configure SMTP (MAIL_USERNAME and MAIL_PASSWORD). The application uses Gmail SMTP on port 587 when those variables are set. On PythonAnywhere, confirm that your account tier allows outbound SMTP and follow PythonAnywhere’s email and security guidance; if SMTP is not configured, password reset emails will not be delivered.",
-        ],
-    )
-
-    add_h(doc, "5. How to access the system", 2)
-    add_num_steps(
-        doc,
-        [
-            "Production: open RabiesResQ at your PythonAnywhere URL (for example https://yourusername.pythonanywhere.com) or your custom domain if configured.",
-            "Local testing: use http://127.0.0.1:5000 (or the host and port you choose) when running the development server.",
-            "Unauthenticated visitors are directed to the login page. After authentication, users are routed by role (patient, clinic personnel, system administrator).",
-        ],
-    )
-
-    add_h(doc, "6. Installation and deployment", 2)
-
-    add_h(doc, "6.1 Prepare the environment", 3)
+    add_h(doc, "1. Prepare the environment", 3)
     add_num_steps(
         doc,
         [
@@ -107,7 +96,7 @@ def main():
         ],
     )
 
-    add_h(doc, "6.2 Configure environment variables", 3)
+    add_h(doc, "2. Configure environment variables", 3)
     add_num_steps(
         doc,
         [
@@ -119,7 +108,7 @@ def main():
         ],
     )
 
-    add_h(doc, "6.3 Initialize the database", 3)
+    add_h(doc, "3. Initialize the database", 3)
     add_num_steps(
         doc,
         [
@@ -128,7 +117,7 @@ def main():
         ],
     )
 
-    add_h(doc, "6.4 Create initial clinic and privileged accounts", 3)
+    add_h(doc, "4. Create initial clinic and privileged accounts", 3)
     add_p(
         doc,
         "With the virtual environment activated, change to the project directory and run Flask CLI commands "
@@ -144,7 +133,7 @@ def main():
     )
     add_p(doc, "Additional staff may be created from the administrator user interface after deployment.")
 
-    add_h(doc, "6.5 Production deployment on PythonAnywhere", 3)
+    add_h(doc, "5. Production deployment on PythonAnywhere", 3)
     add_p(
         doc,
         "These steps follow the usual PythonAnywhere workflow for a Flask WSGI application. "
@@ -164,7 +153,7 @@ def main():
         ],
     )
 
-    add_h(doc, "6.6 Local development (optional)", 3)
+    add_h(doc, "6. Local development (optional)", 3)
     add_num_steps(
         doc,
         [
@@ -173,15 +162,11 @@ def main():
             "Do not use the Flask development server for production; use the PythonAnywhere WSGI deployment above for live hosting.",
         ],
     )
-
-    add_h(doc, "6.7 Day-to-day use (all roles)", 3)
-    add_num_steps(
+    add_p(
         doc,
-        [
-            "Sign in with email and password.",
-            "Use the sidebar or main navigation for your role.",
-            "Sign out when finished, especially on shared workstations.",
-        ],
+        "Email for password reset requires SMTP configuration (MAIL_USERNAME and MAIL_PASSWORD). "
+        "On PythonAnywhere, confirm your account tier allows outbound SMTP; if email is not configured, "
+        "reset codes will not be delivered to users.",
     )
 
     # --- Part 2 ---

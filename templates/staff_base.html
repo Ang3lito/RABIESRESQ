@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html
   lang="en"
   data-notification-sound-role="clinic"
@@ -9,6 +9,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}Staff - RabiesResQ{% endblock %}</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}?v=4" />
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}?v=4" />
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}?v=4" />
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}?v=4" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link
       rel="stylesheet"
@@ -86,11 +90,11 @@
           </nav>
 
           <div class="mt-auto pt-8">
-            <a href="{{ url_for('staff_create_case_record') }}" class="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 font-semibold text-emerald-800 transition hover:bg-emerald-100">
+            <a href="{{ url_for('staff_create_case_record') }}" class="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100">
               <i class="fa-solid fa-file-circle-plus"></i>
               Add Existing Record
             </a>
-            <button type="button" onclick="openPreScreeningModal('case')" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 font-semibold text-white transition hover:bg-emerald-600">
+            <button type="button" onclick="openPreScreeningModal('case')" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600">
               <i class="fa-solid fa-plus"></i>
               New Patient
             </button>

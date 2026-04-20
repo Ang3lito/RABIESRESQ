@@ -609,6 +609,31 @@ def _format_session_timestamp(raw: str | None) -> str:
         return str(raw).strip()
 
 
+def _parse_local_slot_datetime(raw_value: str | None) -> datetime | None:
+    """Parse stored slot datetime strings into local naive datetime for comparisons."""
+    raw = (raw_value or "").strip()
+    if not raw:
+        return None
+    try:
+        dt = datetime.fromisoformat(raw.replace("T", " "))
+    except ValueError:
+        try:
+            dt = datetime.fromisoformat(raw)
+        except ValueError:
+            return None
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(PHILIPPINES_TZ).replace(tzinfo=None)
+    return dt
+
+
+def _is_slot_in_past(raw_value: str | None) -> bool:
+    slot_dt = _parse_local_slot_datetime(raw_value)
+    if slot_dt is None:
+        return True
+    now_local = datetime.now(PHILIPPINES_TZ).replace(tzinfo=None)
+    return slot_dt <= now_local
+
+
 def _admin_fetch_user(db, user_id: int):
     return db.execute(
         """
@@ -2957,6 +2982,16 @@ def create_app():
             db.execute("ALTER TABLE patients ADD COLUMN onboarding_completed INTEGER NOT NULL DEFAULT 0")
             db.commit()
 
+    def _ensure_clinic_personnel_profile_columns():
+        db = get_db()
+        cols = {row["name"] for row in db.execute("PRAGMA table_info(clinic_personnel)").fetchall()}
+        if "date_of_birth" not in cols:
+            db.execute("ALTER TABLE clinic_personnel ADD COLUMN date_of_birth TEXT")
+            db.commit()
+        if "gender" not in cols:
+            db.execute("ALTER TABLE clinic_personnel ADD COLUMN gender TEXT")
+            db.commit()
+
     def _migrate_patients_for_dependents():
         db = get_db()
         table_sql_row = db.execute(
@@ -3252,6 +3287,7 @@ def create_app():
 
     with app.app_context():
         _ensure_patient_onboarding_column()
+        _ensure_clinic_personnel_profile_columns()
         _migrate_patients_for_dependents()
         _ensure_appointments_patient_hidden_column()
         _ensure_vaccination_card_tables()
@@ -3297,7 +3333,14 @@ def create_app():
             ORDER BY CASE
                 WHEN LOWER(COALESCE(p.relationship_to_user, 'self')) = 'self' THEN 0
                 ELSE 1
-            END, p.id ASC
+            END,
+            CASE WHEN TRIM(COALESCE(p.date_of_birth, '')) <> '' THEN 0 ELSE 1 END,
+            CASE WHEN TRIM(COALESCE(p.gender, '')) <> '' THEN 0 ELSE 1 END,
+            CASE
+                WHEN TRIM(COALESCE(p.first_name, '')) <> '' OR TRIM(COALESCE(p.last_name, '')) <> '' THEN 0
+                ELSE 1
+            END,
+            p.id DESC
             LIMIT 1
             """,
             (user_id,),
@@ -5161,7 +5204,6 @@ def create_app():
                 pass
 
         # Fetch available future slots for this clinic
-        now_iso = datetime.now().isoformat()
         rows = db.execute(
             """
             SELECT s.id, s.slot_datetime, s.max_bookings,
@@ -5173,10 +5215,10 @@ def create_app():
             FROM availability_slots s
             WHERE s.clinic_id = ?
               AND s.is_active = 1
-              AND s.slot_datetime > ?
+              AND datetime(REPLACE(s.slot_datetime, 'T', ' ')) > datetime('now', 'localtime')
             ORDER BY s.slot_datetime ASC
             """,
-            (appointment_id, appt["clinic_id"], now_iso),
+            (appointment_id, appt["clinic_id"]),
         ).fetchall()
 
         available_slots = []
@@ -5261,7 +5303,7 @@ def create_app():
             flash("Selected slot is invalid.", "error")
             return redirect(url_for("patient_appointment_edit", appointment_id=appointment_id))
 
-        if slot_datetime <= datetime.now().isoformat():
+        if _is_slot_in_past(slot_datetime):
             flash("The selected slot is in the past. Please choose another date and time.", "error")
             return redirect(url_for("patient_appointment_edit", appointment_id=appointment_id))
 
@@ -5331,8 +5373,6 @@ def create_app():
         date_param = request.args.get("date", "").strip()
         from_param = request.args.get("from", "").strip()
         to_param = request.args.get("to", "").strip()
-        now_iso = datetime.now().isoformat()
-
         if date_param:
             from_date = to_date = date_param
         elif from_param and to_param:
@@ -5351,12 +5391,12 @@ def create_app():
             FROM availability_slots s
             WHERE s.clinic_id = ?
               AND s.is_active = 1
-              AND DATE(s.slot_datetime) >= ?
-              AND DATE(s.slot_datetime) <= ?
-              AND s.slot_datetime > ?
+              AND DATE(REPLACE(s.slot_datetime, 'T', ' ')) >= ?
+              AND DATE(REPLACE(s.slot_datetime, 'T', ' ')) <= ?
+              AND datetime(REPLACE(s.slot_datetime, 'T', ' ')) > datetime('now', 'localtime')
             ORDER BY s.slot_datetime ASC
             """,
-            (clinic_id, from_date, to_date, now_iso),
+            (clinic_id, from_date, to_date),
         ).fetchall()
 
         out = []
@@ -5615,7 +5655,7 @@ def create_app():
                     flash("Invalid or unavailable appointment slot. Please choose another date and time.", "error")
                     return redirect(url_for("patient_dashboard"))
 
-                if slot_datetime <= datetime.now().isoformat():
+                if _is_slot_in_past(slot_datetime):
                     db.rollback()
                     flash("The selected slot is in the past. Please choose another date and time.", "error")
                     return redirect(url_for("patient_dashboard"))
@@ -6087,6 +6127,8 @@ def create_app():
             last_name = normalize_name_case(request.form.get("last_name") or "")
             phone_number = (request.form.get("phone_number") or "").strip()
             specialty = normalize_name_case(request.form.get("specialty") or "")
+            date_of_birth = (request.form.get("date_of_birth") or "").strip()
+            gender = normalize_name_case(request.form.get("gender") or "")
 
             db.execute(
                 """
@@ -6094,10 +6136,20 @@ def create_app():
                 SET first_name = ?,
                     last_name = ?,
                     phone_number = ?,
-                    specialty = ?
+                    specialty = ?,
+                    date_of_birth = ?,
+                    gender = ?
                 WHERE user_id = ?
                 """,
-                (first_name or None, last_name or None, phone_number or None, specialty or None, session["user_id"]),
+                (
+                    first_name or None,
+                    last_name or None,
+                    phone_number or None,
+                    specialty or None,
+                    date_of_birth or None,
+                    gender or None,
+                    session["user_id"],
+                ),
             )
             db.commit()
 
@@ -6107,6 +6159,8 @@ def create_app():
         if section == "account":
             username = (request.form.get("username") or "").strip()
             email = (request.form.get("email") or "").strip().lower()
+            new_password = (request.form.get("new_password") or "").strip()
+            confirm_password = (request.form.get("confirm_password") or "").strip()
 
             errors: list[str] = []
             if not username:
@@ -6115,6 +6169,11 @@ def create_app():
                 errors.append("Email is required.")
             elif "@" not in email:
                 errors.append("Email must be valid.")
+            if new_password:
+                if len(new_password) < 8:
+                    errors.append("Password must be at least 8 characters.")
+                elif new_password != confirm_password:
+                    errors.append("Passwords do not match.")
 
             existing = db.execute(
                 """
@@ -6141,6 +6200,7 @@ def create_app():
                     breadcrumbs=_profile_breadcrumbs(),
                     active_page="profile",
                     highlight_section="account",
+                    show_staff_password_fields=bool(new_password or confirm_password),
                 )
 
             db.execute(
@@ -6151,6 +6211,15 @@ def create_app():
                 """,
                 (username, email, session["user_id"]),
             )
+            if new_password:
+                db.execute(
+                    """
+                    UPDATE users
+                    SET password_hash = ?
+                    WHERE id = ?
+                    """,
+                    (generate_password_hash(new_password), session["user_id"]),
+                )
             db.commit()
 
             session["username"] = username
@@ -9548,7 +9617,7 @@ def create_app():
             flash("Selected slot is invalid.", "error")
             return redirect(url_for("view_appointment", appointment_id=appointment_id))
 
-        if slot_datetime <= datetime.now().isoformat():
+        if _is_slot_in_past(slot_datetime):
             flash("The selected slot is in the past. Please choose another date and time.", "error")
             return redirect(url_for("view_appointment", appointment_id=appointment_id))
 
@@ -11572,6 +11641,8 @@ def create_app():
         first_name = normalize_optional(request.form.get("first_name"))
         last_name = normalize_optional(request.form.get("last_name"))
         license_number = (request.form.get("license_number") or "").strip() or None
+        date_of_birth = (request.form.get("date_of_birth") or "").strip() or None
+        gender = normalize_name_case(request.form.get("gender") or "")
 
         errors: list[str] = []
         if not username:
@@ -11582,6 +11653,13 @@ def create_app():
             errors.append("Employee ID is required.")
         if title not in ("Doctor", "Nurse"):
             errors.append("Title must be Doctor or Nurse.")
+        if date_of_birth:
+            try:
+                date.fromisoformat(date_of_birth[:10])
+            except ValueError:
+                errors.append("Date of birth is invalid.")
+        if gender and gender not in {"Male", "Female", "Other"}:
+            errors.append("Gender must be Male, Female, or Other.")
 
         if not errors:
             dup_user = db.execute(
@@ -11615,6 +11693,8 @@ def create_app():
                 "first_name": first_name or "",
                 "last_name": last_name or "",
                 "license_number": license_number or "",
+                "date_of_birth": date_of_birth or "",
+                "gender": gender or "",
             }
             return redirect(url_for("admin_users", open_staff_modal="1"))
 
@@ -11632,10 +11712,20 @@ def create_app():
             db.execute(
                 """
                 INSERT INTO clinic_personnel (
-                  user_id, clinic_id, first_name, last_name, employee_id, license_number, title
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                  user_id, clinic_id, first_name, last_name, employee_id, license_number, title, date_of_birth, gender
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (uid, clinic["id"], first_name, last_name, employee_id, license_number, title),
+                (
+                    uid,
+                    clinic["id"],
+                    first_name,
+                    last_name,
+                    employee_id,
+                    license_number,
+                    title,
+                    date_of_birth,
+                    gender or None,
+                ),
             )
             db.commit()
         except Exception:

@@ -39,16 +39,6 @@
     </article>
   </section>
 
-  <details class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-    <summary class="cursor-pointer font-semibold text-slate-900">Role overview (permissions)</summary>
-    <ul class="mt-3 list-inside list-disc space-y-2">
-      <li><span class="font-medium">Patient</span> — self-service portal: dashboard, appointments, vaccination card views, pre-screening. Cannot access staff or admin routes.</li>
-      <li><span class="font-medium">Clinic staff</span> (<code class="text-xs">clinic_personnel</code>) — Operations: patients/cases, appointments, availability, vaccination entry. Cannot open system admin pages.</li>
-      <li><span class="font-medium">System administrator</span> — this console (Cases, Appointments, Reporting, User Management). New admin accounts are created via CLI, not this UI.</li>
-      <li><span class="font-medium">Note:</span> <code class="text-xs">clinic_personnel.permissions_json</code> exists in the database but is not enforced by the app yet (reserved).</li>
-    </ul>
-  </details>
-
   <section class="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
     <div class="relative w-full lg:max-w-md">
       <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -273,6 +263,36 @@
                   value="{{ sf.last_name|default('', true) }}"
                   class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
                 />
+              </div>
+              <div>
+                <label class="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700" for="ns-dob">
+                  <i class="fa-regular fa-calendar-days text-slate-400" aria-hidden="true"></i>
+                  Date of Birth
+                </label>
+                <input
+                  id="ns-dob"
+                  type="date"
+                  name="date_of_birth"
+                  value="{{ sf.date_of_birth|default('', true) }}"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
+                />
+              </div>
+              <div>
+                <label class="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700" for="ns-gender">
+                  <i class="fa-solid fa-venus-mars text-slate-400" aria-hidden="true"></i>
+                  Gender
+                </label>
+                {% set ns_gender = sf.gender|default('', true) %}
+                <select
+                  id="ns-gender"
+                  name="gender"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
+                >
+                  <option value="" {% if not ns_gender %}selected{% endif %}>Select</option>
+                  <option value="Male" {% if ns_gender == 'Male' %}selected{% endif %}>Male</option>
+                  <option value="Female" {% if ns_gender == 'Female' %}selected{% endif %}>Female</option>
+                  <option value="Other" {% if ns_gender == 'Other' %}selected{% endif %}>Other</option>
+                </select>
               </div>
               <div class="sm:col-span-2">
                 <label class="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700" for="ns-license">

@@ -82,6 +82,8 @@ CREATE TABLE IF NOT EXISTS clinic_personnel (
   clinic_id INTEGER NOT NULL,
   first_name TEXT,
   last_name TEXT,
+  date_of_birth TEXT,
+  gender TEXT,
   employee_id TEXT NOT NULL UNIQUE,
   license_number TEXT UNIQUE,
   title TEXT NOT NULL CHECK(title IN ('Doctor','Nurse')),

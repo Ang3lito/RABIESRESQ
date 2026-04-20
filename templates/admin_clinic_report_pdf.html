@@ -1,8 +1,12 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <title>Clinic Performance Report ({{ date_from }} to {{ date_to }})</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}?v=4" />
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}?v=4" />
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}?v=4" />
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}?v=4" />
     <style>
       @page { size: A4; margin: 12mm; }
       body { font-family: Arial, sans-serif; font-size: 10pt; color: #0f172a; }
@@ -24,8 +28,8 @@
   <body>
     <p class="title">Clinic Performance Report</p>
     <p class="subtitle">
-      {{ clinic.name if clinic else 'Clinic' }} — Period: {{ date_from }} to {{ date_to }} ({{ period }})
-      {% if yearly_year is not none %} — Year: {{ yearly_year }}{% endif %}
+      {{ clinic.name if clinic else 'Clinic' }} â€” Period: {{ date_from }} to {{ date_to }} ({{ period }})
+      {% if yearly_year is not none %} â€” Year: {{ yearly_year }}{% endif %}
     </p>
     <p class="muted">
       Administrative reporting only. This PDF excludes patient identifiers.
@@ -36,9 +40,9 @@
       <table class="kpi">
         <tr>
           <td class="label">Clinic</td>
-          <td class="value">{{ clinic.name if clinic and clinic.name else '—' }}</td>
+          <td class="value">{{ clinic.name if clinic and clinic.name else 'â€”' }}</td>
           <td class="label">Address</td>
-          <td class="value">{{ clinic.address if clinic and clinic.address else '—' }}</td>
+          <td class="value">{{ clinic.address if clinic and clinic.address else 'â€”' }}</td>
         </tr>
         <tr>
           <td class="label">Primary contact</td>

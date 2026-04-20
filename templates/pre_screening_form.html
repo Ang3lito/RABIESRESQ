@@ -339,6 +339,7 @@
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label class="mb-2 block text-sm font-medium text-slate-700">Spontaneous Bleeding</label>
+                <p class="mb-2 text-xs text-slate-500">Bleeding that starts on its own from the wound without pressing, squeezing, or washing.</p>
                 <div class="flex gap-3">
                   <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2.5 transition-colors bleeding-spontaneous" data-value="Yes">
                     <input type="radio" name="spontaneous_bleeding" value="Yes" class="sr-only">
@@ -352,6 +353,7 @@
               </div>
               <div>
                 <label class="mb-2 block text-sm font-medium text-slate-700">Induced Bleeding</label>
+                <p class="mb-2 text-xs text-slate-500">Bleeding that appears only after the wound is pressed, squeezed, cleaned, or manipulated.</p>
                 <div class="flex gap-3">
                   <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2.5 transition-colors bleeding-induced" data-value="Yes">
                     <input type="radio" name="induced_bleeding" value="Yes" class="sr-only">
@@ -370,17 +372,17 @@
           <div class="mb-6">
             <label class="mb-2 block text-sm font-semibold text-slate-900">PREVIOUS ANTI-RABIES IMMUNIZATION OF PATIENT</label>
             <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors prev-immunization" data-value="None">
-                <input type="radio" name="patient_prev_immunization" value="None" class="sr-only" required>
-                <span class="text-sm font-medium">None</span>
-              </label>
               <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors prev-immunization" data-value="Completed">
-                <input type="radio" name="patient_prev_immunization" value="Completed" class="sr-only">
+                <input type="radio" name="patient_prev_immunization" value="Completed" class="sr-only" required>
                 <span class="text-sm font-medium">Completed</span>
               </label>
               <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors prev-immunization" data-value="Incomplete">
                 <input type="radio" name="patient_prev_immunization" value="Incomplete" class="sr-only">
                 <span class="text-sm font-medium">Incomplete</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors prev-immunization" data-value="None">
+                <input type="radio" name="patient_prev_immunization" value="None" class="sr-only">
+                <span class="text-sm font-medium">None</span>
               </label>
             </div>
             <div id="prev-vaccine-date-container" class="mt-4 hidden">
@@ -447,13 +449,13 @@
                 <input type="radio" name="animal_vaccination" value="Updated" class="sr-only" required>
                 <span class="text-sm font-medium">Updated</span>
               </label>
-              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors animal-vaccination" data-value="None">
-                <input type="radio" name="animal_vaccination" value="None" class="sr-only">
-                <span class="text-sm font-medium">None</span>
-              </label>
               <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors animal-vaccination" data-value="Not Updated">
                 <input type="radio" name="animal_vaccination" value="Not Updated" class="sr-only">
                 <span class="text-sm font-medium">Not Updated</span>
+              </label>
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors animal-vaccination" data-value="None">
+                <input type="radio" name="animal_vaccination" value="None" class="sr-only">
+                <span class="text-sm font-medium">None</span>
               </label>
             </div>
           </div>
@@ -1094,6 +1096,26 @@ function formatAppointmentDisplay(isoStr) {
   }
 }
 
+function parseSlotDateTime(slotStr) {
+  if (!slotStr) return null;
+  var raw = String(slotStr).trim();
+  if (!raw) return null;
+  var normalized = raw.replace('T', ' ');
+  var m = normalized.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (m) {
+    var y = parseInt(m[1], 10);
+    var mo = parseInt(m[2], 10) - 1;
+    var d = parseInt(m[3], 10);
+    var h = parseInt(m[4], 10);
+    var mi = parseInt(m[5], 10);
+    var s = m[6] ? parseInt(m[6], 10) : 0;
+    return new Date(y, mo, d, h, mi, s);
+  }
+  var parsed = new Date(raw);
+  if (isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
 function populateSummary() {
   collectStepData(1);
   collectStepData(2);
@@ -1302,7 +1324,10 @@ function buildCalendar() {
     .then(function(r) { return r.json(); })
     .then(function(slots) {
       slotsByDate = {};
+      var now = new Date();
       slots.forEach(function(s) {
+        var slotDtObj = parseSlotDateTime(s.slot_datetime);
+        if (!slotDtObj || slotDtObj <= now) return;
         var dt = s.slot_datetime ? s.slot_datetime.slice(0, 10) : '';
         if (dt) {
           if (!slotsByDate[dt]) slotsByDate[dt] = [];
@@ -1414,9 +1439,13 @@ function onAvailabilityDateClick(dateStr) {
   document.getElementById('appointment_slot_id').value = '';
   document.getElementById('appointment_datetime').value = '';
   // Use preloaded slotsByDate so every green date always shows its times
-  var slots = slotsByDate[dateStr] || [];
+  var now = new Date();
+  var slots = (slotsByDate[dateStr] || []).filter(function(s) {
+    var slotDtObj = parseSlotDateTime(s.slot_datetime);
+    return !!slotDtObj && slotDtObj > now;
+  });
   if (!slots || slots.length === 0) {
-    noSlots.textContent = 'No available times. Please contact the clinic or try another date.';
+    noSlots.textContent = 'No available future times for this date.';
     noSlots.classList.remove('hidden');
     return;
   }

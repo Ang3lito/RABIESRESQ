@@ -1,8 +1,12 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <title>Case Record - {{ (case.patient_name or 'Patient')|namecase }} (Case {{ case.id }})</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}?v=4" />
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}?v=4" />
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}?v=4" />
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}?v=4" />
     <style>
       @page {
         size: 215.9mm 330.2mm;
@@ -243,13 +247,13 @@
             <td>
               <div class="field-label" style="margin-bottom: 4px;">Anti-Rabies Details</div>
               <table style="width: 100%;" cellpadding="0" cellspacing="0">
-                <tr><td class="field-label">ANTI-RABIES</td><td class="field-value" style="text-align: right;">{{ vaccination_card.anti_rabies or '—' }}</td></tr>
-                <tr><td class="field-label">Vaccine</td><td class="field-value" style="text-align: right;">{{ vaccination_card.get('form_vc_anti_rabies_vaccine') or '—' }}</td></tr>
-                <tr><td class="field-label">Batch No.</td><td class="field-value" style="text-align: right;">{{ vaccination_card.pcec_batch or '—' }}</td></tr>
+                <tr><td class="field-label">ANTI-RABIES</td><td class="field-value" style="text-align: right;">{{ vaccination_card.anti_rabies or 'â€”' }}</td></tr>
+                <tr><td class="field-label">Vaccine</td><td class="field-value" style="text-align: right;">{{ vaccination_card.get('form_vc_anti_rabies_vaccine') or 'â€”' }}</td></tr>
+                <tr><td class="field-label">Batch No.</td><td class="field-value" style="text-align: right;">{{ vaccination_card.pcec_batch or 'â€”' }}</td></tr>
                 <tr>
                   <td class="field-label">Mfg / Expiry</td>
                   <td class="field-value" style="text-align: right;">
-                    {{ vaccination_card.pcec_mfg_date or '—' }} / {{ vaccination_card.pcec_expiry or '—' }}
+                    {{ vaccination_card.pcec_mfg_date or 'â€”' }} / {{ vaccination_card.pcec_expiry or 'â€”' }}
                   </td>
                 </tr>
               </table>
@@ -257,12 +261,12 @@
             <td>
               <div class="field-label" style="margin-bottom: 4px;">Other Prophylaxis Given</div>
               <table style="width: 100%;" cellpadding="0" cellspacing="0">
-                <tr><td class="field-label">Tetanus Prophylaxis</td><td class="field-value" style="text-align: right;">{{ vaccination_card.tetanus_prophylaxis or '—' }}</td></tr>
-                <tr><td class="field-label">Tetanus Toxoid / ATS / HTIG</td><td class="field-value" style="text-align: right;">{{ vaccination_card.tetanus_toxoid or vaccination_card.ats or vaccination_card.htig or '—' }}</td></tr>
-                <tr><td class="field-label">Tetanus Batch</td><td class="field-value" style="text-align: right;">{{ vaccination_card.tetanus_batch or '—' }}</td></tr>
+                <tr><td class="field-label">Tetanus Prophylaxis</td><td class="field-value" style="text-align: right;">{{ vaccination_card.tetanus_prophylaxis or 'â€”' }}</td></tr>
+                <tr><td class="field-label">Tetanus Toxoid / ATS / HTIG</td><td class="field-value" style="text-align: right;">{{ vaccination_card.tetanus_toxoid or vaccination_card.ats or vaccination_card.htig or 'â€”' }}</td></tr>
+                <tr><td class="field-label">Tetanus Batch</td><td class="field-value" style="text-align: right;">{{ vaccination_card.tetanus_batch or 'â€”' }}</td></tr>
                 <tr>
                   <td class="field-label">Tetanus Mfg / Expiry</td>
-                  <td class="field-value" style="text-align: right;">{{ vaccination_card.tetanus_mfg_date or '—' }} / {{ vaccination_card.tetanus_expiry or '—' }}</td>
+                  <td class="field-value" style="text-align: right;">{{ vaccination_card.tetanus_mfg_date or 'â€”' }} / {{ vaccination_card.tetanus_expiry or 'â€”' }}</td>
                 </tr>
               </table>
             </td>
@@ -295,11 +299,11 @@
             {% set row = card_doses_by_type.pre_exposure[day] if card_doses_by_type.pre_exposure is defined and day in card_doses_by_type.pre_exposure else None %}
             <tr>
               <td class="dose-day">DAY {{ day }}</td>
-              <td>{{ row.dose_date if row and row.dose_date else '—' }}</td>
-              <td>{{ row.type_of_vaccine if row and row.type_of_vaccine else '—' }}</td>
-              <td>{{ row.dose if row and row.dose else '—' }}</td>
-              <td>{{ row.route_site if row and row.route_site else '—' }}</td>
-              <td>{{ row.given_by if row and row.given_by else '—' }}</td>
+              <td>{{ row.dose_date if row and row.dose_date else 'â€”' }}</td>
+              <td>{{ row.type_of_vaccine if row and row.type_of_vaccine else 'â€”' }}</td>
+              <td>{{ row.dose if row and row.dose else 'â€”' }}</td>
+              <td>{{ row.route_site if row and row.route_site else 'â€”' }}</td>
+              <td>{{ row.given_by if row and row.given_by else 'â€”' }}</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -322,11 +326,11 @@
             {% set row = card_doses_by_type.post_exposure[day] if card_doses_by_type.post_exposure is defined and day in card_doses_by_type.post_exposure else None %}
             <tr>
               <td class="dose-day">DAY {{ day }}</td>
-              <td>{{ row.dose_date if row and row.dose_date else '—' }}</td>
-              <td>{{ row.type_of_vaccine if row and row.type_of_vaccine else '—' }}</td>
-              <td>{{ row.dose if row and row.dose else '—' }}</td>
-              <td>{{ row.route_site if row and row.route_site else '—' }}</td>
-              <td>{{ row.given_by if row and row.given_by else '—' }}</td>
+              <td>{{ row.dose_date if row and row.dose_date else 'â€”' }}</td>
+              <td>{{ row.type_of_vaccine if row and row.type_of_vaccine else 'â€”' }}</td>
+              <td>{{ row.dose if row and row.dose else 'â€”' }}</td>
+              <td>{{ row.route_site if row and row.route_site else 'â€”' }}</td>
+              <td>{{ row.given_by if row and row.given_by else 'â€”' }}</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -349,11 +353,11 @@
             {% set row = card_doses_by_type.booster[day] if card_doses_by_type.booster is defined and day in card_doses_by_type.booster else None %}
             <tr>
               <td class="dose-day">DAY {{ day }}</td>
-              <td>{{ row.dose_date if row and row.dose_date else '—' }}</td>
-              <td>{{ row.type_of_vaccine if row and row.type_of_vaccine else '—' }}</td>
-              <td>{{ row.dose if row and row.dose else '—' }}</td>
-              <td>{{ row.route_site if row and row.route_site else '—' }}</td>
-              <td>{{ row.given_by if row and row.given_by else '—' }}</td>
+              <td>{{ row.dose_date if row and row.dose_date else 'â€”' }}</td>
+              <td>{{ row.type_of_vaccine if row and row.type_of_vaccine else 'â€”' }}</td>
+              <td>{{ row.dose if row and row.dose else 'â€”' }}</td>
+              <td>{{ row.route_site if row and row.route_site else 'â€”' }}</td>
+              <td>{{ row.given_by if row and row.given_by else 'â€”' }}</td>
             </tr>
           {% endfor %}
         </tbody>
