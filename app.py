@@ -955,17 +955,7 @@ def _get_admin_dashboard_notifications(db, clinic_id: int) -> list[dict[str, obj
         ).fetchone()["n"]
         or 0
     )
-    if pending:
-        out.append(
-            {
-                "type": "case",
-                "page_key": "patients",
-                "count": int(pending),
-                "message": "bite case(s) still pending at this clinic.",
-                "link_href": url_for("admin_patients"),
-                "recipient_label": None,
-            }
-        )
+    # Removed 'case' notification from here to reduce redundancy; handled by global support banner.
     today_appts = (
         db.execute(
             """
@@ -3869,6 +3859,109 @@ def create_app():
             return {}
 
     @app.context_processor
+    def _inject_support_banner_stats():
+        try:
+            role = session.get("role")
+            if role not in ["system_admin", "clinic_personnel"]:
+                return {}
+            
+            user_id = session.get("user_id")
+            if not user_id:
+                return {}
+                
+            db = get_db()
+            clinic_id = None
+            
+            if role == "system_admin":
+                clinic = _get_singleton_clinic_row(db)
+                if clinic:
+                    clinic_id = clinic["id"]
+            else:
+                staff = db.execute("SELECT clinic_id FROM clinic_personnel WHERE user_id = ?", (user_id,)).fetchone()
+                if staff:
+                    clinic_id = staff["clinic_id"]
+            
+            if clinic_id:
+                # 1. Check for High Risk Cases first (Category III or High Risk)
+                high_risk_count = db.execute(
+                    """
+                    SELECT COUNT(*) as n FROM cases 
+                    WHERE clinic_id = ? 
+                    AND LOWER(COALESCE(case_status, 'pending')) = 'pending'
+                    AND (LOWER(category) = 'category iii' OR LOWER(risk_level) = 'high')
+                    """,
+                    (clinic_id,)
+                ).fetchone()["n"]
+
+                # 2. Count all Pending Cases
+                total_pending = db.execute(
+                    "SELECT COUNT(*) as n FROM cases WHERE clinic_id = ? AND LOWER(COALESCE(case_status, 'pending')) = 'pending'",
+                    (clinic_id,)
+                ).fetchone()["n"]
+                
+                # 3. Count Due Vaccinations (for staff)
+                due_vax_count = 0
+                if role == "clinic_personnel":
+                    due_vax_count = _get_staff_due_vaccinations_count(clinic_id)
+                
+                other_pending = total_pending - high_risk_count
+                
+                # Determine URLs
+                if role == "system_admin":
+                    base_url = url_for("admin_patients", status="pending")
+                    high_risk_url = url_for("admin_patients", status="pending", category="category iii")
+                    vax_url = "#"
+                else:
+                    base_url = url_for("staff_patients", status="pending")
+                    high_risk_url = url_for("staff_patients", status="pending", category="category iii")
+                    vax_url = url_for("staff_vaccinations")
+                
+                # Priority messaging logic
+                if high_risk_count > 0:
+                    status = 'high_risk'
+                    button_text = 'Review Now'
+                    view_url = high_risk_url
+                elif total_pending > 0 or due_vax_count > 0:
+                    status = 'pending'
+                    button_text = 'View Details'
+                    view_url = base_url if total_pending > 0 else vax_url
+                else:
+                    status = 'all_clear'
+                    button_text = 'View Records'
+                    view_url = base_url
+
+                return {
+                    "support_banner_count": total_pending,
+                    "high_risk_count": high_risk_count,
+                    "other_pending_count": other_pending,
+                    "due_vax_count": due_vax_count,
+                    "support_banner_url": view_url,
+                    "all_cases_url": base_url,
+                    "vax_url": vax_url,
+                    "banner_status": status,
+                    "banner_text": "cases awaiting review",
+                    "banner_subtext": "You’re keeping the clinic safe",
+                    "banner_button_text": button_text,
+                    "is_admin": role == "system_admin"
+                }
+            elif role == "patient":
+                # For patients, count unread items (notifications, etc)
+                uc = _get_patient_unread_counts(int(user_id))
+                total_unread = sum(int(v) for v in uc.values())
+                
+                return {
+                    "support_banner_count": total_unread,
+                    "support_banner_url": url_for("patient_notifications"),
+                    "banner_text": "unread notifications",
+                    "banner_subtext": "You’re staying informed—view details to continue.",
+                    "banner_status": "pending" if total_unread > 0 else "all_clear",
+                    "banner_button_text": "View Details"
+                }
+        except Exception:
+            pass
+        return {}
+
+    @app.context_processor
     def _inject_admin_sidebar_identity():
         try:
             if session.get("role") != "system_admin":
@@ -6231,32 +6324,43 @@ def create_app():
         flash("Invalid update request.", "error")
         return redirect(url_for("staff_profile"))
 
-    @app.route("/staff/patients/new-account", methods=["GET", "POST"])
-    @role_required("clinic_personnel", "system_admin")
+    @app.route("/staff/patient/new", methods=["POST"])
     def staff_new_patient_account():
-        if session.get("role") == "system_admin":
-            return redirect(url_for("admin_dashboard"))
-
-        db = get_db()
-        staff = db.execute(
-            """
-            SELECT cp.*, u.username, u.email
-            FROM clinic_personnel cp
-            JOIN users u ON u.id = cp.user_id
-            WHERE cp.user_id = ?
-            """,
-            (session["user_id"],),
-        ).fetchone()
-        if staff is None:
-            session.clear()
-            flash("Account profile missing, contact admin.", "error")
+        role = session.get("role")
+        if role not in ["system_admin", "clinic_personnel"]:
             return redirect(url_for("auth.login"))
 
-        staff_display_name = _staff_display_name(staff)
+        db = get_db()
+        staff = None
+        clinic_id = None
+        staff_id = None
+        display_name = "Administrator"
+
+        if role == "system_admin":
+            clinic_row = _get_singleton_clinic_row(db)
+            if clinic_row:
+                clinic_id = clinic_row["id"]
+        else:
+            staff = db.execute(
+                """
+                SELECT cp.*, u.username, u.email
+                FROM clinic_personnel cp
+                JOIN users u ON u.id = cp.user_id
+                WHERE cp.user_id = ?
+                """,
+                (session["user_id"],),
+            ).fetchone()
+            if staff is None:
+                session.clear()
+                flash("Account profile missing, contact admin.", "error")
+                return redirect(url_for("auth.login"))
+            clinic_id = staff["clinic_id"]
+            staff_id = staff["id"]
+            display_name = _staff_display_name(staff)
 
         clinic_row = db.execute(
             "SELECT id, name FROM clinics WHERE id = ?",
-            (staff["clinic_id"],),
+            (clinic_id,),
         ).fetchone()
         clinics = [clinic_row] if clinic_row else []
 
@@ -6311,7 +6415,7 @@ def create_app():
                         return render_template(
                             "staff_new_patient.html",
                             staff=staff,
-                            staff_display_name=staff_display_name,
+                            staff_display_name=display_name,
                             patient=patient,
                             clinics=clinics,
                             breadcrumbs=breadcrumbs,
@@ -6392,7 +6496,7 @@ def create_app():
                         """,
                         (
                             patient_id,
-                            staff["clinic_id"],
+                            clinic_id,
                             pdata["exposure_date"],
                             pdata["exposure_time"] or None,
                             pdata["final_place_of_exposure"],
@@ -6445,8 +6549,8 @@ def create_app():
                         """,
                         (
                             patient_id,
-                            staff["id"],
-                            staff["clinic_id"],
+                            staff_id,
+                            clinic_id,
                             walk_in_at,
                             walk_in_status,
                             "Walk-in",
@@ -6473,6 +6577,8 @@ def create_app():
                         flash("Patient and case created. Credentials were sent to the provided email.", "success")
 
                     db.commit()
+                    if role == "system_admin":
+                        return redirect(url_for("admin_case_details", case_id=case_id))
                     return redirect(url_for("view_patient_case", case_id=case_id))
                 except Exception:
                     db.rollback()
@@ -6489,14 +6595,14 @@ def create_app():
         return render_template(
             "staff_new_patient.html",
             staff=staff,
-            staff_display_name=staff_display_name,
+            staff_display_name=display_name,
             patient=patient_ctx,
             clinics=clinics,
             breadcrumbs=breadcrumbs,
             active_page="cases",
             pre_screening_embedded=False,
             pre_screening_form_action=url_for("staff_new_patient_account"),
-            pre_screening_cancel_url=url_for("staff_patients"),
+            pre_screening_cancel_url=url_for("admin_patients") if role == "system_admin" else url_for("staff_patients"),
             pre_screening_submit_label="Create patient account",
         )
 
@@ -7472,23 +7578,33 @@ def create_app():
     @app.get("/staff/cases/export.csv")
     @role_required("clinic_personnel", "system_admin")
     def staff_cases_export_csv():
-        if session.get("role") == "system_admin":
-            return redirect(url_for("admin_dashboard"))
         db = get_db()
-        staff = db.execute(
-            """
-            SELECT cp.*, u.username, u.email, c.name AS clinic_name
-            FROM clinic_personnel cp
-            JOIN users u ON u.id = cp.user_id
-            JOIN clinics c ON c.id = cp.clinic_id
-            WHERE cp.user_id = ?
-            """,
-            (session["user_id"],),
-        ).fetchone()
-        if staff is None:
-            session.clear()
-            flash("Account profile missing, contact admin.", "error")
-            return redirect(url_for("auth.login"))
+        role = session.get("role")
+        clinic_id = None
+        clinic_name = "Clinic"
+
+        if role == "system_admin":
+            clinic_row = _get_singleton_clinic_row(db)
+            if clinic_row:
+                clinic_id = clinic_row["id"]
+                clinic_name = clinic_row["name"]
+        else:
+            staff = db.execute(
+                """
+                SELECT cp.*, u.username, u.email, c.name AS clinic_name
+                FROM clinic_personnel cp
+                JOIN users u ON u.id = cp.user_id
+                JOIN clinics c ON c.id = cp.clinic_id
+                WHERE cp.user_id = ?
+                """,
+                (session["user_id"],),
+            ).fetchone()
+            if staff is None:
+                session.clear()
+                flash("Account profile missing, contact admin.", "error")
+                return redirect(url_for("auth.login"))
+            clinic_id = staff["clinic_id"]
+            clinic_name = staff["clinic_name"]
 
         # Reuse staff_patients query params by calling that route's logic shape.
         q = request.args.to_dict(flat=True)
@@ -7528,7 +7644,7 @@ def create_app():
             "c.clinic_id = ?",
             "LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('archived', 'queued', 'scheduled')",
         ]
-        params: list[object] = [staff["clinic_id"]]
+        params: list[object] = [clinic_id]
         if category != "all":
             where_clauses.append("LOWER(COALESCE(c.risk_level, c.category, '')) = ?")
             params.append(category)
@@ -7842,30 +7958,39 @@ def create_app():
     @app.get("/staff/cases/export.pdf")
     @role_required("clinic_personnel", "system_admin")
     def staff_cases_export_pdf():
-        if session.get("role") == "system_admin":
-            return redirect(url_for("admin_dashboard"))
         try:
             from xhtml2pdf import pisa  # type: ignore[import]
         except Exception:
             flash("PDF generation is temporarily unavailable. Please contact the clinic.", "error")
             return redirect(url_for("staff_patients"))
 
-        # Reuse CSV builder output and render in a PDF-friendly template.
         db = get_db()
-        staff = db.execute(
-            """
-            SELECT cp.*, u.username, u.email, c.name AS clinic_name
-            FROM clinic_personnel cp
-            JOIN users u ON u.id = cp.user_id
-            JOIN clinics c ON c.id = cp.clinic_id
-            WHERE cp.user_id = ?
-            """,
-            (session["user_id"],),
-        ).fetchone()
-        if staff is None:
-            session.clear()
-            flash("Account profile missing, contact admin.", "error")
-            return redirect(url_for("auth.login"))
+        role = session.get("role")
+        clinic_id = None
+        clinic_name = "Clinic"
+
+        if role == "system_admin":
+            clinic_row = _get_singleton_clinic_row(db)
+            if clinic_row:
+                clinic_id = clinic_row["id"]
+                clinic_name = clinic_row["name"]
+        else:
+            staff = db.execute(
+                """
+                SELECT cp.*, u.username, u.email, c.name AS clinic_name
+                FROM clinic_personnel cp
+                JOIN users u ON u.id = cp.user_id
+                JOIN clinics c ON c.id = cp.clinic_id
+                WHERE cp.user_id = ?
+                """,
+                (session["user_id"],),
+            ).fetchone()
+            if staff is None:
+                session.clear()
+                flash("Account profile missing, contact admin.", "error")
+                return redirect(url_for("auth.login"))
+            clinic_id = staff["clinic_id"]
+            clinic_name = staff["clinic_name"]
 
         # Fetch same rows as CSV export by calling the SQL snippet directly.
         q = request.args.to_dict(flat=True)
@@ -7910,7 +8035,7 @@ def create_app():
             "c.clinic_id = ?",
             "LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('archived', 'queued', 'scheduled')",
         ]
-        params: list[object] = [staff["clinic_id"]]
+        params: list[object] = [clinic_id]
         if category != "all":
             where_clauses.append("LOWER(COALESCE(c.risk_level, c.category, '')) = ?")
             params.append(category)
@@ -8190,11 +8315,11 @@ def create_app():
             date_from = ""
             date_to = ""
 
-        # Default view: vaccinations from the current week (latest to oldest).
+        # Default view: vaccinations from the past week and the next week.
         if not date_from and not date_to:
             today = datetime.now().date()
-            date_to = today.isoformat()
-            date_from = (today - timedelta(days=6)).isoformat()
+            date_to = (today + timedelta(days=7)).isoformat()
+            date_from = (today - timedelta(days=7)).isoformat()
 
         try:
             page = int(request.args.get("page", "1"))
@@ -8911,8 +9036,6 @@ def create_app():
               AND DATE(vcd.dose_date) >= DATE(?)
               AND DATE(vcd.dose_date) <= DATE(?)
               AND TRIM(COALESCE(vcd.dose_date, '')) <> ''
-              AND TRIM(COALESCE(vcd.type_of_vaccine, '')) <> ''
-              AND TRIM(COALESCE(vcd.given_by, '')) <> ''
             """,
             (clinic_id, date_from, date_to),
         ).fetchall()
@@ -11151,9 +11274,19 @@ def create_app():
             params.append(case_status)
 
         if search:
-            q = search.strip().lower().removeprefix("c-").strip()
-            where_clauses.append("CAST(c.id AS TEXT) LIKE ?")
-            params.append(f"%{q}%")
+            search_clean = search.strip().lower()
+            # If it looks like a case code (C-00001), extract the numeric ID part
+            q_id = search_clean.removeprefix("c-").lstrip("0")
+            if not q_id and "0" in search_clean: # handle "C-00000" or just "0"
+                q_id = "0"
+            
+            where_clauses.append("""
+                (CAST(c.id AS TEXT) LIKE ? 
+                 OR LOWER(p.first_name) LIKE ? 
+                 OR LOWER(p.last_name) LIKE ? 
+                 OR LOWER(u.email) LIKE ?)
+            """)
+            params.extend([f"%{q_id}%", f"%{search_clean}%", f"%{search_clean}%", f"%{search_clean}%"])
 
         where_sql = " AND ".join(where_clauses)
 
@@ -12129,7 +12262,7 @@ def create_app():
         page = request.args.get("page", 1, type=int) or 1
         if page < 1:
             page = 1
-        per_page = 50
+        per_page = 10
 
         total_row = db.execute("SELECT COUNT(*) AS n FROM user_session_logs").fetchone()
         total = int(total_row["n"] or 0)

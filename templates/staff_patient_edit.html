@@ -9,7 +9,7 @@
       {% if crumb.href %}
         <a href="{{ crumb.href }}" class="hover:text-slate-700">{{ crumb.label }}</a>
       {% else %}
-        <span class="font-bold text-blue-600">{{ crumb.label }}</span>
+        <span class="font-bold text-[#1A4D2E]">{{ crumb.label }}</span>
       {% endif %}
       {% if not loop.last %}
         <span>/</span>
@@ -20,7 +20,7 @@
 
 {% block main_content %}
   <section class="mt-6">
-            <h1 class="text-2xl font-bold text-blue-900 sm:text-4xl lg:text-5xl">Edit Information</h1>
+            <h1 class="text-2xl font-bold text-[#1A4D2E] sm:text-4xl lg:text-5xl">Edit Information</h1>
             <p class="mt-1 text-slate-500">Update pre-screening forms for RRQ-{{ case.case_id }}.</p>
           </section>
 
@@ -30,8 +30,8 @@
             data-confirm="Save changes to this case information?"
             data-confirm-variant="primary"
           >
-            <article class="rounded-2xl border border-slate-200 bg-white p-5">
-              <h2 class="text-xl font-semibold text-blue-900 sm:text-2xl lg:text-3xl">Victim Info Pre-screening Form</h2>
+            <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+              <h2 class="text-xl font-semibold text-[#1A4D2E] sm:text-2xl lg:text-3xl">Victim Info Pre-screening Form</h2>
               <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
                   <label class="mb-1 block text-sm text-slate-600" for="full_name">Full Name</label>
@@ -40,7 +40,7 @@
                     name="full_name"
                     type="text"
                     value="{{ (case.first_name or '') ~ ' ' ~ (case.last_name or '') }}"
-                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
                   />
                 </div>
                 <div>
@@ -50,7 +50,7 @@
                     name="age"
                     type="text"
                     value="{{ case.age or '' }}"
-                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
                   />
                 </div>
                 <div>
@@ -60,7 +60,7 @@
                     name="address"
                     type="text"
                     value="{{ case.address or '' }}"
-                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
                   />
                 </div>
                 <div>
@@ -70,7 +70,7 @@
                     name="phone_number"
                     type="text"
                     value="{{ case.phone_number or '' }}"
-                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
                   />
                 </div>
                 <div>
@@ -80,14 +80,14 @@
                     name="email"
                     type="email"
                     value="{{ case.email or '' }}"
-                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
                   />
                 </div>
               </div>
             </article>
 
-            <article class="rounded-2xl border border-slate-200 bg-white p-5">
-              <h2 class="text-xl font-semibold text-blue-900 sm:text-2xl lg:text-3xl">Bite Details Pre-screening Form</h2>
+            <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+              <h2 class="text-xl font-semibold text-[#1A4D2E] sm:text-2xl lg:text-3xl">Bite Details Pre-screening Form</h2>
               {% set ad_raw = (case.animal_detail or '')|trim %}
               {% set animal_type_sel = '' %}
               {% set other_animal_val = '' %}
@@ -123,7 +123,7 @@
                     name="exposure_date"
                     type="date"
                     value="{{ case.exposure_date or '' }}"
-                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
                   />
                 </div>
                 <div>
@@ -131,7 +131,7 @@
                   <select
                     id="type_of_exposure"
                     name="type_of_exposure"
-                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
                   >
                     <option value="">Select…</option>
                     {% for opt in exposure_opts %}
@@ -144,7 +144,7 @@
                   <select
                     id="animal_type"
                     name="animal_type"
-                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
                   >
                     <option value="">Select…</option>
                     {% for opt in ['Dog', 'Cat', 'Others'] %}
@@ -157,7 +157,7 @@
                   <select
                     id="wound_description"
                     name="wound_description"
-                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
                   >
                     <option value="">Select…</option>
                     {% for opt in wound_opts %}
@@ -172,7 +172,7 @@
                     name="other_animal"
                     type="text"
                     value="{{ other_animal_val }}"
-                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
                     placeholder="Required when Animal is Others"
                   />
                 </div>
@@ -181,7 +181,7 @@
                   <select
                     id="bleeding_type"
                     name="bleeding_type"
-                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
                   >
                     <option value="">Select…</option>
                     {% for opt in bleeding_opts %}
@@ -194,7 +194,7 @@
                   <select
                     id="local_treatment"
                     name="local_treatment"
-                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
                   >
                     <option value="">Select…</option>
                     {% for opt in ['Wash with Water Only', 'Washed with Water and Soap', 'Applied Garlic, etc.', 'Others'] %}
@@ -209,7 +209,7 @@
                     name="other_treatment"
                     type="text"
                     value="{{ other_treatment_val }}"
-                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
                     placeholder="Required when Local Treatment is Others"
                   />
                 </div>
@@ -220,7 +220,7 @@
                     name="patient_prev_immunization"
                     type="text"
                     value="{{ case.patient_prev_immunization or '' }}"
-                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
                   />
                 </div>
                 <div>
@@ -230,7 +230,7 @@
                     name="prev_vaccine_date"
                     type="date"
                     value="{{ case.prev_vaccine_date or '' }}"
-                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
                   />
                 </div>
                 <div>
@@ -240,7 +240,7 @@
                     name="tetanus_date"
                     type="date"
                     value="{{ case.tetanus_date or '' }}"
-                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
                   />
                 </div>
                 <div>
@@ -248,7 +248,7 @@
                   <select
                     id="hrtig_immunization"
                     name="hrtig_immunization"
-                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
                   >
                     <option value="" {{ "selected" if case.hrtig_immunization is none else "" }}>N/A</option>
                     <option value="1" {{ "selected" if case.hrtig_immunization in [1, "1", true] else "" }}>Yes</option>
@@ -258,8 +258,8 @@
               </div>
             </article>
 
-            <article class="rounded-2xl border border-slate-200 bg-white p-5">
-              <h2 class="text-xl font-semibold text-blue-900 sm:text-2xl lg:text-3xl">WHO category (decision-support override)</h2>
+            <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+              <h2 class="text-xl font-semibold text-[#1A4D2E] sm:text-2xl lg:text-3xl">WHO category (decision-support override)</h2>
               <p class="mt-1 text-sm text-slate-600">
                 Adjust the final WHO exposure category when it differs from the system suggestion. This does not replace clinical judgment. Use Save Changes at the bottom of the page to persist all edits.
               </p>
@@ -270,7 +270,7 @@
                   <dt class="text-slate-500">Auto (system):</dt>
                   <dd><span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-800">{{ who_auto }}</span></dd>
                   <dt class="text-slate-500">Current final:</dt>
-                  <dd><span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">{{ who_final }}</span></dd>
+                  <dd><span class="rounded-full bg-[#1A4D2E]/10 px-3 py-1 text-xs font-semibold text-[#1A4D2E]">{{ who_final }}</span></dd>
                 </div>
                 {% if case.who_category_reasons %}
                   <div>
@@ -288,7 +288,7 @@
               <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div>
                   <label for="who_category_final" class="mb-1 block text-xs font-medium text-slate-600">Set final category</label>
-                  <select id="who_category_final" name="who_category_final" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none ring-emerald-300 focus:ring">
+                  <select id="who_category_final" name="who_category_final" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none ring-[#1A4D2E]/30 focus:ring">
                     {% for opt in ['Category I','Category II','Category III','Unknown'] %}
                       <option value="{{ opt }}" {{ 'selected' if opt == who_final else '' }}>{{ opt }}</option>
                     {% endfor %}
@@ -296,13 +296,13 @@
                 </div>
                 <div class="md:col-span-2">
                   <label for="override_reason" class="mb-1 block text-xs font-medium text-slate-600">Reason for override (required if final category differs from system)</label>
-                  <input id="override_reason" name="override_reason" type="text" maxlength="300" value="{{ case.who_category_override_reason or '' }}" placeholder="Document clinical reason when overriding" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                  <input id="override_reason" name="override_reason" type="text" maxlength="300" value="{{ case.who_category_override_reason or '' }}" placeholder="Document clinical reason when overriding" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
                 </div>
               </div>
             </article>
 
-            <article class="rounded-2xl border border-slate-200 bg-white p-5">
-              <h2 class="text-xl font-semibold text-blue-900 sm:text-2xl lg:text-3xl">Vaccination Record Card</h2>
+            <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+              <h2 class="text-xl font-semibold text-[#1A4D2E] sm:text-2xl lg:text-3xl">Vaccination Record Card</h2>
               <div class="mt-4 space-y-5">
                 {% set ar_sel = (vaccination_card.get('form_vc_anti_rabies_vaccine') or '') %}
                 {% set ta_sel = (vaccination_card.get('form_vc_tetanus_agent') or '') %}
@@ -314,7 +314,7 @@
                     <div class="space-y-3">
                       <div>
                         <label class="mb-1 block text-xs font-semibold uppercase text-slate-600" for="vc_anti_rabies_vaccine">PVRV/PCEC/ERIG/HRIG</label>
-                        <select id="vc_anti_rabies_vaccine" name="vc_anti_rabies_vaccine" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none ring-emerald-300 focus:ring">
+                        <select id="vc_anti_rabies_vaccine" name="vc_anti_rabies_vaccine" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none ring-[#1A4D2E]/30 focus:ring">
                           <option value="">—</option>
                           {% for o in ar_known %}
                           <option value="{{ o }}" {{ 'selected' if ar_sel == o else '' }}>{{ o }}</option>
@@ -328,15 +328,15 @@
                       <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
                         <div>
                           <label class="mb-1 block text-xs text-slate-500" for="vc_pcec_batch">Batch No.</label>
-                          <input id="vc_pcec_batch" name="vc_pcec_batch" type="text" value="{{ vaccination_card.pcec_batch or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                          <input id="vc_pcec_batch" name="vc_pcec_batch" type="text" value="{{ vaccination_card.pcec_batch or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
                         </div>
                         <div>
                           <label class="mb-1 block text-xs text-slate-500" for="vc_pcec_mfg_date">Mfg. Date</label>
-                          <input id="vc_pcec_mfg_date" name="vc_pcec_mfg_date" type="date" value="{{ vaccination_card.pcec_mfg_date or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                          <input id="vc_pcec_mfg_date" name="vc_pcec_mfg_date" type="date" value="{{ vaccination_card.pcec_mfg_date or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
                         </div>
                         <div>
                           <label class="mb-1 block text-xs text-slate-500" for="vc_pcec_expiry">Expiry Date</label>
-                          <input id="vc_pcec_expiry" name="vc_pcec_expiry" type="date" min="{{ expiry_min_date }}" value="{{ vaccination_card.pcec_expiry or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                          <input id="vc_pcec_expiry" name="vc_pcec_expiry" type="date" min="{{ expiry_min_date }}" value="{{ vaccination_card.pcec_expiry or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
                         </div>
                       </div>
                     </div>
@@ -347,7 +347,7 @@
                       <p class="text-xs text-slate-500">Tetanus product and batch details are saved with <strong>Save Changes</strong>.</p>
                       <div>
                         <label class="mb-1 block text-xs font-semibold uppercase text-slate-600" for="vc_tetanus_agent">Tetanus toxoid/ATS/HTIG</label>
-                        <select id="vc_tetanus_agent" name="vc_tetanus_agent" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none ring-emerald-300 focus:ring">
+                        <select id="vc_tetanus_agent" name="vc_tetanus_agent" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none ring-[#1A4D2E]/30 focus:ring">
                           <option value="">—</option>
                           <optgroup label="TETANUS TOXOID:">
                             <option value="Abhay-TOX" {{ 'selected' if ta_sel == 'Abhay-TOX' else '' }}>Abhay-TOX</option>
@@ -372,15 +372,15 @@
                       <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
                         <div>
                           <label class="mb-1 block text-xs text-slate-500" for="vc_tetanus_batch">Batch No.</label>
-                          <input id="vc_tetanus_batch" name="vc_tetanus_batch" type="text" value="{{ vaccination_card.tetanus_batch or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                          <input id="vc_tetanus_batch" name="vc_tetanus_batch" type="text" value="{{ vaccination_card.tetanus_batch or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
                         </div>
                         <div>
                           <label class="mb-1 block text-xs text-slate-500" for="vc_tetanus_mfg_date">Mfg. Date</label>
-                          <input id="vc_tetanus_mfg_date" name="vc_tetanus_mfg_date" type="date" value="{{ vaccination_card.tetanus_mfg_date or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                          <input id="vc_tetanus_mfg_date" name="vc_tetanus_mfg_date" type="date" value="{{ vaccination_card.tetanus_mfg_date or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
                         </div>
                         <div>
                           <label class="mb-1 block text-xs text-slate-500" for="vc_tetanus_expiry">Expiry Date</label>
-                          <input id="vc_tetanus_expiry" name="vc_tetanus_expiry" type="date" min="{{ expiry_min_date }}" value="{{ vaccination_card.tetanus_expiry or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                          <input id="vc_tetanus_expiry" name="vc_tetanus_expiry" type="date" min="{{ expiry_min_date }}" value="{{ vaccination_card.tetanus_expiry or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
                         </div>
                       </div>
                     </div>
@@ -408,7 +408,7 @@
                           {% set rs_val = (row.route_site if row and row.route_site else '') %}
                           <tr>
                             <td class="px-2 py-1.5 font-medium">DAY {{ day }}</td>
-                            <td class="px-2 py-1"><input name="vc_pre_{{ day }}_date" type="date" value="{{ row.dose_date if row and row.dose_date else suggested_dates_by_type.pre_exposure.get(day, '') }}" class="w-full min-w-[7rem] cursor-pointer rounded border border-slate-300 px-2 py-1 text-sm outline-none ring-emerald-300 focus:ring" /></td>
+                            <td class="px-2 py-1"><input name="vc_pre_{{ day }}_date" type="date" value="{{ row.dose_date if row and row.dose_date else suggested_dates_by_type.pre_exposure.get(day, '') }}" class="w-full min-w-[7rem] cursor-pointer rounded border border-slate-300 px-2 py-1 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" /></td>
                             <td class="px-2 py-1">
                               <input type="hidden" name="vc_pre_{{ day }}_type" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" data-vc-type />
                               <input type="text" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" readonly class="w-full min-w-[6rem] rounded border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-700" data-vc-type-display />
@@ -419,7 +419,7 @@
                             <td class="px-2 py-1">
                               <input type="hidden" name="vc_pre_{{ day }}_route_site" value="{{ rs_val }}" data-vc-route-site />
                               <div class="relative min-w-[11rem]" data-vc-route-site-widget>
-                                <button type="button" class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-left text-xs text-slate-900 hover:border-emerald-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" data-vc-rs-trigger aria-haspopup="true" aria-expanded="false" aria-controls="vc-rs-pre-{{ day }}-panel">
+                                <button type="button" class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-left text-xs text-[#1A4D2E] hover:border-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" data-vc-rs-trigger aria-haspopup="true" aria-expanded="false" aria-controls="vc-rs-pre-{{ day }}-panel">
                                   <span class="min-w-0 flex-1 truncate" data-vc-rs-trigger-text>Select route &amp; site…</span>
                                   <svg class="h-4 w-4 shrink-0 text-slate-500 transition-transform" data-vc-rs-chevron fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
@@ -427,16 +427,16 @@
                                   <p class="mb-2 text-xs text-slate-500">Select all that apply</p>
                                   <p class="mb-1 text-xs font-semibold text-slate-600">Route</p>
                                   <div class="mb-2 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="ID" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route> ID (Intradermal)</label>
-                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="IM" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route> IM (Intramuscular)</label>
-                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route-other-toggle /> Others</label>
+                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="ID" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-route> ID (Intradermal)</label>
+                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="IM" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-route> IM (Intramuscular)</label>
+                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-route-other-toggle /> Others</label>
                                   </div>
                                   <input type="text" value="" placeholder="Specify other route…" autocomplete="off" class="mb-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs hidden" data-vc-route-other-input />
                                   <p class="mb-1 text-xs font-semibold text-slate-600">Site</p>
                                   <div class="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="upper arm" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site> upper arm</label>
-                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="Anterolateral thigh" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site> Anterolateral thigh</label>
-                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" value="Others" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site-other-toggle> Others</label>
+                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="upper arm" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-site> upper arm</label>
+                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="Anterolateral thigh" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-site> Anterolateral thigh</label>
+                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" value="Others" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-site-other-toggle> Others</label>
                                   </div>
                                   <input type="text" value="" placeholder="Specify other site…" autocomplete="off" class="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs hidden" data-vc-site-other-input />
                                 </div>
@@ -471,7 +471,7 @@
                           {% set rs_val = (row.route_site if row and row.route_site else '') %}
                           <tr>
                             <td class="px-2 py-1.5 font-medium">DAY {{ day }}</td>
-                            <td class="px-2 py-1"><input name="vc_post_{{ day }}_date" type="date" value="{{ row.dose_date if row and row.dose_date else suggested_dates_by_type.post_exposure.get(day, '') }}" class="w-full min-w-[7rem] cursor-pointer rounded border border-slate-300 px-2 py-1 text-sm outline-none ring-emerald-300 focus:ring" /></td>
+                            <td class="px-2 py-1"><input name="vc_post_{{ day }}_date" type="date" value="{{ row.dose_date if row and row.dose_date else suggested_dates_by_type.post_exposure.get(day, '') }}" class="w-full min-w-[7rem] cursor-pointer rounded border border-slate-300 px-2 py-1 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" /></td>
                             <td class="px-2 py-1">
                               <input type="hidden" name="vc_post_{{ day }}_type" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" data-vc-type />
                               <input type="text" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" readonly class="w-full min-w-[6rem] rounded border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-700" data-vc-type-display />
@@ -482,7 +482,7 @@
                             <td class="px-2 py-1">
                               <input type="hidden" name="vc_post_{{ day }}_route_site" value="{{ rs_val }}" data-vc-route-site />
                               <div class="relative min-w-[11rem]" data-vc-route-site-widget>
-                                <button type="button" class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-left text-xs text-slate-900 hover:border-emerald-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" data-vc-rs-trigger aria-haspopup="true" aria-expanded="false" aria-controls="vc-rs-post-{{ day }}-panel">
+                                <button type="button" class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-left text-xs text-[#1A4D2E] hover:border-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" data-vc-rs-trigger aria-haspopup="true" aria-expanded="false" aria-controls="vc-rs-post-{{ day }}-panel">
                                   <span class="min-w-0 flex-1 truncate" data-vc-rs-trigger-text>Select route &amp; site…</span>
                                   <svg class="h-4 w-4 shrink-0 text-slate-500 transition-transform" data-vc-rs-chevron fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
@@ -490,16 +490,16 @@
                                   <p class="mb-2 text-xs text-slate-500">Select all that apply</p>
                                   <p class="mb-1 text-xs font-semibold text-slate-600">Route</p>
                                   <div class="mb-2 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="ID" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route> ID (Intradermal)</label>
-                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="IM" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route> IM (Intramuscular)</label>
-                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route-other-toggle /> Others</label>
+                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="ID" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-route> ID (Intradermal)</label>
+                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="IM" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-route> IM (Intramuscular)</label>
+                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-route-other-toggle /> Others</label>
                                   </div>
                                   <input type="text" value="" placeholder="Specify other route…" autocomplete="off" class="mb-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs hidden" data-vc-route-other-input />
                                   <p class="mb-1 text-xs font-semibold text-slate-600">Site</p>
                                   <div class="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="upper arm" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site> upper arm</label>
-                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="Anterolateral thigh" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site> Anterolateral thigh</label>
-                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" value="Others" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site-other-toggle> Others</label>
+                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="upper arm" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-site> upper arm</label>
+                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="Anterolateral thigh" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-site> Anterolateral thigh</label>
+                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" value="Others" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-site-other-toggle> Others</label>
                                   </div>
                                   <input type="text" value="" placeholder="Specify other site…" autocomplete="off" class="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs hidden" data-vc-site-other-input />
                                 </div>
@@ -534,7 +534,7 @@
                           {% set rs_val = (row.route_site if row and row.route_site else '') %}
                           <tr>
                             <td class="px-2 py-1.5 font-medium">DAY {{ day }}</td>
-                            <td class="px-2 py-1"><input name="vc_booster_{{ day }}_date" type="date" value="{{ row.dose_date if row and row.dose_date else suggested_dates_by_type.booster.get(day, '') }}" class="w-full min-w-[7rem] cursor-pointer rounded border border-slate-300 px-2 py-1 text-sm outline-none ring-emerald-300 focus:ring" /></td>
+                            <td class="px-2 py-1"><input name="vc_booster_{{ day }}_date" type="date" value="{{ row.dose_date if row and row.dose_date else suggested_dates_by_type.booster.get(day, '') }}" class="w-full min-w-[7rem] cursor-pointer rounded border border-slate-300 px-2 py-1 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" /></td>
                             <td class="px-2 py-1">
                               <input type="hidden" name="vc_booster_{{ day }}_type" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" data-vc-type />
                               <input type="text" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" readonly class="w-full min-w-[6rem] rounded border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-700" data-vc-type-display />
@@ -545,7 +545,7 @@
                             <td class="px-2 py-1">
                               <input type="hidden" name="vc_booster_{{ day }}_route_site" value="{{ rs_val }}" data-vc-route-site />
                               <div class="relative min-w-[11rem]" data-vc-route-site-widget>
-                                <button type="button" class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-left text-xs text-slate-900 hover:border-emerald-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" data-vc-rs-trigger aria-haspopup="true" aria-expanded="false" aria-controls="vc-rs-booster-{{ day }}-panel">
+                                <button type="button" class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-left text-xs text-[#1A4D2E] hover:border-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" data-vc-rs-trigger aria-haspopup="true" aria-expanded="false" aria-controls="vc-rs-booster-{{ day }}-panel">
                                   <span class="min-w-0 flex-1 truncate" data-vc-rs-trigger-text>Select route &amp; site…</span>
                                   <svg class="h-4 w-4 shrink-0 text-slate-500 transition-transform" data-vc-rs-chevron fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
@@ -553,16 +553,16 @@
                                   <p class="mb-2 text-xs text-slate-500">Select all that apply</p>
                                   <p class="mb-1 text-xs font-semibold text-slate-600">Route</p>
                                   <div class="mb-2 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="ID" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route> ID (Intradermal)</label>
-                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="IM" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route> IM (Intramuscular)</label>
-                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route-other-toggle /> Others</label>
+                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="ID" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-route> ID (Intradermal)</label>
+                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="IM" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-route> IM (Intramuscular)</label>
+                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-route-other-toggle /> Others</label>
                                   </div>
                                   <input type="text" value="" placeholder="Specify other route…" autocomplete="off" class="mb-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs hidden" data-vc-route-other-input />
                                   <p class="mb-1 text-xs font-semibold text-slate-600">Site</p>
                                   <div class="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="upper arm" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site> upper arm</label>
-                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="Anterolateral thigh" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site> Anterolateral thigh</label>
-                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" value="Others" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site-other-toggle> Others</label>
+                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="upper arm" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-site> upper arm</label>
+                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="Anterolateral thigh" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-site> Anterolateral thigh</label>
+                                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" value="Others" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-site-other-toggle> Others</label>
                                   </div>
                                   <input type="text" value="" placeholder="Specify other site…" autocomplete="off" class="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs hidden" data-vc-site-other-input />
                                 </div>
@@ -578,7 +578,7 @@
 
                 <div>
                   <label class="mb-1 block text-sm font-semibold text-slate-700" for="vc_remarks">Remarks</label>
-                  <textarea id="vc_remarks" name="vc_remarks" rows="3" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none ring-emerald-300 focus:ring">{{ vaccination_card.remarks or '' }}</textarea>
+                  <textarea id="vc_remarks" name="vc_remarks" rows="3" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 focus:ring">{{ vaccination_card.remarks or '' }}</textarea>
                 </div>
               </div>
             </article>
@@ -589,9 +589,9 @@
               {% endfor %}
             </datalist>
 
-            <div class="fixed bottom-5 right-5 z-50 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur">
+            <div class="fixed bottom-5 right-5 z-50 rounded-[2rem] border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur">
               <div class="flex items-center gap-3">
-                <button type="submit" class="rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600">
+                <button type="submit" class="rounded-xl bg-[#1A4D2E] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#1A4D2E]">
                   Save Changes
                 </button>
                 <a href="{{ url_for('view_patient_case', case_id=case.case_id) }}" class="rounded-xl px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-700">

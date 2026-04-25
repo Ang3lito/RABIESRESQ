@@ -1,0 +1,68 @@
+<!-- Reusable Notification Panel Component -->
+<div class="group relative overflow-hidden rounded-[2.5rem] border border-[#1A4D2E]/10 bg-gradient-to-br from-[#1A4D2E]/5 to-white p-6 shadow-sm transition-all hover:shadow-md sm:p-8">
+  {# Decorative background element #}
+  <div class="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#1A4D2E]/5 transition-transform duration-500 group-hover:scale-125"></div>
+  
+  <div class="relative flex flex-col gap-6 sm:flex-row sm:items-center">
+    {# Uplifting Icon Container #}
+    <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white text-[#1A4D2E] shadow-xl shadow-[#1A4D2E]/5 ring-1 ring-[#1A4D2E]/10 transition-transform duration-300 group-hover:scale-110 {{ 'text-red-600' if banner_status == 'high_risk' else '' }}">
+      {% if banner_status == 'high_risk' %}
+        <i class="fa-solid fa-triangle-exclamation text-3xl" aria-hidden="true"></i>
+      {% else %}
+        <i class="fa-solid fa-clipboard-list text-3xl" aria-hidden="true"></i>
+      {% endif %}
+    </div>
+
+    {# Text Content #}
+    <div class="min-w-0 flex-1">
+      <h3 class="text-2xl font-bold tracking-tight text-[#1A4D2E] sm:text-3xl">
+        {% if banner_status == 'high_risk' %}
+          High-risk cases detected — immediate review required
+        {% elif support_banner_count|default(0) > 0 %}
+          {{ support_banner_count }} {{ banner_text|default('cases awaiting review') }}
+        {% else %}
+          All clear — no cases pending
+        {% endif %}
+      </h3>
+      
+      <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+        <p class="text-base font-medium leading-relaxed text-slate-500/90">
+          {{ banner_subtext|default('You’re keeping the clinic safe') }}
+        </p>
+        
+        {# Secondary Summary for Pending Cases when in High Risk mode #}
+        {% if banner_status == 'high_risk' and (other_pending_count|default(0) > 0 or due_vax_count|default(0) > 0) %}
+          <div class="hidden h-1 w-1 rounded-full bg-slate-300 sm:block"></div>
+          <p class="text-sm font-semibold text-slate-400">
+            {% if other_pending_count|default(0) > 0 %}
+              {{ other_pending_count }} other cases pending.
+            {% endif %}
+            {% if due_vax_count|default(0) > 0 %}
+              {{ due_vax_count }} vaccinations due.
+            {% endif %}
+            <a href="{{ all_cases_url|default('#') }}" class="ml-1 text-[#1A4D2E] underline underline-offset-4 hover:opacity-70">See all</a>
+          </p>
+        {% elif due_vax_count|default(0) > 0 and banner_status != 'high_risk' %}
+          <div class="hidden h-1 w-1 rounded-full bg-slate-300 sm:block"></div>
+          <p class="text-sm font-semibold text-slate-400">
+            {{ due_vax_count }} vaccinations due soon.
+            <a href="{{ vax_url|default('#') }}" class="ml-1 text-[#1A4D2E] underline underline-offset-4 hover:opacity-70">View due</a>
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Action Buttons #}
+    <div class="flex flex-wrap items-center gap-3 shrink-0">
+
+
+      <a 
+        href="{{ support_banner_url|default('#') }}" 
+        class="inline-flex items-center gap-3 rounded-2xl bg-[#1A4D2E] px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#1A4D2E]/20 transition-all hover:opacity-90 hover:shadow-xl active:scale-95 {{ 'bg-red-600 shadow-red-500/20' if banner_status == 'high_risk' else '' }}"
+      >
+        <span>{{ banner_button_text|default('View details') }}</span>
+        <i class="fa-solid fa-chevron-right text-xs transition-transform group-hover:translate-x-1" aria-hidden="true"></i>
+      </a>
+    </div>
+  </div>
+</div>

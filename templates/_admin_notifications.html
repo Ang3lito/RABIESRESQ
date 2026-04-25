@@ -1,45 +1,72 @@
 <div class="shrink-0 border-b border-slate-100 pb-5">
   {% set notifs = dashboard_notifications|default([]) %}
   {% if notifs %}
-    <div class="mt-2 space-y-2">
-      {% for n in notifs %}
-      <div class="flex flex-wrap gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm md:flex-nowrap md:items-start">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
-          <i class="fa-solid fa-bell text-sm"></i>
+  <div class="mt-4 space-y-4">
+    {% for n in notifs %}
+    <div class="group relative overflow-hidden rounded-[2.5rem] border border-[#1A4D2E]/10 bg-gradient-to-br from-[#1A4D2E]/5 to-white p-6 shadow-sm transition-all hover:shadow-md">
+      {# Decorative background element #}
+      <div class="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[#1A4D2E]/5 transition-transform duration-500 group-hover:scale-125"></div>
+      
+      <div class="relative flex flex-col gap-5 sm:flex-row sm:items-center">
+        {# Dynamic Icon Container #}
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-[#1A4D2E] shadow-xl shadow-[#1A4D2E]/5 ring-1 ring-[#1A4D2E]/10 transition-transform duration-300 group-hover:scale-110">
+          {% if n.type == 'appointment' %}
+            <i class="fa-solid fa-calendar-check text-2xl" aria-hidden="true"></i>
+          {% elif n.type == 'case' %}
+            <i class="fa-solid fa-clipboard-list text-2xl" aria-hidden="true"></i>
+          {% elif n.type == 'vaccination' %}
+            <i class="fa-solid fa-syringe text-2xl" aria-hidden="true"></i>
+          {% else %}
+            <i class="fa-solid fa-bell text-2xl" aria-hidden="true"></i>
+          {% endif %}
         </div>
+
+        {# Text Content #}
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-2">
             {% if n.recipient_label %}
-            <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">{{ n.recipient_label }}</span>
+            <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">{{ n.recipient_label }}</span>
             {% endif %}
+            
             {% if n.type == 'appointment' %}
-            <span class="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">Appointment</span>
+            <span class="inline-flex rounded-full bg-[#1A4D2E]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#1A4D2E]">Appointment</span>
             {% elif n.type == 'case' %}
-            <span class="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">Case</span>
+            <span class="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700">Case</span>
             {% elif n.type == 'vaccination' %}
-            <span class="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700">Vaccination</span>
-            {% elif n.type == 'session_logs' %}
-            <span class="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">Session Logs</span>
+            <span class="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-violet-700">Vaccination</span>
             {% elif n.type %}
-            <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">{{ n.type|title }}</span>
+            <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">{{ n.type|title }}</span>
             {% endif %}
           </div>
-          <p class="mt-1 text-sm text-slate-700">
+          
+          <h4 class="mt-1 text-base font-bold text-slate-800">
             {% if n.count is not none %}
-              <span class="font-semibold text-slate-800">{{ n.count }}</span>
+            <span class="text-[#1A4D2E]">{{ n.count }}</span>
             {% endif %}
             {{ n.message }}
-          </p>
-          {% if n.link_href %}
-          <a href="{{ n.link_href }}" class="mt-1 inline-block text-sm font-medium text-emerald-600 hover:text-emerald-700">View details</a>
-          {% endif %}
+          </h4>
         </div>
+
+        {# Action Link #}
+        {% if n.link_href %}
+        <div class="shrink-0">
+          <a href="{{ n.link_href }}" class="inline-flex items-center gap-2 text-sm font-bold text-[#1A4D2E] hover:opacity-80">
+            <span>View details</span>
+            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+          </a>
+        </div>
+        {% endif %}
       </div>
-      {% endfor %}
     </div>
+    {% endfor %}
+  </div>
   {% else %}
-    <div class="mt-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
-      No new notifications.
+  <div class="group relative overflow-hidden rounded-[2.5rem] border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center transition-all hover:border-[#1A4D2E]/20 hover:bg-slate-50">
+    <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-slate-300 shadow-xl shadow-slate-200/50 ring-1 ring-slate-100 transition-transform duration-300 group-hover:scale-110">
+      <i class="fa-solid fa-check-double text-3xl opacity-50" aria-hidden="true"></i>
     </div>
+    <h4 class="mt-4 text-base font-bold text-slate-500">No new notifications at this time.</h4>
+    <p class="mt-1 text-sm font-medium text-slate-400">Everything is up to date and running smoothly.</p>
+  </div>
   {% endif %}
 </div>

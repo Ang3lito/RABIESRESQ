@@ -8,7 +8,7 @@
       {% if crumb.href %}
         <a href="{{ crumb.href }}" class="hover:text-slate-700">{{ crumb.label }}</a>
       {% else %}
-        <span class="font-bold text-blue-600">{{ crumb.label }}</span>
+        <span class="font-bold text-[#1A4D2E]">{{ crumb.label }}</span>
       {% endif %}
       {% if not loop.last %}
         <span>/</span>
@@ -19,13 +19,13 @@
 
 {% block main_content %}
   <div class="mb-6 border-b border-slate-200 pb-4">
-    <h1 class="text-2xl font-bold text-slate-900">Profile Management</h1>
+    <h1 class="text-2xl font-bold text-[#1A4D2E]">Profile Management</h1>
   </div>
 
   <div id="staff-profile-sections" class="space-y-6">
     <section id="section-personal" class="staff-profile-section relative rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div class="mb-4">
-        <h2 class="text-lg font-bold text-slate-900">Personal Information</h2>
+        <h2 class="text-lg font-bold text-[#1A4D2E]">Personal Information</h2>
       </div>
       <form method="post" id="form-personal" action="{{ url_for('staff_profile_update') }}" class="space-y-4">
         <input type="hidden" name="update_section" value="personal" />
@@ -37,7 +37,7 @@
               name="first_name"
               value="{{ staff.first_name or '' }}"
               autocomplete="given-name"
-              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
             />
           </div>
           <div>
@@ -47,7 +47,7 @@
               name="last_name"
               value="{{ staff.last_name or '' }}"
               autocomplete="family-name"
-              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
             />
           </div>
           <div>
@@ -62,7 +62,7 @@
               name="phone_number"
               value="{{ staff.phone_number or '' }}"
               autocomplete="tel"
-              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
             />
           </div>
           <div>
@@ -71,7 +71,7 @@
               type="date"
               name="date_of_birth"
               value="{{ (staff.date_of_birth or '')[:10] }}"
-              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
             />
           </div>
           <div>
@@ -79,7 +79,7 @@
             {% set staff_gender = (staff.gender or '')|trim|lower %}
             <select
               name="gender"
-              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
             >
               <option value="">Select</option>
               <option value="Male" {% if staff_gender == 'male' %}selected{% endif %}>Male</option>
@@ -93,7 +93,7 @@
               type="text"
               name="specialty"
               value="{{ staff.specialty or '' }}"
-              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
               placeholder="e.g. Rabies clinic lead"
             />
           </div>
@@ -101,7 +101,7 @@
         <div
           class="staff-section-save {% if highlight_section|default('') != 'personal' %}hidden{% endif %} mt-6 flex justify-end border-t border-slate-200 pt-4"
         >
-          <button type="submit" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
+          <button type="submit" class="rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A4D2E]">
             Save changes
           </button>
         </div>
@@ -110,7 +110,7 @@
 
     <section id="section-account" class="staff-profile-section relative rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div class="mb-4">
-        <h2 class="text-lg font-bold text-slate-900">Account Security</h2>
+        <h2 class="text-lg font-bold text-[#1A4D2E]">Account Security</h2>
       </div>
       <form method="post" id="form-account" action="{{ url_for('staff_profile_update') }}" class="space-y-4">
         <input type="hidden" name="update_section" value="account" />
@@ -123,7 +123,7 @@
               value="{{ staff.username }}"
               required
               autocomplete="username"
-              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
             />
           </div>
           <div>
@@ -134,14 +134,14 @@
               value="{{ staff.email }}"
               required
               autocomplete="email"
-              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
             />
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium text-slate-700">Password</label>
             <div class="flex items-center gap-2">
               <input type="text" value="••••••••" disabled class="flex-1 rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-slate-500 cursor-not-allowed" />
-              <button type="button" id="change-staff-password-btn" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">Change password</button>
+              <button type="button" id="change-staff-password-btn" class="text-sm font-medium text-[#1A4D2E] hover:text-[#1A4D2E]">Change password</button>
             </div>
           </div>
           <div id="staff-password-change-fields" class="{% if not show_staff_password_fields|default(false) %}hidden {% endif %}md:col-span-2">
@@ -152,7 +152,7 @@
                   type="password"
                   name="new_password"
                   placeholder="Leave empty to keep current password"
-                  class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
                 />
               </div>
               <div>
@@ -161,7 +161,7 @@
                   type="password"
                   name="confirm_password"
                   placeholder="Confirm new password"
-                  class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
                 />
               </div>
             </div>
@@ -177,7 +177,7 @@
           >
             Cancel
           </button>
-          <button type="submit" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
+          <button type="submit" class="rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A4D2E]">
             Save changes
           </button>
         </div>

@@ -4,7 +4,7 @@
 
 {% block content %}
   <div class="mb-6">
-    <h1 class="text-2xl font-bold text-slate-900">Profile Management</h1>
+    <h1 class="text-2xl font-bold text-[#1A4D2E]">Profile Management</h1>
   </div>
 
   <form
@@ -18,25 +18,25 @@
     <!-- Section 1: Personal Information -->
     <div class="profile-section relative rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div class="mb-4">
-        <h2 class="text-lg font-bold text-slate-900">Personal Information</h2>
+        <h2 class="text-lg font-bold text-[#1A4D2E]">Personal Information</h2>
       </div>
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <label for="first_name" class="mb-1 block text-sm font-medium text-slate-700">First Name</label>
-          <input type="text" id="first_name" name="first_name" value="{{ patient.first_name or '' }}" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <input type="text" id="first_name" name="first_name" value="{{ patient.first_name or '' }}" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
         </div>
         <div>
           <label for="last_name" class="mb-1 block text-sm font-medium text-slate-700">Last Name</label>
-          <input type="text" id="last_name" name="last_name" value="{{ patient.last_name or '' }}" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <input type="text" id="last_name" name="last_name" value="{{ patient.last_name or '' }}" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
         </div>
         <div>
           <label for="profile_date_of_birth" class="mb-1 block text-sm font-medium text-slate-700">Date of Birth</label>
-          <input type="date" id="profile_date_of_birth" name="date_of_birth" value="{{ (patient.date_of_birth or '')[:10] }}" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <input type="date" id="profile_date_of_birth" name="date_of_birth" value="{{ (patient.date_of_birth or '')[:10] }}" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
         </div>
         <div>
           <label for="profile_gender" class="mb-1 block text-sm font-medium text-slate-700">Gender</label>
           {% set patient_gender = (patient.gender or '')|trim|lower %}
-          <select id="profile_gender" name="gender" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <select id="profile_gender" name="gender" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
             <option value="">Select</option>
             <option value="Male" {% if patient_gender == 'male' %}selected{% endif %}>Male</option>
             <option value="Female" {% if patient_gender == 'female' %}selected{% endif %}>Female</option>
@@ -45,15 +45,15 @@
         </div>
         <div class="md:col-span-2">
           <label for="address" class="mb-1 block text-sm font-medium text-slate-700">Address</label>
-          <input type="text" id="address" name="address" value="{{ patient.address or '' }}" placeholder="e.g. Lahug, 123 Main St" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <input type="text" id="address" name="address" value="{{ patient.address or '' }}" placeholder="e.g. Lahug, 123 Main St" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
         </div>
         <div class="md:col-span-2">
           <label for="phone_number" class="mb-1 block text-sm font-medium text-slate-700">Contact Details</label>
-          <input type="tel" id="phone_number" name="phone_number" value="{{ patient.phone_number or '' }}" placeholder="e.g., +63 917 123 4567" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <input type="tel" id="phone_number" name="phone_number" value="{{ patient.phone_number or '' }}" placeholder="e.g., +63 917 123 4567" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
         </div>
       </div>
       <div class="profile-section-save hidden mt-6 flex justify-end border-t border-slate-200 pt-4">
-        <button type="submit" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
+        <button type="submit" class="rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A4D2E]">
           Save Changes
         </button>
       </div>
@@ -62,29 +62,29 @@
     <!-- Section 2: Account Security -->
     <div class="profile-section relative rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div class="mb-4">
-        <h2 class="text-lg font-bold text-slate-900">Account Security</h2>
+        <h2 class="text-lg font-bold text-[#1A4D2E]">Account Security</h2>
       </div>
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <label for="email" class="mb-1 block text-sm font-medium text-slate-700">Email</label>
-          <input type="email" id="email" name="email" value="{{ patient.email or '' }}" required class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <input type="email" id="email" name="email" value="{{ patient.email or '' }}" required class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
         </div>
         <div>
           <label for="password_display" class="mb-1 block text-sm font-medium text-slate-700">Password</label>
           <div class="flex items-center gap-2">
             <input type="text" id="password_display" value="••••••••" disabled class="flex-1 rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-slate-500 cursor-not-allowed">
-            <button type="button" id="change-password-btn" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">Change password</button>
+            <button type="button" id="change-password-btn" class="text-sm font-medium text-[#1A4D2E] hover:text-[#1A4D2E]">Change password</button>
           </div>
         </div>
         <div id="password-change-fields" class="hidden md:col-span-2">
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label for="new_password" class="mb-1 block text-sm font-medium text-slate-700">New Password</label>
-              <input type="password" id="new_password" name="new_password" placeholder="Leave empty to keep current password" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <input type="password" id="new_password" name="new_password" placeholder="Leave empty to keep current password" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
             </div>
             <div>
               <label for="confirm_password" class="mb-1 block text-sm font-medium text-slate-700">Confirm Password</label>
-              <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm new password" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm new password" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
             </div>
           </div>
         </div>
@@ -97,7 +97,7 @@
         >
           Cancel
         </button>
-        <button type="submit" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
+        <button type="submit" class="rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A4D2E]">
           Save Changes
         </button>
       </div>
@@ -106,24 +106,24 @@
     <!-- Section 3: Medical Information -->
     <div class="profile-section relative rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div class="mb-4">
-        <h2 class="text-lg font-bold text-slate-900">Medical Information</h2>
+        <h2 class="text-lg font-bold text-[#1A4D2E]">Medical Information</h2>
       </div>
       <div class="space-y-4">
         <div>
           <label for="allergies" class="mb-1 block text-sm font-medium text-slate-700">Allergies</label>
-          <textarea id="allergies" name="allergies" rows="3" class="w-full resize-y rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">{{ patient.allergies or '' }}</textarea>
+          <textarea id="allergies" name="allergies" rows="3" class="w-full resize-y rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">{{ patient.allergies or '' }}</textarea>
         </div>
         <div>
           <label for="pre_existing_conditions" class="mb-1 block text-sm font-medium text-slate-700">Pre-existing Conditions</label>
-          <textarea id="pre_existing_conditions" name="pre_existing_conditions" rows="3" class="w-full resize-y rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">{{ patient.pre_existing_conditions or '' }}</textarea>
+          <textarea id="pre_existing_conditions" name="pre_existing_conditions" rows="3" class="w-full resize-y rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">{{ patient.pre_existing_conditions or '' }}</textarea>
         </div>
         <div>
           <label for="current_medications" class="mb-1 block text-sm font-medium text-slate-700">Current Medications</label>
-          <textarea id="current_medications" name="current_medications" rows="3" class="w-full resize-y rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">{{ patient.current_medications or '' }}</textarea>
+          <textarea id="current_medications" name="current_medications" rows="3" class="w-full resize-y rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">{{ patient.current_medications or '' }}</textarea>
         </div>
       </div>
       <div class="profile-section-save hidden mt-6 flex justify-end border-t border-slate-200 pt-4">
-        <button type="submit" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
+        <button type="submit" class="rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A4D2E]">
           Save Changes
         </button>
       </div>

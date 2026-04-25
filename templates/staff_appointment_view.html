@@ -8,7 +8,7 @@
       {% if crumb.href %}
         <a href="{{ crumb.href }}" class="hover:text-slate-700">{{ crumb.label }}</a>
       {% else %}
-        <span class="font-bold text-blue-600">{{ crumb.label }}</span>
+        <span class="font-bold text-[#1A4D2E]">{{ crumb.label }}</span>
       {% endif %}
       {% if not loop.last %}
         <span>/</span>
@@ -26,7 +26,7 @@
   {% endif %}
   <section class="mt-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h1 class="text-4xl font-bold text-blue-900">{{ patient_name|namecase }}</h1>
+              <h1 class="text-4xl font-bold text-[#1A4D2E]">{{ patient_name|namecase }}</h1>
               <p class="mt-1 text-slate-600">Appointment ID: {{ appointment.id }}</p>
             </div>
             <div class="flex flex-wrap gap-2">
@@ -36,7 +36,7 @@
               data-confirm="Approve this appointment request?"
               data-confirm-variant="primary"
             >
-                <button type="submit" class="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50" {% if appointment_is_expired|default(false) %}disabled title="Reschedule to a future slot first"{% endif %}>
+                <button type="submit" class="rounded-xl bg-[#1A4D2E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1A4D2E] disabled:cursor-not-allowed disabled:opacity-50" {% if appointment_is_expired|default(false) %}disabled title="Reschedule to a future slot first"{% endif %}>
                   Approve
                 </button>
               </form>
@@ -52,19 +52,19 @@
             <form
               method="post"
               action="{{ url_for('edit_appointment', appointment_id=appointment.id) }}"
-              class="xl:col-span-2 rounded-2xl border border-slate-200 bg-white p-5"
+              class="xl:col-span-2 rounded-[2rem] border border-slate-200 bg-white p-5"
               data-confirm="Save changes to this appointment schedule?"
               data-confirm-variant="primary"
             >
-              <h2 class="text-2xl font-semibold text-blue-900">Appointment Details</h2>
-              <p class="mt-2 text-sm font-medium text-slate-700">Currently Requested Schedule: <span class="text-blue-800">{{ requested_schedule_display }}</span></p>
+              <h2 class="text-2xl font-semibold text-[#1A4D2E]">Appointment Details</h2>
+              <p class="mt-2 text-sm font-medium text-slate-700">Currently Requested Schedule: <span class="text-[#1A4D2E]">{{ requested_schedule_display }}</span></p>
               <div class="mt-2 text-sm text-slate-600">Reschedule using available slots for this clinic.</div>
 
               <input type="hidden" name="appointment_slot_id" id="staff-resched-appointment-slot-id" value="" />
 
               <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label class="mb-2 block text-sm font-semibold text-slate-900">Select date</label>
+                  <label class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Select date</label>
                   <div class="mb-2 flex items-center justify-between">
                     <button
                       type="button"
@@ -89,12 +89,12 @@
                 </div>
 
                 <div>
-                  <label class="mb-2 block text-sm font-semibold text-slate-900">Available times</label>
+                  <label class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Available times</label>
                   <div id="staff-resched-availability-times" class="flex flex-wrap gap-2">
                     <span id="staff-resched-availability-times-placeholder" class="text-sm text-slate-500">Select a date on the calendar.</span>
                   </div>
                   <p id="staff-resched-availability-no-slots" class="mt-2 hidden text-sm text-amber-600">No available times. Please try another date.</p>
-                  <div id="staff-resched-selected-slot-display" class="mt-2 hidden rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium text-emerald-800"></div>
+                  <div id="staff-resched-selected-slot-display" class="mt-2 hidden rounded-lg border border-[#1A4D2E]/20 bg-[#1A4D2E]/5 p-3 text-xs font-medium text-[#1A4D2E]"></div>
                 </div>
               </div>
 
@@ -105,8 +105,8 @@
               </div>
             </form>
 
-            <article class="rounded-2xl border border-slate-200 bg-white p-5">
-              <h2 class="text-2xl font-semibold text-blue-900">Pre-screening Summary</h2>
+            <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+              <h2 class="text-2xl font-semibold text-[#1A4D2E]">Pre-screening Summary</h2>
               <dl class="mt-4 space-y-3 text-sm">
                 <div>
                   <dt class="text-slate-500">Case ID</dt>
@@ -235,7 +235,7 @@
           const clickable = hasSlots && !isPast;
           let cls = 'rounded p-1 text-sm ';
           if (clickable) {
-            cls += 'cursor-pointer bg-emerald-100 text-emerald-800 hover:bg-emerald-200';
+            cls += 'cursor-pointer bg-[#1A4D2E]/10 text-[#1A4D2E] hover:bg-[#1A4D2E]';
           } else if (isPast) {
             cls += 'text-slate-300';
           } else {
@@ -272,10 +272,10 @@
 
       function staffReschedOnAvailabilityDateClick(dateStr) {
         document.querySelectorAll('#staff-resched-availability-calendar [data-date]').forEach(el => {
-          el.classList.remove('ring', 'ring-2', 'ring-emerald-500');
+          el.classList.remove('ring', 'ring-2', 'ring-[#1A4D2E]');
         });
         const el = document.querySelector('#staff-resched-availability-calendar [data-date="' + dateStr + '"]');
-        if (el) el.classList.add('ring', 'ring-2', 'ring-emerald-500');
+        if (el) el.classList.add('ring', 'ring-2', 'ring-[#1A4D2E]');
 
         const container = document.getElementById('staff-resched-availability-times');
         const placeholder = document.getElementById('staff-resched-availability-times-placeholder');
@@ -302,16 +302,16 @@
         slots.forEach(s => {
           const btn = document.createElement('button');
           btn.type = 'button';
-          btn.className = 'rounded-lg border-2 border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-emerald-500 hover:bg-emerald-50';
+          btn.className = 'rounded-lg border-2 border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-[#1A4D2E] hover:bg-[#1A4D2E]/5';
           btn.textContent = s.time_display || s.slot_datetime;
           btn.dataset.slotId = s.id;
           btn.addEventListener('click', function() {
             document.querySelectorAll('#staff-resched-availability-times button').forEach(b => {
-              b.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+              b.classList.remove('border-[#1A4D2E]', 'bg-[#1A4D2E]/5', 'text-[#1A4D2E]');
               b.classList.add('border-slate-300', 'bg-white', 'text-slate-700');
             });
             this.classList.remove('border-slate-300', 'bg-white', 'text-slate-700');
-            this.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+            this.classList.add('border-[#1A4D2E]', 'bg-[#1A4D2E]/5', 'text-[#1A4D2E]');
             hiddenSlotId.value = this.dataset.slotId || '';
             if (selDisplay) {
               selDisplay.textContent = 'Selected: ' + (s.slot_datetime || s.time_display);

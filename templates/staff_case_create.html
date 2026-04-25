@@ -9,7 +9,7 @@
       {% if crumb.href %}
         <a href="{{ crumb.href }}" class="hover:text-slate-700">{{ crumb.label }}</a>
       {% else %}
-        <span class="font-bold text-blue-600">{{ crumb.label }}</span>
+        <span class="font-bold text-[#1A4D2E]">{{ crumb.label }}</span>
       {% endif %}
       {% if not loop.last %}
         <span>/</span>
@@ -20,21 +20,21 @@
 
 {% block main_content %}
   <section class="mt-6">
-    <h1 class="text-2xl font-bold text-blue-900 sm:text-4xl lg:text-5xl">Add Existing Record</h1>
+    <h1 class="text-2xl font-bold text-[#1A4D2E] sm:text-4xl lg:text-5xl">Add Existing Record</h1>
     <p class="mt-1 text-slate-500">Create an existing record.</p>
   </section>
 
   <form id="case-create-form" method="post" class="mt-6 space-y-5">
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <h2 class="text-xl font-semibold text-blue-900 sm:text-2xl lg:text-3xl">Victim Info Pre-screening Form</h2>
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+      <h2 class="text-xl font-semibold text-[#1A4D2E] sm:text-2xl lg:text-3xl">Victim Info Pre-screening Form</h2>
       <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <label class="mb-1 block text-sm text-slate-600" for="first_name">First Name</label>
-          <input id="first_name" name="first_name" type="text" value="{{ form.first_name or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+          <input id="first_name" name="first_name" type="text" value="{{ form.first_name or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring" />
         </div>
         <div>
           <label class="mb-1 block text-sm text-slate-600" for="last_name">Last Name</label>
-          <input id="last_name" name="last_name" type="text" value="{{ form.last_name or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+          <input id="last_name" name="last_name" type="text" value="{{ form.last_name or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring" />
         </div>
         {% set _addr = form.address or '' %}
         {% set _parts = _addr.split(',') %}
@@ -44,11 +44,11 @@
         {% set victim_address_value = (form.victim_address or _street_guess or '') %}
         <div>
           <label class="mb-1 block text-sm text-slate-600" for="age">Age</label>
-          <input id="age" name="age" type="text" value="{{ form.age or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+          <input id="age" name="age" type="text" value="{{ form.age or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring" />
         </div>
         <div>
           <label class="mb-1 block text-sm text-slate-600" for="barangay">Barangay</label>
-          <select id="barangay" name="barangay" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-emerald-300 focus:ring">
+          <select id="barangay" name="barangay" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring">
             <option value="">Select barangay...</option>
             <option value="Adlaon" {{ "selected" if barangay_value == "Adlaon" else "" }}>Adlaon</option>
             <option value="Agsungot" {{ "selected" if barangay_value == "Agsungot" else "" }}>Agsungot</option>
@@ -60,32 +60,32 @@
         </div>
         <div class="md:col-span-2">
           <label class="mb-1 block text-sm text-slate-600" for="victim_address">Street / Sitio / House No.</label>
-          <input id="victim_address" name="victim_address" type="text" value="{{ victim_address_value }}" placeholder="Enter additional address details..." class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+          <input id="victim_address" name="victim_address" type="text" value="{{ victim_address_value }}" placeholder="Enter additional address details..." class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring" />
         </div>
         <div class="md:col-span-2">
           <label class="mb-1 block text-sm text-slate-600" for="phone_number">Contact Number</label>
-          <input id="phone_number" name="phone_number" type="text" value="{{ form.phone_number or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+          <input id="phone_number" name="phone_number" type="text" value="{{ form.phone_number or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring" />
         </div>
       </div>
     </article>
 
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <h2 class="text-xl font-semibold text-blue-900 sm:text-2xl lg:text-3xl">Bite Details Pre-screening Form</h2>
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+      <h2 class="text-xl font-semibold text-[#1A4D2E] sm:text-2xl lg:text-3xl">Bite Details Pre-screening Form</h2>
       {% set selected_areas = form.affected_area_values or [] %}
       <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <label class="mb-1 block text-sm text-slate-600" for="exposure_date">Exposure Date</label>
-          <input id="exposure_date" name="exposure_date" type="date" required value="{{ form.exposure_date or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+          <input id="exposure_date" name="exposure_date" type="date" required value="{{ form.exposure_date or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring" />
         </div>
         <div>
           <label class="mb-1 block text-sm text-slate-600" for="exposure_time">Exposure Time</label>
-          <input id="exposure_time" name="exposure_time" type="time" value="{{ form.exposure_time or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+          <input id="exposure_time" name="exposure_time" type="time" value="{{ form.exposure_time or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring" />
         </div>
         <div>
           <label class="mb-1 block text-sm text-slate-600" for="type_of_exposure">Type of Exposure</label>
           <div class="grid grid-cols-2 gap-2 md:grid-cols-3">
             {% for opt in ['Bite','Scratch','Contamination of Mucous Membrane','Non-Bite','Touch only'] %}
-              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2 text-xs font-medium transition-colors exposure-type {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.type_of_exposure or '') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2 text-xs font-medium transition-colors exposure-type {{ 'border-[#1A4D2E] bg-[#1A4D2E]/5 text-[#1A4D2E]' if (form.type_of_exposure or '') == opt else 'border-slate-200 text-slate-700 hover:border-[#1A4D2E]' }}" data-value="{{ opt }}">
                 <input type="radio" name="type_of_exposure" value="{{ opt }}" class="sr-only" {{ "checked" if (form.type_of_exposure or '') == opt else "" }} required />
                 <span class="text-center">{{ opt }}</span>
               </label>
@@ -94,7 +94,7 @@
         </div>
         <div>
           <label class="mb-1 block text-sm text-slate-600" for="place_of_exposure">Place of Exposure</label>
-          <select id="place_of_exposure" name="place_of_exposure" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-emerald-300 focus:ring">
+          <select id="place_of_exposure" name="place_of_exposure" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring">
             <option value="" {{ "selected" if not form.place_of_exposure else "" }}>Select...</option>
             {% for opt in ['Inside home','Outside home','Workplace','School','Street/Road','Park','Market/Mall','Farm',"Neighbor's house",'Public transport','Other'] %}
               <option value="{{ opt }}" {{ "selected" if (form.place_of_exposure or '') == opt else "" }}>{{ opt }}</option>
@@ -104,7 +104,7 @@
         <div>
           <label class="mb-1 block text-sm text-slate-600" id="case-create-affected-area-label" for="case-create-affected-area-trigger">Affected Area</label>
           <div id="case-create-affected-area-group" class="relative">
-            <button type="button" id="case-create-affected-area-trigger" class="flex w-full items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-left text-sm text-slate-900">
+            <button type="button" id="case-create-affected-area-trigger" class="flex w-full items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-left text-sm text-[#1A4D2E]">
               <span id="case-create-affected-area-trigger-text" class="min-w-0 flex-1 truncate">Select affected areas...</span>
               <span id="case-create-affected-area-chevron" class="text-slate-500 transition-transform">&#9662;</span>
             </button>
@@ -113,7 +113,7 @@
               <div class="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
                 {% for area in ['Head/Face','Neck','Trunk','Right arm','Left arm','Right hand','Left hand','Right leg','Left leg','Right foot','Left foot','Other'] %}
                   <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 {{ 'sm:col-span-2' if area == 'Other' else '' }}">
-                    <input type="checkbox" name="affected_area" value="{{ area }}" {{ "checked" if area in selected_areas else "" }} id="{{ 'case_create_affected_area_cb_other' if area == 'Other' else '' }}" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                    <input type="checkbox" name="affected_area" value="{{ area }}" {{ "checked" if area in selected_areas else "" }} id="{{ 'case_create_affected_area_cb_other' if area == 'Other' else '' }}" class="rounded border-slate-300 text-[#1A4D2E] focus:ring-[#1A4D2E]">
                     <span>{{ area }}</span>
                   </label>
                 {% endfor %}
@@ -123,18 +123,18 @@
         </div>
         <div id="place-of-exposure-other-container" class="md:col-span-2 {{ '' if (form.place_of_exposure or '') == 'Other' else 'hidden' }}">
           <label class="mb-1 block text-sm text-slate-600" for="place_of_exposure_other">Specify other place of exposure</label>
-          <input id="place_of_exposure_other" name="place_of_exposure_other" type="text" value="{{ form.place_of_exposure_other or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+          <input id="place_of_exposure_other" name="place_of_exposure_other" type="text" value="{{ form.place_of_exposure_other or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring" />
         </div>
         <div id="case-create-affected-area-other-container" class="md:col-span-2 {{ '' if 'Other' in selected_areas else 'hidden' }}">
           <label class="mb-1 block text-sm text-slate-600" for="affected_area_other">Specify other affected area</label>
-          <input id="affected_area_other" name="affected_area_other" type="text" value="{{ form.affected_area_other or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+          <input id="affected_area_other" name="affected_area_other" type="text" value="{{ form.affected_area_other or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring" />
         </div>
 
         <div class="md:col-span-2">
           <label class="mb-1 block text-sm text-slate-600">Description of Wound</label>
           <div class="grid grid-cols-2 gap-2 md:grid-cols-5">
             {% for opt in ['Punctured','Abrasion','Lacerated','Avulsed','None'] %}
-              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2 text-xs font-medium transition-colors wound-type {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.wound_description or '') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2 text-xs font-medium transition-colors wound-type {{ 'border-[#1A4D2E] bg-[#1A4D2E]/5 text-[#1A4D2E]' if (form.wound_description or '') == opt else 'border-slate-200 text-slate-700 hover:border-[#1A4D2E]' }}" data-value="{{ opt }}">
                 <input type="radio" name="wound_description" value="{{ opt }}" class="sr-only" {{ "checked" if (form.wound_description or '') == opt else "" }} />
                 <span>{{ opt }}</span>
               </label>
@@ -149,7 +149,7 @@
               <p class="mb-2 text-xs font-medium text-slate-500">Spontaneous Bleeding</p>
               <div class="flex gap-2">
                 {% for opt in ['Yes', 'No'] %}
-                  <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors bleeding-spontaneous {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.spontaneous_bleeding or 'No') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+                  <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors bleeding-spontaneous {{ 'border-[#1A4D2E] bg-[#1A4D2E]/5 text-[#1A4D2E]' if (form.spontaneous_bleeding or 'No') == opt else 'border-slate-200 text-slate-700 hover:border-[#1A4D2E]' }}" data-value="{{ opt }}">
                     <input type="radio" name="spontaneous_bleeding" value="{{ opt }}" class="sr-only" {{ "checked" if (form.spontaneous_bleeding or 'No') == opt else "" }} />
                     <span>{{ opt }}</span>
                   </label>
@@ -160,7 +160,7 @@
               <p class="mb-2 text-xs font-medium text-slate-500">Induced Bleeding</p>
               <div class="flex gap-2">
                 {% for opt in ['Yes', 'No'] %}
-                  <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors bleeding-induced {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.induced_bleeding or 'No') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+                  <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors bleeding-induced {{ 'border-[#1A4D2E] bg-[#1A4D2E]/5 text-[#1A4D2E]' if (form.induced_bleeding or 'No') == opt else 'border-slate-200 text-slate-700 hover:border-[#1A4D2E]' }}" data-value="{{ opt }}">
                     <input type="radio" name="induced_bleeding" value="{{ opt }}" class="sr-only" {{ "checked" if (form.induced_bleeding or 'No') == opt else "" }} />
                     <span>{{ opt }}</span>
                   </label>
@@ -174,7 +174,7 @@
           <label class="mb-1 block text-sm text-slate-600">Previous Anti-Rabies Immunization of Patient</label>
           <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {% for opt in ['None','Completed','Incomplete'] %}
-              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors prev-immunization {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.patient_prev_immunization or '') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors prev-immunization {{ 'border-[#1A4D2E] bg-[#1A4D2E]/5 text-[#1A4D2E]' if (form.patient_prev_immunization or '') == opt else 'border-slate-200 text-slate-700 hover:border-[#1A4D2E]' }}" data-value="{{ opt }}">
                 <input type="radio" name="patient_prev_immunization" value="{{ opt }}" class="sr-only" {{ "checked" if (form.patient_prev_immunization or '') == opt else "" }} />
                 <span>{{ opt }}</span>
               </label>
@@ -183,14 +183,14 @@
         </div>
         <div id="prev-vaccine-date-container" class="{{ '' if (form.patient_prev_immunization or '') in ['Completed','Incomplete'] else 'hidden' }}">
           <label class="mb-1 block text-sm text-slate-600" for="prev_vaccine_date">Previous Vaccine Date</label>
-          <input id="prev_vaccine_date" name="prev_vaccine_date" type="date" value="{{ form.prev_vaccine_date or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+          <input id="prev_vaccine_date" name="prev_vaccine_date" type="date" value="{{ form.prev_vaccine_date or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring" />
         </div>
 
         <div>
           <label class="mb-1 block text-sm text-slate-600">Type of Animal</label>
           <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {% for opt in ['Dog','Cat','Others'] %}
-              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors animal-type {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.animal_type or '') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors animal-type {{ 'border-[#1A4D2E] bg-[#1A4D2E]/5 text-[#1A4D2E]' if (form.animal_type or '') == opt else 'border-slate-200 text-slate-700 hover:border-[#1A4D2E]' }}" data-value="{{ opt }}">
                 <input type="radio" name="animal_type" value="{{ opt }}" class="sr-only" {{ "checked" if (form.animal_type or '') == opt else "" }} />
                 <span>{{ opt }}</span>
               </label>
@@ -199,14 +199,14 @@
         </div>
         <div id="case-create-other-animal-wrap" class="{{ '' if (form.animal_type or '') == 'Others' else 'hidden' }}">
           <label class="mb-1 block text-sm text-slate-600" for="other_animal">Specify other animal</label>
-          <input id="other_animal" name="other_animal" type="text" value="{{ form.other_animal or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+          <input id="other_animal" name="other_animal" type="text" value="{{ form.other_animal or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring" />
         </div>
 
         <div class="md:col-span-2">
           <label class="mb-1 block text-sm text-slate-600">Animal Status</label>
           <div class="grid grid-cols-2 gap-2 sm:grid-cols-5">
             {% for opt in ['Healthy','Killed','Sick','Lost','Died'] %}
-              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2 text-xs font-medium transition-colors animal-status {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.animal_status or '') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2 text-xs font-medium transition-colors animal-status {{ 'border-[#1A4D2E] bg-[#1A4D2E]/5 text-[#1A4D2E]' if (form.animal_status or '') == opt else 'border-slate-200 text-slate-700 hover:border-[#1A4D2E]' }}" data-value="{{ opt }}">
                 <input type="radio" name="animal_status" value="{{ opt }}" class="sr-only" {{ "checked" if (form.animal_status or '') == opt else "" }} />
                 <span>{{ opt }}</span>
               </label>
@@ -218,7 +218,7 @@
           <label class="mb-1 block text-sm text-slate-600">Anti-Rabies Vaccination of Animal</label>
           <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {% for opt in ['Updated','None','Not Updated'] %}
-              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2 text-xs font-medium transition-colors animal-vaccination {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.animal_vaccination or '') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2 text-xs font-medium transition-colors animal-vaccination {{ 'border-[#1A4D2E] bg-[#1A4D2E]/5 text-[#1A4D2E]' if (form.animal_vaccination or '') == opt else 'border-slate-200 text-slate-700 hover:border-[#1A4D2E]' }}" data-value="{{ opt }}">
                 <input type="radio" name="animal_vaccination" value="{{ opt }}" class="sr-only" {{ "checked" if (form.animal_vaccination or '') == opt else "" }} />
                 <span>{{ opt }}</span>
               </label>
@@ -230,7 +230,7 @@
           <label class="mb-1 block text-sm text-slate-600">Local Wound Treatment</label>
           <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {% for opt in ['Wash with Water Only','Washed with Water and Soap','Applied Garlic, etc.','Others'] %}
-              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2 text-xs font-medium transition-colors local-treatment {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.local_treatment or '') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2 text-xs font-medium transition-colors local-treatment {{ 'border-[#1A4D2E] bg-[#1A4D2E]/5 text-[#1A4D2E]' if (form.local_treatment or '') == opt else 'border-slate-200 text-slate-700 hover:border-[#1A4D2E]' }}" data-value="{{ opt }}">
                 <input type="radio" name="local_treatment" value="{{ opt }}" class="sr-only" {{ "checked" if (form.local_treatment or '') == opt else "" }} />
                 <span class="text-center">{{ opt }}</span>
               </label>
@@ -239,14 +239,14 @@
         </div>
         <div id="case-create-other-treatment-wrap" class="{{ '' if (form.local_treatment or '') == 'Others' else 'hidden' }}">
           <label class="mb-1 block text-sm text-slate-600" for="other_treatment">Specify other treatment</label>
-          <input id="other_treatment" name="other_treatment" type="text" value="{{ form.other_treatment or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+          <input id="other_treatment" name="other_treatment" type="text" value="{{ form.other_treatment or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring" />
         </div>
 
         <div>
           <label class="mb-1 block text-sm text-slate-600">Tetanus Immunization</label>
           <div class="flex gap-2">
             {% for opt in ['Yes','No'] %}
-              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors tetanus-immunization {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.tetanus_immunization or '') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors tetanus-immunization {{ 'border-[#1A4D2E] bg-[#1A4D2E]/5 text-[#1A4D2E]' if (form.tetanus_immunization or '') == opt else 'border-slate-200 text-slate-700 hover:border-[#1A4D2E]' }}" data-value="{{ opt }}">
                 <input type="radio" name="tetanus_immunization" value="{{ opt }}" class="sr-only" {{ "checked" if (form.tetanus_immunization or '') == opt else "" }} />
                 <span>{{ opt }}</span>
               </label>
@@ -255,14 +255,14 @@
         </div>
         <div id="tetanus-date-container" class="{{ '' if (form.tetanus_immunization or '') == 'Yes' else 'hidden' }}">
           <label class="mb-1 block text-sm text-slate-600" for="tetanus_date">Date (for Tetanus Immunization)</label>
-          <input id="tetanus_date" name="tetanus_date" type="date" value="{{ form.tetanus_date or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+          <input id="tetanus_date" name="tetanus_date" type="date" value="{{ form.tetanus_date or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring" />
         </div>
 
         <div>
           <label class="mb-1 block text-sm text-slate-600">Human Tetanus Immunoglobulin</label>
           <div class="flex gap-2">
             {% for opt in ['Yes','No'] %}
-              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors hrtig-immunization {{ 'border-emerald-500 bg-emerald-50 text-emerald-700' if (form.hrtig_immunization or '') == opt else 'border-slate-200 text-slate-700 hover:border-emerald-300' }}" data-value="{{ opt }}">
+              <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors hrtig-immunization {{ 'border-[#1A4D2E] bg-[#1A4D2E]/5 text-[#1A4D2E]' if (form.hrtig_immunization or '') == opt else 'border-slate-200 text-slate-700 hover:border-[#1A4D2E]' }}" data-value="{{ opt }}">
                 <input type="radio" name="hrtig_immunization" value="{{ opt }}" class="sr-only" {{ "checked" if (form.hrtig_immunization or '') == opt else "" }} />
                 <span>{{ opt }}</span>
               </label>
@@ -271,12 +271,12 @@
         </div>
         <div id="hrtig-date-container" class="{{ '' if (form.hrtig_immunization or '') == 'Yes' else 'hidden' }}">
           <label class="mb-1 block text-sm text-slate-600" for="hrtig_date">HRIG Date</label>
-          <input id="hrtig_date" name="hrtig_date" type="date" value="{{ form.hrtig_date or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-emerald-300 focus:ring" />
+          <input id="hrtig_date" name="hrtig_date" type="date" value="{{ form.hrtig_date or '' }}" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring" />
         </div>
 
         <div class="md:col-span-2">
           <label class="mb-1 block text-sm text-slate-600" for="risk_level">Category / Risk (optional manual override)</label>
-          <select id="risk_level" name="risk_level" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-emerald-300 focus:ring">
+          <select id="risk_level" name="risk_level" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring">
             <option value="" {{ "selected" if not form.risk_level else "" }}>Auto (system computes from pre-screening)</option>
             <option value="Category I" {{ "selected" if form.risk_level == "Category I" else "" }}>Category I</option>
             <option value="Category II" {{ "selected" if form.risk_level == "Category II" else "" }}>Category II</option>
@@ -288,8 +288,8 @@
       </div>
     </article>
 
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <h2 class="text-xl font-semibold text-blue-900 sm:text-2xl lg:text-3xl">Vaccination Record Card</h2>
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+      <h2 class="text-xl font-semibold text-[#1A4D2E] sm:text-2xl lg:text-3xl">Vaccination Record Card</h2>
       <div class="mt-4 space-y-5">
         {% set ar_sel = (vaccination_card.get('form_vc_anti_rabies_vaccine') or '') %}
         {% set ta_sel = (vaccination_card.get('form_vc_tetanus_agent') or '') %}
@@ -301,7 +301,7 @@
             <div class="space-y-3">
               <div>
                 <label class="mb-1 block text-xs font-semibold uppercase text-slate-600" for="vc_anti_rabies_vaccine">PVRV/PCEC/ERIG/HRIG</label>
-                <select id="vc_anti_rabies_vaccine" name="vc_anti_rabies_vaccine" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none ring-emerald-300 focus:ring">
+                <select id="vc_anti_rabies_vaccine" name="vc_anti_rabies_vaccine" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none ring-[#1A4D2E]/30 focus:ring">
                   <option value="">—</option>
                   {% for o in ar_known %}
                   <option value="{{ o }}" {{ 'selected' if ar_sel == o else '' }}>{{ o }}</option>
@@ -315,15 +315,15 @@
               <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <div>
                   <label class="mb-1 block text-xs text-slate-500" for="vc_pcec_batch">Batch No.</label>
-                  <input id="vc_pcec_batch" name="vc_pcec_batch" type="text" value="{{ vaccination_card.pcec_batch or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                  <input id="vc_pcec_batch" name="vc_pcec_batch" type="text" value="{{ vaccination_card.pcec_batch or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
                 </div>
                 <div>
                   <label class="mb-1 block text-xs text-slate-500" for="vc_pcec_mfg_date">Mfg. Date</label>
-                  <input id="vc_pcec_mfg_date" name="vc_pcec_mfg_date" type="date" value="{{ vaccination_card.pcec_mfg_date or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                  <input id="vc_pcec_mfg_date" name="vc_pcec_mfg_date" type="date" value="{{ vaccination_card.pcec_mfg_date or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
                 </div>
                 <div>
                   <label class="mb-1 block text-xs text-slate-500" for="vc_pcec_expiry">Expiry Date</label>
-                  <input id="vc_pcec_expiry" name="vc_pcec_expiry" type="date" min="{{ expiry_min_date }}" value="{{ vaccination_card.pcec_expiry or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                  <input id="vc_pcec_expiry" name="vc_pcec_expiry" type="date" min="{{ expiry_min_date }}" value="{{ vaccination_card.pcec_expiry or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
                 </div>
               </div>
             </div>
@@ -334,7 +334,7 @@
               <p class="text-xs text-slate-500">Tetanus product and batch details are saved when you create the record.</p>
               <div>
                 <label class="mb-1 block text-xs font-semibold uppercase text-slate-600" for="vc_tetanus_agent">Tetanus toxoid/ATS/HTIG</label>
-                <select id="vc_tetanus_agent" name="vc_tetanus_agent" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none ring-emerald-300 focus:ring">
+                <select id="vc_tetanus_agent" name="vc_tetanus_agent" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none ring-[#1A4D2E]/30 focus:ring">
                   <option value="">—</option>
                   <optgroup label="TETANUS TOXOID:">
                     <option value="Abhay-TOX" {{ 'selected' if ta_sel == 'Abhay-TOX' else '' }}>Abhay-TOX</option>
@@ -359,15 +359,15 @@
               <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <div>
                   <label class="mb-1 block text-xs text-slate-500" for="vc_tetanus_batch">Batch No.</label>
-                  <input id="vc_tetanus_batch" name="vc_tetanus_batch" type="text" value="{{ vaccination_card.tetanus_batch or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                  <input id="vc_tetanus_batch" name="vc_tetanus_batch" type="text" value="{{ vaccination_card.tetanus_batch or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
                 </div>
                 <div>
                   <label class="mb-1 block text-xs text-slate-500" for="vc_tetanus_mfg_date">Mfg. Date</label>
-                  <input id="vc_tetanus_mfg_date" name="vc_tetanus_mfg_date" type="date" value="{{ vaccination_card.tetanus_mfg_date or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                  <input id="vc_tetanus_mfg_date" name="vc_tetanus_mfg_date" type="date" value="{{ vaccination_card.tetanus_mfg_date or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
                 </div>
                 <div>
                   <label class="mb-1 block text-xs text-slate-500" for="vc_tetanus_expiry">Expiry Date</label>
-                  <input id="vc_tetanus_expiry" name="vc_tetanus_expiry" type="date" min="{{ expiry_min_date }}" value="{{ vaccination_card.tetanus_expiry or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
+                  <input id="vc_tetanus_expiry" name="vc_tetanus_expiry" type="date" min="{{ expiry_min_date }}" value="{{ vaccination_card.tetanus_expiry or '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
                 </div>
               </div>
             </div>
@@ -395,7 +395,7 @@
                   {% set rs_val = (row.route_site if row and row.route_site else '') %}
                   <tr>
                     <td class="px-2 py-1.5 font-medium">DAY {{ day }}</td>
-                    <td class="px-2 py-1"><input name="vc_pre_{{ day }}_date" type="date" value="{{ row.dose_date if row and row.dose_date else suggested_dates_by_type.pre_exposure.get(day, '') }}" class="w-full min-w-[7rem] cursor-pointer rounded border border-slate-300 px-2 py-1 text-sm outline-none ring-emerald-300 focus:ring" /></td>
+                    <td class="px-2 py-1"><input name="vc_pre_{{ day }}_date" type="date" value="{{ row.dose_date if row and row.dose_date else suggested_dates_by_type.pre_exposure.get(day, '') }}" class="w-full min-w-[7rem] cursor-pointer rounded border border-slate-300 px-2 py-1 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" /></td>
                     <td class="px-2 py-1">
                       <input type="hidden" name="vc_pre_{{ day }}_type" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" data-vc-type />
                       <input type="text" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" readonly class="w-full min-w-[6rem] rounded border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-700" data-vc-type-display />
@@ -406,7 +406,7 @@
                     <td class="px-2 py-1">
                       <input type="hidden" name="vc_pre_{{ day }}_route_site" value="{{ rs_val }}" data-vc-route-site />
                       <div class="relative min-w-[11rem]" data-vc-route-site-widget>
-                        <button type="button" class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-left text-xs text-slate-900 hover:border-emerald-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" data-vc-rs-trigger aria-haspopup="true" aria-expanded="false" aria-controls="vc-create-rs-pre-{{ day }}-panel">
+                        <button type="button" class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-left text-xs text-[#1A4D2E] hover:border-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" data-vc-rs-trigger aria-haspopup="true" aria-expanded="false" aria-controls="vc-create-rs-pre-{{ day }}-panel">
                           <span class="min-w-0 flex-1 truncate" data-vc-rs-trigger-text>Select route &amp; site…</span>
                           <svg class="h-4 w-4 shrink-0 text-slate-500 transition-transform" data-vc-rs-chevron fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </button>
@@ -414,16 +414,16 @@
                           <p class="mb-2 text-xs text-slate-500">Select all that apply</p>
                           <p class="mb-1 text-xs font-semibold text-slate-600">Route</p>
                           <div class="mb-2 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="ID" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route> ID (Intradermal)</label>
-                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="IM" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route> IM (Intramuscular)</label>
-                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route-other-toggle /> Others</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="ID" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-route> ID (Intradermal)</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="IM" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-route> IM (Intramuscular)</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-route-other-toggle /> Others</label>
                           </div>
                           <input type="text" value="" placeholder="Specify other route…" autocomplete="off" class="mb-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs hidden" data-vc-route-other-input />
                           <p class="mb-1 text-xs font-semibold text-slate-600">Site</p>
                           <div class="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="upper arm" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site> upper arm</label>
-                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="Anterolateral thigh" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site> Anterolateral thigh</label>
-                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" value="Others" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site-other-toggle> Others</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="upper arm" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-site> upper arm</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="Anterolateral thigh" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-site> Anterolateral thigh</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" value="Others" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-site-other-toggle> Others</label>
                           </div>
                           <input type="text" value="" placeholder="Specify other site…" autocomplete="off" class="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs hidden" data-vc-site-other-input />
                         </div>
@@ -458,7 +458,7 @@
                   {% set rs_val = (row.route_site if row and row.route_site else '') %}
                   <tr>
                     <td class="px-2 py-1.5 font-medium">DAY {{ day }}</td>
-                    <td class="px-2 py-1"><input name="vc_post_{{ day }}_date" type="date" value="{{ row.dose_date if row and row.dose_date else suggested_dates_by_type.post_exposure.get(day, '') }}" class="w-full min-w-[7rem] cursor-pointer rounded border border-slate-300 px-2 py-1 text-sm outline-none ring-emerald-300 focus:ring" /></td>
+                    <td class="px-2 py-1"><input name="vc_post_{{ day }}_date" type="date" value="{{ row.dose_date if row and row.dose_date else suggested_dates_by_type.post_exposure.get(day, '') }}" class="w-full min-w-[7rem] cursor-pointer rounded border border-slate-300 px-2 py-1 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" /></td>
                     <td class="px-2 py-1">
                       <input type="hidden" name="vc_post_{{ day }}_type" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" data-vc-type />
                       <input type="text" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" readonly class="w-full min-w-[6rem] rounded border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-700" data-vc-type-display />
@@ -469,7 +469,7 @@
                     <td class="px-2 py-1">
                       <input type="hidden" name="vc_post_{{ day }}_route_site" value="{{ rs_val }}" data-vc-route-site />
                       <div class="relative min-w-[11rem]" data-vc-route-site-widget>
-                        <button type="button" class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-left text-xs text-slate-900 hover:border-emerald-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" data-vc-rs-trigger aria-haspopup="true" aria-expanded="false" aria-controls="vc-create-rs-post-{{ day }}-panel">
+                        <button type="button" class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-left text-xs text-[#1A4D2E] hover:border-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" data-vc-rs-trigger aria-haspopup="true" aria-expanded="false" aria-controls="vc-create-rs-post-{{ day }}-panel">
                           <span class="min-w-0 flex-1 truncate" data-vc-rs-trigger-text>Select route &amp; site…</span>
                           <svg class="h-4 w-4 shrink-0 text-slate-500 transition-transform" data-vc-rs-chevron fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </button>
@@ -477,16 +477,16 @@
                           <p class="mb-2 text-xs text-slate-500">Select all that apply</p>
                           <p class="mb-1 text-xs font-semibold text-slate-600">Route</p>
                           <div class="mb-2 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="ID" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route> ID (Intradermal)</label>
-                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="IM" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route> IM (Intramuscular)</label>
-                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route-other-toggle /> Others</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="ID" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-route> ID (Intradermal)</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="IM" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-route> IM (Intramuscular)</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-route-other-toggle /> Others</label>
                           </div>
                           <input type="text" value="" placeholder="Specify other route…" autocomplete="off" class="mb-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs hidden" data-vc-route-other-input />
                           <p class="mb-1 text-xs font-semibold text-slate-600">Site</p>
                           <div class="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="upper arm" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site> upper arm</label>
-                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="Anterolateral thigh" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site> Anterolateral thigh</label>
-                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" value="Others" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site-other-toggle> Others</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="upper arm" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-site> upper arm</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="Anterolateral thigh" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-site> Anterolateral thigh</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" value="Others" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-site-other-toggle> Others</label>
                           </div>
                           <input type="text" value="" placeholder="Specify other site…" autocomplete="off" class="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs hidden" data-vc-site-other-input />
                         </div>
@@ -521,7 +521,7 @@
                   {% set rs_val = (row.route_site if row and row.route_site else '') %}
                   <tr>
                     <td class="px-2 py-1.5 font-medium">DAY {{ day }}</td>
-                    <td class="px-2 py-1"><input name="vc_booster_{{ day }}_date" type="date" value="{{ row.dose_date if row and row.dose_date else suggested_dates_by_type.booster.get(day, '') }}" class="w-full min-w-[7rem] cursor-pointer rounded border border-slate-300 px-2 py-1 text-sm outline-none ring-emerald-300 focus:ring" /></td>
+                    <td class="px-2 py-1"><input name="vc_booster_{{ day }}_date" type="date" value="{{ row.dose_date if row and row.dose_date else suggested_dates_by_type.booster.get(day, '') }}" class="w-full min-w-[7rem] cursor-pointer rounded border border-slate-300 px-2 py-1 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" /></td>
                     <td class="px-2 py-1">
                       <input type="hidden" name="vc_booster_{{ day }}_type" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" data-vc-type />
                       <input type="text" value="{{ row.type_of_vaccine if row and row.type_of_vaccine else '' }}" readonly class="w-full min-w-[6rem] rounded border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-700" data-vc-type-display />
@@ -532,7 +532,7 @@
                     <td class="px-2 py-1">
                       <input type="hidden" name="vc_booster_{{ day }}_route_site" value="{{ rs_val }}" data-vc-route-site />
                       <div class="relative min-w-[11rem]" data-vc-route-site-widget>
-                        <button type="button" class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-left text-xs text-slate-900 hover:border-emerald-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" data-vc-rs-trigger aria-haspopup="true" aria-expanded="false" aria-controls="vc-create-rs-booster-{{ day }}-panel">
+                        <button type="button" class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-left text-xs text-[#1A4D2E] hover:border-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" data-vc-rs-trigger aria-haspopup="true" aria-expanded="false" aria-controls="vc-create-rs-booster-{{ day }}-panel">
                           <span class="min-w-0 flex-1 truncate" data-vc-rs-trigger-text>Select route &amp; site…</span>
                           <svg class="h-4 w-4 shrink-0 text-slate-500 transition-transform" data-vc-rs-chevron fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </button>
@@ -540,16 +540,16 @@
                           <p class="mb-2 text-xs text-slate-500">Select all that apply</p>
                           <p class="mb-1 text-xs font-semibold text-slate-600">Route</p>
                           <div class="mb-2 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="ID" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route> ID (Intradermal)</label>
-                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="IM" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route> IM (Intramuscular)</label>
-                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-route-other-toggle /> Others</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="ID" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-route> ID (Intradermal)</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="IM" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-route> IM (Intramuscular)</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-route-other-toggle /> Others</label>
                           </div>
                           <input type="text" value="" placeholder="Specify other route…" autocomplete="off" class="mb-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs hidden" data-vc-route-other-input />
                           <p class="mb-1 text-xs font-semibold text-slate-600">Site</p>
                           <div class="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="upper arm" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site> upper arm</label>
-                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="Anterolateral thigh" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site> Anterolateral thigh</label>
-                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" value="Others" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500" data-vc-site-other-toggle> Others</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="upper arm" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-site> upper arm</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" value="Anterolateral thigh" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-site> Anterolateral thigh</label>
+                            <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" value="Others" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]" data-vc-site-other-toggle> Others</label>
                           </div>
                           <input type="text" value="" placeholder="Specify other site…" autocomplete="off" class="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs hidden" data-vc-site-other-input />
                         </div>
@@ -565,7 +565,7 @@
 
         <div>
           <label class="mb-1 block text-sm font-semibold text-slate-700" for="vc_remarks">Remarks</label>
-          <textarea id="vc_remarks" name="vc_remarks" rows="3" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none ring-emerald-300 focus:ring">{{ vaccination_card.remarks or '' }}</textarea>
+          <textarea id="vc_remarks" name="vc_remarks" rows="3" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 focus:ring">{{ vaccination_card.remarks or '' }}</textarea>
         </div>
       </div>
     </article>
@@ -577,7 +577,7 @@
     </datalist>
 
     <div class="flex items-center gap-3">
-      <button type="submit" class="rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600">
+      <button type="submit" class="rounded-xl bg-[#1A4D2E] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#1A4D2E]">
         Create Case Record
       </button>
       <a href="{{ url_for('staff_patients') }}" class="text-sm font-medium text-slate-500 hover:text-slate-700">
@@ -677,9 +677,9 @@
           labels.forEach((label) => {
             const input = label.querySelector(`input[name="${inputName}"]`);
             const checked = !!(input && input.checked);
-            label.classList.toggle("border-emerald-500", checked);
-            label.classList.toggle("bg-emerald-50", checked);
-            label.classList.toggle("text-emerald-700", checked);
+            label.classList.toggle("border-[#1A4D2E]", checked);
+            label.classList.toggle("bg-[#1A4D2E]/5", checked);
+            label.classList.toggle("text-[#1A4D2E]", checked);
             label.classList.toggle("border-slate-200", !checked);
             label.classList.toggle("text-slate-700", !checked);
           });

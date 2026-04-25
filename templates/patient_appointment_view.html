@@ -7,7 +7,7 @@
     <div class="flex items-center justify-between border-b border-slate-200 pb-3">
       <div>
         <div class="flex flex-wrap items-center gap-3">
-          <h1 class="text-2xl font-bold text-slate-900">
+          <h1 class="text-2xl font-bold text-[#1A4D2E]">
             Appointment #{{ appointment_number or appointment.id }}
           </h1>
           {% set raw_status = appointment.status or 'Scheduled' %}
@@ -19,7 +19,7 @@
           {% elif display_status == 'Expired' %}
           <span class="inline-flex items-center rounded-full bg-slate-300 px-2.5 py-0.5 text-xs font-medium text-slate-800">Expired</span>
           {% else %}
-          <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+          <span class="inline-flex items-center rounded-full bg-[#1A4D2E]/10 px-2.5 py-0.5 text-xs font-medium text-[#1A4D2E]">
             {{ display_status }}
           </span>
           {% endif %}
@@ -37,7 +37,7 @@
       <div class="flex items-center">
         <a
           href="{{ url_for('patient_dashboard') }}"
-          class="inline-flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+          class="inline-flex items-center justify-center rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E] focus:ring-offset-2"
         >
           Back to dashboard
         </a>
@@ -47,8 +47,8 @@
     <div class="mt-6 grid grid-cols-1 gap-5 xl:grid-cols-3">
       <!-- Left column: Actions + Appointment Details -->
       <section class="space-y-5 xl:col-span-1">
-        <article class="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
-          <h2 class="text-lg font-semibold text-slate-900">Actions</h2>
+        <article class="space-y-3 rounded-[2rem] border border-slate-200 bg-white p-5">
+          <h2 class="text-lg font-semibold text-[#1A4D2E]">Actions</h2>
           {% set status_lower = (appointment.status or '')|lower %}
           {% set is_cancelled = status_lower in ['cancelled', 'canceled', 'removed'] %}
           {% set is_completed = status_lower == 'completed' %}
@@ -81,7 +81,7 @@
             </p>
             <a
               href="{{ url_for('patient_appointment_edit', appointment_id=appointment.id) }}"
-              class="inline-flex w-full items-center justify-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
+              class="inline-flex w-full items-center justify-center rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A4D2E]"
             >
               Reschedule date &amp; time
             </a>
@@ -91,7 +91,7 @@
             </p>
             <a
               href="{{ url_for('patient_appointment_edit', appointment_id=appointment.id) }}"
-              class="inline-flex w-full items-center justify-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
+              class="inline-flex w-full items-center justify-center rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A4D2E]"
             >
               Reschedule date &amp; time
             </a>
@@ -128,19 +128,19 @@
           {% endif %}
         </article>
 
-        <article class="rounded-2xl border border-slate-200 bg-white p-5">
-          <h2 class="text-3xl font-semibold text-blue-900">Appointment Details</h2>
+        <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+          <h2 class="text-3xl font-semibold text-[#1A4D2E]">Appointment Details</h2>
           <dl class="mt-5 space-y-4 text-sm">
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <dt class="text-slate-500">Status</dt>
-                <dd class="mt-1 font-semibold text-slate-900">
+                <dd class="mt-1 font-semibold text-[#1A4D2E]">
                   {{ display_status }}
                 </dd>
               </div>
               <div>
                 <dt class="text-slate-500">Appointment Date &amp; Time</dt>
-                <dd class="mt-1 font-semibold text-slate-900">
+                <dd class="mt-1 font-semibold text-[#1A4D2E]">
                   {{ appt_datetime_display or 'N/A' }}
                 </dd>
               </div>
@@ -152,7 +152,7 @@
               {% set category_lower = (category_value or '')|lower %}
               <dd class="mt-1">
                 {% if category_lower == 'category i' %}
-                  <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">{{ category_value }}</span>
+                  <span class="rounded-full bg-[#1A4D2E]/10 px-3 py-1 text-xs font-semibold text-[#1A4D2E]">{{ category_value }}</span>
                 {% elif category_lower == 'category ii' %}
                   <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">{{ category_value }}</span>
                 {% elif category_lower == 'category iii' %}
@@ -204,24 +204,24 @@
 
       <!-- Right column: Vaccination Status + Vaccination Record -->
       <section class="space-y-5 xl:col-span-2">
-        <article class="rounded-2xl border border-slate-200 bg-white p-5">
-          <h2 class="text-3xl font-semibold text-blue-900">Vaccination Status</h2>
+        <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+          <h2 class="text-3xl font-semibold text-[#1A4D2E]">Vaccination Status</h2>
           <p class="mt-2 text-sm font-medium text-slate-600">
             Dose Type:
-            <span class="text-blue-800">{{ dose_type_label }}</span>
+            <span class="text-[#1A4D2E]">{{ dose_type_label }}</span>
           </p>
           <div class="mt-4 flex items-end justify-between">
             <p class="text-slate-600">Progress</p>
             <p class="font-semibold text-slate-800">{{ doses_completed }} of {{ expected_doses }} Doses</p>
           </div>
           <div class="mt-2 h-2.5 w-full rounded-full bg-slate-200">
-            <div class="h-full rounded-full bg-emerald-500" style="width: {{ progress_pct }}%"></div>
+            <div class="h-full rounded-full bg-[#1A4D2E]" style="width: {{ progress_pct }}%"></div>
           </div>
 
           <div class="mt-4">
             <p class="text-slate-500">Next Appointment</p>
             {% if next_appointment_display %}
-              <p class="text-3xl font-bold leading-tight text-blue-900">{{ next_appointment_display }}</p>
+              <p class="text-3xl font-bold leading-tight text-[#1A4D2E]">{{ next_appointment_display }}</p>
             {% else %}
               <p class="text-2xl font-semibold text-slate-700">No upcoming appointment</p>
             {% endif %}
@@ -231,7 +231,7 @@
           <div class="mt-4">
             <a
               href="{{ url_for('patient_vaccination_card_view', appointment_id=appointment.id) }}"
-              class="inline-flex w-full items-center justify-center rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 sm:w-auto"
+              class="inline-flex w-full items-center justify-center rounded-lg bg-[#1A4D2E] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E] focus:ring-offset-2 sm:w-auto"
             >
               View vaccine card
             </a>
@@ -239,8 +239,8 @@
           {% endif %}
         </article>
 
-        <article class="rounded-2xl border border-slate-200 bg-white p-5">
-          <h2 class="text-2xl font-semibold text-blue-900">Vaccination Record Card</h2>
+        <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+          <h2 class="text-2xl font-semibold text-[#1A4D2E]">Vaccination Record Card</h2>
           <div class="mt-4 space-y-5">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4">

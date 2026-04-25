@@ -10,7 +10,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}?v=4" />
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
-  <body class="min-h-screen bg-slate-50 text-slate-900">
+  <body class="min-h-screen bg-slate-50 text-[#1A4D2E]">
     <header class="border-b bg-white">
       <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
         {% if request.endpoint == "staff_dashboard" %}
@@ -18,7 +18,7 @@
             <input
               type="text"
               placeholder="Search patients, cases..."
-              class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm outline-none ring-emerald-300 transition focus:ring"
+              class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
             />
           </div>
         {% else %}
@@ -28,14 +28,14 @@
                 {% if crumb.href %}
                   <a href="{{ crumb.href }}" class="hover:text-slate-700">{{ crumb.label }}</a>
                 {% else %}
-                  <span class="font-bold text-blue-600">{{ crumb.label }}</span>
+                  <span class="font-bold text-[#1A4D2E]">{{ crumb.label }}</span>
                 {% endif %}
                 {% if not loop.last %}
                   <span>/</span>
                 {% endif %}
               {% endfor %}
             {% else %}
-              <a href="{{ url_for('index') }}" class="text-lg font-semibold text-slate-900">RabiesResQ</a>
+              <a href="{{ url_for('index') }}" class="text-lg font-semibold text-[#1A4D2E]">RabiesResQ</a>
             {% endif %}
           </nav>
         {% endif %}

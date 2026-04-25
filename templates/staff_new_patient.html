@@ -8,7 +8,7 @@
       {% if crumb.href %}
         <a href="{{ crumb.href }}" class="hover:text-slate-700">{{ crumb.label }}</a>
       {% else %}
-        <span class="font-bold text-blue-600">{{ crumb.label }}</span>
+        <span class="font-bold text-[#1A4D2E]">{{ crumb.label }}</span>
       {% endif %}
       {% if not loop.last %}<span>/</span>{% endif %}
     {% endfor %}
@@ -17,14 +17,14 @@
 
 {% block main_content %}
   <section class="mt-6">
-    <h1 class="text-2xl font-bold text-blue-900 sm:text-4xl lg:text-5xl">New Patient</h1>
+    <h1 class="text-2xl font-bold text-[#1A4D2E] sm:text-4xl lg:text-5xl">New Patient</h1>
     <p class="mt-1 max-w-3xl text-slate-500">
       Create appointments for walk-in patients. The email entered under Victim Info becomes the patient login; temporary credentials are emailed after submission.
     </p>
   </section>
 
   <section class="mt-6">
-    <button type="button" onclick="openPreScreeningModal('case')" class="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600">
+    <button type="button" onclick="openPreScreeningModal('case')" class="inline-flex items-center gap-2 rounded-xl bg-[#1A4D2E] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#1A4D2E]">
       <i class="fa-solid fa-plus"></i>
       Start walk-in pre-screening
     </button>

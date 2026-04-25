@@ -4,10 +4,10 @@
 {% set clinics = clinics|default([]) %}
 {% set _ps_email_autofill = pre_screening_email_autofill|default(true) %}
 <!-- Pre-Screening Form (modal on patient pages; embedded on staff new patient) -->
-<div id="pre-screening-modal" class="{% if _ps_emb %}relative z-10 mx-auto w-full max-w-4xl{% else %}hidden fixed inset-0 z-50 overflow-y-auto{% endif %}">
+<div id="pre-screening-modal" class="{% if _ps_emb %}relative z-10 mx-auto w-full max-w-4xl{% else %}hidden fixed inset-0 z-[80] overflow-y-auto{% endif %}">
   {% if not _ps_emb %}
   <!-- Backdrop -->
-  <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onclick="closePreScreeningModal()"></div>
+  <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closePreScreeningModal()"></div>
   {% endif %}
 
   <!-- Modal / card content -->
@@ -17,7 +17,7 @@
       <div class="sticky top-0 z-10 border-b border-slate-200 bg-white px-6 py-4">
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="text-2xl font-bold text-slate-900">Pre-Screening Form</h2>
+            <h2 class="text-2xl font-bold text-[#1A4D2E]">Pre-Screening Form</h2>
             <p id="step-indicator" class="mt-1 text-sm text-slate-600">Step 1: Victim Info</p>
           </div>
           {% if _ps_emb %}
@@ -37,7 +37,7 @@
         <!-- Progress Bar -->
         <div class="mt-4">
           <div class="h-2 w-full rounded-full bg-slate-200">
-            <div id="progress-bar" class="h-2 rounded-full bg-emerald-500 transition-all duration-300" style="width: 33.33%"></div>
+            <div id="progress-bar" class="h-2 rounded-full bg-[#1A4D2E] transition-all duration-300" style="width: 33.33%"></div>
           </div>
           <div class="mt-1 flex justify-between text-xs text-slate-500">
             <span id="progress-fraction">1/3</span>
@@ -53,17 +53,17 @@
         <!-- Step 1: Victim Information -->
         <div id="step-1" class="step-content">
           <div class="mb-6">
-            <h3 class="text-lg font-bold text-slate-900">Victim Information</h3>
+            <h3 class="text-lg font-bold text-[#1A4D2E]">Victim Information</h3>
             <p class="mt-1 text-sm text-slate-600">Please provide the details of the person who was bitten.</p>
           </div>
 
           <div class="space-y-6">
             <div>
-              <label for="relationship_to_user" class="mb-2 block text-sm font-semibold text-slate-900">Relationship to Account User</label>
+              <label for="relationship_to_user" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Relationship to Account User</label>
               <select
                 id="relationship_to_user"
                 name="relationship_to_user"
-                class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
               >
                 <option value="Self" selected>Self</option>
                 <option value="Child">Child</option>
@@ -74,27 +74,27 @@
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
-                <label for="victim_first_name" class="mb-2 block text-sm font-semibold text-slate-900">First Name</label>
-                <input type="text" id="victim_first_name" name="victim_first_name" value="{{ patient.first_name or '' }}" data-self-value="{{ patient.first_name or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="First name">
+                <label for="victim_first_name" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">First Name</label>
+                <input type="text" id="victim_first_name" name="victim_first_name" value="{{ patient.first_name or '' }}" data-self-value="{{ patient.first_name or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="First name">
               </div>
               <div>
-                <label for="victim_middle_initial" class="mb-2 block text-sm font-semibold text-slate-900">Middle Initial <span class="font-normal text-slate-500">(optional)</span></label>
-                <input type="text" id="victim_middle_initial" name="victim_middle_initial" maxlength="2" data-self-value="" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="M.I.">
+                <label for="victim_middle_initial" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Middle Initial <span class="font-normal text-slate-500">(optional)</span></label>
+                <input type="text" id="victim_middle_initial" name="victim_middle_initial" maxlength="2" data-self-value="" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="M.I.">
               </div>
               <div>
-                <label for="victim_last_name" class="mb-2 block text-sm font-semibold text-slate-900">Last Name</label>
-                <input type="text" id="victim_last_name" name="victim_last_name" value="{{ patient.last_name or '' }}" data-self-value="{{ patient.last_name or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Last name">
+                <label for="victim_last_name" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Last Name</label>
+                <input type="text" id="victim_last_name" name="victim_last_name" value="{{ patient.last_name or '' }}" data-self-value="{{ patient.last_name or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="Last name">
               </div>
             </div>
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
-                <label for="date_of_birth" class="mb-2 block text-sm font-semibold text-slate-900">Birthday</label>
-                <input type="date" id="date_of_birth" name="date_of_birth" value="{{ patient.date_of_birth or '' }}" data-self-value="{{ patient.date_of_birth or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <label for="date_of_birth" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Birthday</label>
+                <input type="date" id="date_of_birth" name="date_of_birth" value="{{ patient.date_of_birth or '' }}" data-self-value="{{ patient.date_of_birth or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
               </div>
               <div>
-                <label for="gender" class="mb-2 block text-sm font-semibold text-slate-900">Gender</label>
-                <select id="gender" name="gender" data-self-value="{{ patient.gender or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <label for="gender" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Gender</label>
+                <select id="gender" name="gender" data-self-value="{{ patient.gender or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
                   <option value="">Select gender...</option>
                   <option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
                   <option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
@@ -102,18 +102,18 @@
                 </select>
               </div>
               <div>
-                <label for="age" class="mb-2 block text-sm font-semibold text-slate-900">Age</label>
-                <input type="number" id="age" name="age" value="{{ patient.age or '' }}" data-self-value="{{ patient.age or '' }}" required readonly inputmode="none" tabindex="-1" title="Computed from birthday" class="w-full cursor-default rounded-lg border border-slate-300 bg-slate-100 px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="—">
+                <label for="age" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Age</label>
+                <input type="number" id="age" name="age" value="{{ patient.age or '' }}" data-self-value="{{ patient.age or '' }}" required readonly inputmode="none" tabindex="-1" title="Computed from birthday" class="w-full cursor-default rounded-lg border border-slate-300 bg-slate-100 px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="—">
               </div>
             </div>
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label for="barangay" class="mb-2 block text-sm font-semibold text-slate-900">Barangay</label>
+                <label for="barangay" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Barangay</label>
                 {% set _addr = patient.address or '' %}
                 {% set _parts = _addr.split(',') %}
                 {% set patient_barangay = _parts[0].strip() if _parts else '' %}
-                <select id="barangay" name="barangay" data-self-value="{{ patient_barangay }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <select id="barangay" name="barangay" data-self-value="{{ patient_barangay }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
                   <option value="">Select barangay...</option>
                   <option value="Adlaon" {% if patient_barangay == 'Adlaon' %}selected{% endif %}>Adlaon</option>
                   <option value="Agsungot" {% if patient_barangay == 'Agsungot' %}selected{% endif %}>Agsungot</option>
@@ -124,16 +124,16 @@
                 </select>
               </div>
               <div>
-                <label for="contact_number" class="mb-2 block text-sm font-semibold text-slate-900">Contact Number</label>
-                <input type="tel" id="contact_number" name="contact_number" value="{{ patient.phone_number or '' }}" data-self-value="{{ patient.phone_number or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="09XXXXXXXXX">
+                <label for="contact_number" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Contact Number</label>
+                <input type="tel" id="contact_number" name="contact_number" value="{{ patient.phone_number or '' }}" data-self-value="{{ patient.phone_number or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="09XXXXXXXXX">
               </div>
             </div>
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div class="md:col-span-2">
-                <label for="email_address" class="mb-2 block text-sm font-semibold text-slate-900">Email Address</label>
+                <label for="email_address" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Email Address</label>
                 {% set _self_email = (session.email or patient.user_email or '') if _ps_email_autofill else '' %}
-                <input type="email" id="email_address" name="email_address" value="{{ _self_email }}" data-self-value="{{ _self_email }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="you@example.com">
+                <input type="email" id="email_address" name="email_address" value="{{ _self_email }}" data-self-value="{{ _self_email }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="you@example.com">
               </div>
             </div>
           </div>
@@ -142,43 +142,43 @@
         <!-- Step 2: Bite Details -->
         <div id="step-2" class="step-content hidden">
           <div class="mb-6">
-            <h3 class="text-lg font-bold text-slate-900">Bite Details</h3>
+            <h3 class="text-lg font-bold text-[#1A4D2E]">Bite Details</h3>
             <p class="mt-1 text-sm text-slate-600">Please provide the following information about the incident to help us assess the situation.</p>
           </div>
 
           <!-- Type of Exposure -->
           <div class="mb-6">
-            <label class="mb-2 block text-sm font-semibold text-slate-900">TYPE OF EXPOSURE</label>
+            <label class="mb-2 block text-sm font-semibold text-[#1A4D2E]">TYPE OF EXPOSURE</label>
             <div class="grid grid-cols-2 gap-3 overflow-visible pt-1 md:grid-cols-5">
               <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Bite">
                 <input type="radio" name="type_of_exposure" value="Bite" class="peer sr-only" required aria-describedby="exposure-desc-bite">
                 <span id="exposure-desc-bite" class="sr-only">Animal teeth broke the skin; saliva may enter the wound.</span>
                 <span class="text-sm font-medium">Bite</span>
-                <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Animal teeth broke the skin; saliva may enter the wound.</span>
+                <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[90] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Animal teeth broke the skin; saliva may enter the wound.</span>
               </label>
               <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Scratch">
                 <input type="radio" name="type_of_exposure" value="Scratch" class="peer sr-only" aria-describedby="exposure-desc-scratch">
                 <span id="exposure-desc-scratch" class="sr-only">Claws or teeth scratched the skin (with or without bleeding).</span>
                 <span class="text-sm font-medium">Scratch</span>
-                <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Claws or teeth scratched the skin (with or without bleeding).</span>
+                <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[90] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Claws or teeth scratched the skin (with or without bleeding).</span>
               </label>
               <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Contamination of Mucous Membrane">
                 <input type="radio" name="type_of_exposure" value="Contamination of Mucous Membrane" class="peer sr-only" aria-describedby="exposure-desc-mucous">
                 <span id="exposure-desc-mucous" class="sr-only">Saliva or infectious material contacted eyes, nose, or mouth.</span>
                 <span class="text-sm font-medium text-center">Contamination of Mucous Membrane</span>
-                <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Saliva or infectious material contacted eyes, nose, or mouth.</span>
+                <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[90] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Saliva or infectious material contacted eyes, nose, or mouth.</span>
               </label>
               <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Non-Bite">
                 <input type="radio" name="type_of_exposure" value="Non-Bite" class="peer sr-only" aria-describedby="exposure-desc-nonbite">
                 <span id="exposure-desc-nonbite" class="sr-only">Exposure without a classic bite (e.g., lick on broken skin, contamination).</span>
                 <span class="text-sm font-medium">Non-Bite</span>
-                <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Exposure without a classic bite (e.g., lick on broken skin, contamination).</span>
+                <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[90] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Exposure without a classic bite (e.g., lick on broken skin, contamination).</span>
               </label>
               <label class="group relative flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors exposure-type" data-value="Touch only">
                 <input type="radio" name="type_of_exposure" value="Touch only" class="peer sr-only" aria-describedby="exposure-desc-touch">
                 <span id="exposure-desc-touch" class="sr-only">Contact with unbroken skin only; no wound or mucosa involved.</span>
                 <span class="text-sm font-medium text-center">Touch only / Lick on intact skin</span>
-                <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Contact with unbroken skin only; no wound or mucosa involved.</span>
+                <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[90] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Contact with unbroken skin only; no wound or mucosa involved.</span>
               </label>
             </div>
           </div>
@@ -186,20 +186,20 @@
           <!-- Date and Time Exposed -->
           <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label for="exposure_date" class="mb-2 block cursor-pointer text-sm font-semibold text-slate-900" onclick="document.getElementById('exposure_date').showPicker?.(); document.getElementById('exposure_date').focus();">DATE EXPOSED</label>
-              <input type="date" id="exposure_date" name="exposure_date" required class="w-full cursor-pointer rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" onclick="this.showPicker?.()">
+              <label for="exposure_date" class="mb-2 block cursor-pointer text-sm font-semibold text-[#1A4D2E]" onclick="document.getElementById('exposure_date').showPicker?.(); document.getElementById('exposure_date').focus();">DATE EXPOSED</label>
+              <input type="date" id="exposure_date" name="exposure_date" required class="w-full cursor-pointer rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" onclick="this.showPicker?.()">
             </div>
             <div>
-              <label for="exposure_time" class="mb-2 block cursor-pointer text-sm font-semibold text-slate-900" onclick="document.getElementById('exposure_time').showPicker?.(); document.getElementById('exposure_time').focus();">TIME EXPOSED</label>
-              <input type="time" id="exposure_time" name="exposure_time" required class="w-full cursor-pointer rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" onclick="this.showPicker?.()">
+              <label for="exposure_time" class="mb-2 block cursor-pointer text-sm font-semibold text-[#1A4D2E]" onclick="document.getElementById('exposure_time').showPicker?.(); document.getElementById('exposure_time').focus();">TIME EXPOSED</label>
+              <input type="time" id="exposure_time" name="exposure_time" required class="w-full cursor-pointer rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" onclick="this.showPicker?.()">
             </div>
           </div>
 
           <!-- Place of Exposure and Affected Area -->
           <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label for="place_of_exposure" class="mb-2 block text-sm font-semibold text-slate-900">PLACE OF EXPOSURE</label>
-              <select id="place_of_exposure" name="place_of_exposure" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <label for="place_of_exposure" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">PLACE OF EXPOSURE</label>
+              <select id="place_of_exposure" name="place_of_exposure" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
                 <option value="">Select...</option>
                 <option value="Inside home">Inside home</option>
                 <option value="Outside home">Outside home</option>
@@ -215,16 +215,16 @@
               </select>
               <div id="place-of-exposure-other-container" class="mt-3 hidden">
                 <label for="place_of_exposure_other" class="mb-2 block text-sm font-medium text-slate-700">Specify other place of exposure</label>
-                <input type="text" id="place_of_exposure_other" name="place_of_exposure_other" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Specify...">
+                <input type="text" id="place_of_exposure_other" name="place_of_exposure_other" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="Specify...">
               </div>
             </div>
             <div>
-              <label id="affected-area-label" for="affected-area-trigger" class="mb-2 block text-sm font-semibold text-slate-900">AFFECTED AREA</label>
+              <label id="affected-area-label" for="affected-area-trigger" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">AFFECTED AREA</label>
               <div id="affected-area-group" class="relative">
                 <button
                   type="button"
                   id="affected-area-trigger"
-                  class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-left text-sm text-slate-900 hover:border-emerald-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-left text-sm text-[#1A4D2E] hover:border-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
                   aria-haspopup="true"
                   aria-expanded="false"
                   aria-controls="affected-area-panel"
@@ -242,31 +242,31 @@
                 >
                   <p class="mb-2 text-xs text-slate-500">Select all that apply</p>
                   <div class="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Head/Face" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Head/Face</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Neck" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Neck</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Trunk" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Trunk</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Right arm" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Right arm</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Left arm" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Left arm</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Right hand" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Right hand</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Left hand" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Left hand</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Right leg" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Right leg</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Left leg" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Left leg</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Right foot" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Right foot</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Left foot" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Left foot</label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" name="affected_area" value="Other" id="affected_area_cb_other" class="rounded border-slate-300 bg-white text-emerald-600 focus:ring-emerald-500"> Other</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Head/Face" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]"> Head/Face</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Neck" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]"> Neck</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Trunk" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]"> Trunk</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Right arm" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]"> Right arm</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Left arm" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]"> Left arm</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Right hand" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]"> Right hand</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Left hand" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]"> Left hand</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Right leg" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]"> Right leg</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Left leg" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]"> Left leg</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Right foot" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]"> Right foot</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100"><input type="checkbox" name="affected_area" value="Left foot" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]"> Left foot</label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded bg-slate-50 px-2 py-1.5 hover:bg-slate-100 sm:col-span-2"><input type="checkbox" name="affected_area" value="Other" id="affected_area_cb_other" class="rounded border-slate-300 bg-white text-[#1A4D2E] focus:ring-[#1A4D2E]"> Other</label>
                   </div>
                 </div>
               </div>
               <div id="affected-area-other-container" class="mt-3 hidden">
                 <label for="affected_area_other" class="mb-2 block text-sm font-medium text-slate-700">Specify other affected area</label>
-                <input type="text" id="affected_area_other" name="affected_area_other" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Specify...">
+                <input type="text" id="affected_area_other" name="affected_area_other" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="Specify...">
               </div>
             </div>
           </div>
 
           <!-- Physical Examination Findings -->
           <div class="mb-6">
-            <label class="mb-2 block text-sm font-semibold text-slate-900">PHYSICAL EXAMINATION FINDINGS</label>
+            <label class="mb-2 block text-sm font-semibold text-[#1A4D2E]">PHYSICAL EXAMINATION FINDINGS</label>
             
             <!-- Description of Wound -->
             <div class="mb-4">
@@ -283,7 +283,7 @@
                     </svg>
                   </span>
                   <span class="text-xs font-medium">Punctured</span>
-                  <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Small, deep hole—often from teeth; may close quickly on the surface.</span>
+                  <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[90] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Small, deep hole—often from teeth; may close quickly on the surface.</span>
                 </label>
                 <label class="group relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 px-3 py-3 transition-colors wound-type" data-value="Abrasion">
                   <input type="radio" name="wound_description" value="Abrasion" class="peer sr-only" aria-describedby="wound-desc-abrasion">
@@ -296,7 +296,7 @@
                     </svg>
                   </span>
                   <span class="text-xs font-medium">Abrasion</span>
-                  <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Superficial scrape; top layers of skin rubbed off.</span>
+                  <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[90] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Superficial scrape; top layers of skin rubbed off.</span>
                 </label>
                 <label class="group relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 px-3 py-3 transition-colors wound-type" data-value="Lacerated">
                   <input type="radio" name="wound_description" value="Lacerated" class="peer sr-only" aria-describedby="wound-desc-lacerated">
@@ -307,7 +307,7 @@
                     </svg>
                   </span>
                   <span class="text-xs font-medium">Lacerated</span>
-                  <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Jagged or torn cut with irregular edges.</span>
+                  <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[90] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Jagged or torn cut with irregular edges.</span>
                 </label>
                 <label class="group relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 px-3 py-3 transition-colors wound-type" data-value="Avulsed">
                   <input type="radio" name="wound_description" value="Avulsed" class="peer sr-only" aria-describedby="wound-desc-avulsed">
@@ -319,7 +319,7 @@
                     </svg>
                   </span>
                   <span class="text-xs font-medium">Avulsed</span>
-                  <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Skin or tissue partly torn away or hanging as a flap.</span>
+                  <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[90] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">Skin or tissue partly torn away or hanging as a flap.</span>
                 </label>
                 <label class="group relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 px-3 py-3 transition-colors wound-type" data-value="None">
                   <input type="radio" name="wound_description" value="None" class="peer sr-only" aria-describedby="wound-desc-none">
@@ -330,7 +330,7 @@
                     </svg>
                   </span>
                   <span class="text-xs font-medium">None</span>
-                  <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[70] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">No break in the skin or no wound visible.</span>
+                  <span role="tooltip" aria-hidden="true" class="pointer-events-none absolute bottom-full left-0 right-0 z-[90] mb-2 box-border hidden w-full min-w-0 whitespace-normal rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-center text-xs font-normal leading-snug text-slate-700 shadow-xl ring-1 ring-slate-900/5 group-hover:block group-focus-within:block peer-checked:!hidden">No break in the skin or no wound visible.</span>
                 </label>
               </div>
             </div>
@@ -370,7 +370,7 @@
 
           <!-- Previous Anti-Rabies Immunization -->
           <div class="mb-6">
-            <label class="mb-2 block text-sm font-semibold text-slate-900">PREVIOUS ANTI-RABIES IMMUNIZATION OF PATIENT</label>
+            <label class="mb-2 block text-sm font-semibold text-[#1A4D2E]">PREVIOUS ANTI-RABIES IMMUNIZATION OF PATIENT</label>
             <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
               <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors prev-immunization" data-value="Completed">
                 <input type="radio" name="patient_prev_immunization" value="Completed" class="sr-only" required>
@@ -387,13 +387,13 @@
             </div>
             <div id="prev-vaccine-date-container" class="mt-4 hidden">
               <label for="prev_vaccine_date" class="mb-2 block text-sm font-medium text-slate-700">Date of Previous Anti-Rabies Vaccine</label>
-              <input type="date" id="prev_vaccine_date" name="prev_vaccine_date" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <input type="date" id="prev_vaccine_date" name="prev_vaccine_date" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
             </div>
           </div>
 
           <!-- Type of Animal -->
           <div class="mb-6">
-            <label class="mb-2 block text-sm font-semibold text-slate-900">TYPE OF ANIMAL</label>
+            <label class="mb-2 block text-sm font-semibold text-[#1A4D2E]">TYPE OF ANIMAL</label>
             <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
               <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors animal-type" data-value="Dog">
                 <input type="radio" name="animal_type" value="Dog" class="sr-only" required>
@@ -410,13 +410,13 @@
             </div>
             <div id="other-animal-container" class="mt-4 hidden">
               <label for="other_animal" class="mb-2 block text-sm font-medium text-slate-700">Specify other animal</label>
-              <input type="text" id="other_animal" name="other_animal" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <input type="text" id="other_animal" name="other_animal" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
             </div>
           </div>
 
           <!-- Animal Status -->
           <div class="mb-6">
-            <label class="mb-2 block text-sm font-semibold text-slate-900">ANIMAL STATUS</label>
+            <label class="mb-2 block text-sm font-semibold text-[#1A4D2E]">ANIMAL STATUS</label>
             <div class="grid grid-cols-2 gap-3 md:grid-cols-5">
               <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors animal-status" data-value="Healthy">
                 <input type="radio" name="animal_status" value="Healthy" class="sr-only" required>
@@ -443,7 +443,7 @@
 
           <!-- Anti-Rabies Vaccination of Animal -->
           <div class="mb-6">
-            <label class="mb-2 block text-sm font-semibold text-slate-900">ANTI-RABIES VACCINATION OF ANIMAL</label>
+            <label class="mb-2 block text-sm font-semibold text-[#1A4D2E]">ANTI-RABIES VACCINATION OF ANIMAL</label>
             <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
               <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-3 transition-colors animal-vaccination" data-value="Updated">
                 <input type="radio" name="animal_vaccination" value="Updated" class="sr-only" required>
@@ -462,7 +462,7 @@
 
           <!-- Local Wound Treatment -->
           <div class="mb-6">
-            <label class="mb-2 block text-sm font-semibold text-slate-900">LOCAL WOUND TREATMENT</label>
+            <label class="mb-2 block text-sm font-semibold text-[#1A4D2E]">LOCAL WOUND TREATMENT</label>
             <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
               <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-3 py-2.5 transition-colors local-treatment" data-value="Wash with Water Only">
                 <input type="radio" name="local_treatment" value="Wash with Water Only" class="sr-only" required>
@@ -483,13 +483,13 @@
             </div>
             <div id="other-treatment-container" class="mt-4 hidden">
               <label for="other_treatment" class="mb-2 block text-sm font-medium text-slate-700">Specify other treatment</label>
-              <input type="text" id="other_treatment" name="other_treatment" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <input type="text" id="other_treatment" name="other_treatment" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
             </div>
           </div>
 
           <!-- Tetanus Immunization -->
           <div class="mb-6">
-            <label class="mb-2 block text-sm font-semibold text-slate-900">TETANUS IMMUNIZATION</label>
+            <label class="mb-2 block text-sm font-semibold text-[#1A4D2E]">TETANUS IMMUNIZATION</label>
             <div class="flex gap-3">
               <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2.5 transition-colors tetanus-immunization" data-value="Yes">
                 <input type="radio" name="tetanus_immunization" value="Yes" class="sr-only" required>
@@ -502,13 +502,13 @@
             </div>
             <div id="tetanus-date-container" class="mt-4 hidden">
               <label for="tetanus_date" class="mb-2 block text-sm font-medium text-slate-700">Date (for Tetanus Immunization)</label>
-              <input type="date" id="tetanus_date" name="tetanus_date" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <input type="date" id="tetanus_date" name="tetanus_date" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
             </div>
           </div>
 
           <!-- Human Tetanus Immunoglobulin -->
           <div class="mb-6">
-            <label class="mb-2 block text-sm font-semibold text-slate-900">HUMAN TETANUS IMMUNOGLOBULIN</label>
+            <label class="mb-2 block text-sm font-semibold text-[#1A4D2E]">HUMAN TETANUS IMMUNOGLOBULIN</label>
             <div class="flex gap-3">
               <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2.5 transition-colors hrtig-immunization" data-value="Yes">
                 <input type="radio" name="hrtig_immunization" value="Yes" class="sr-only" required>
@@ -521,7 +521,7 @@
             </div>
             <div id="hrtig-date-container" class="mt-4 hidden">
               <label for="hrtig_date" class="mb-2 block text-sm font-medium text-slate-700">HRIG Date</label>
-              <input type="date" id="hrtig_date" name="hrtig_date" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <input type="date" id="hrtig_date" name="hrtig_date" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
               <p class="mt-1 text-xs text-slate-500">Required only if HRIG is Yes</p>
             </div>
           </div>
@@ -530,7 +530,7 @@
         <!-- Step 3: Choose appointment time (only for New Appointment) -->
         <div id="step-3" class="step-content hidden" data-step-appointment-only="true">
           <div class="mb-6">
-            <h3 class="text-lg font-bold text-slate-900">Choose appointment time</h3>
+            <h3 class="text-lg font-bold text-[#1A4D2E]">Choose appointment time</h3>
             <p class="mt-1 text-sm text-slate-600">Select a date, then a time. Only available slots are shown.</p>
           </div>
           <input type="hidden" name="appointment_slot_id" id="appointment_slot_id" value="" />
@@ -538,8 +538,8 @@
           <input type="hidden" name="clinic_id" id="clinic_id_slot" value="{{ clinics[0].id if clinics and clinics|length == 1 else '' }}" />
           {% if clinics and clinics|length > 1 %}
           <div class="mb-4">
-            <label for="clinic_select" class="mb-2 block text-sm font-semibold text-slate-900">Clinic</label>
-            <select id="clinic_select" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <label for="clinic_select" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Clinic</label>
+            <select id="clinic_select" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
               {% for c in clinics %}
               <option value="{{ c.id }}" {% if loop.first %}selected{% endif %}>{{ c.name }}</option>
               {% endfor %}
@@ -547,7 +547,7 @@
           </div>
           {% endif %}
           <div class="mb-4">
-            <label class="mb-2 block text-sm font-semibold text-slate-900">Select date</label>
+            <label class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Select date</label>
             <div class="mb-2 flex items-center justify-between">
               <button
                 type="button"
@@ -573,19 +573,19 @@
             <p id="availability-no-dates" class="mt-2 hidden text-sm text-slate-500">Loading dates...</p>
           </div>
           <div class="mb-4">
-            <label class="mb-2 block text-sm font-semibold text-slate-900">Available times for selected date</label>
+            <label class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Available times for selected date</label>
             <div id="availability-times" class="flex flex-wrap gap-2">
               <span id="availability-times-placeholder" class="text-sm text-slate-500">Select a date above.</span>
             </div>
             <p id="availability-no-slots" class="mt-2 hidden text-sm text-amber-600">No available times. Please contact the clinic or try another date.</p>
           </div>
-          <div id="selected-slot-display" class="hidden rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800"></div>
+          <div id="selected-slot-display" class="hidden rounded-lg border border-[#1A4D2E]/20 bg-[#1A4D2E]/5 p-3 text-sm font-medium text-[#1A4D2E]"></div>
         </div>
 
         <!-- Step 4: Summary -->
         <div id="step-4" class="step-content hidden">
           <div class="mb-6">
-            <h3 class="text-lg font-bold text-slate-900">Pre-Screening Summary</h3>
+            <h3 class="text-lg font-bold text-[#1A4D2E]">Pre-Screening Summary</h3>
             <p class="mt-1 text-sm text-slate-600">Please review the information below before submitting.</p>
           </div>
 
@@ -612,8 +612,8 @@
         <!-- Navigation Buttons -->
         <div class="mt-8 flex justify-end gap-3 border-t border-slate-200 pt-6">
           <button type="button" id="back-btn" onclick="previousStep()" class="hidden rounded-lg border-2 border-slate-300 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Back</button>
-          <button type="button" id="next-btn" onclick="nextStep()" class="rounded-lg bg-emerald-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-emerald-600">Next</button>
-          <button type="submit" id="submit-btn" class="hidden rounded-lg bg-emerald-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-emerald-600">{{ pre_screening_submit_label|default('Submit & Continue to Dashboard') }}</button>
+          <button type="button" id="next-btn" onclick="nextStep()" class="rounded-lg bg-[#1A4D2E] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#1A4D2E]">Next</button>
+          <button type="submit" id="submit-btn" class="hidden rounded-lg bg-[#1A4D2E] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#1A4D2E]">{{ pre_screening_submit_label|default('Submit & Continue to Dashboard') }}</button>
         </div>
       </form>
     </div>
@@ -621,8 +621,8 @@
 </div>
 
 <script>
-window.preScreeningEmbedded = {{ 'true' if _ps_emb else 'false' }};
-window.preScreeningCancelUrl = {{ (pre_screening_cancel_url|default(''))|tojson }};
+window.preScreeningEmbedded = "{{ 'true' if _ps_emb else 'false' }}" === "true";
+window.preScreeningCancelUrl = "{{ pre_screening_cancel_url|default('') }}";
 let currentStep = 1;
 let totalSteps = 3;
 let formData = {};
@@ -777,13 +777,13 @@ function initializeRadioButtons() {
       const radio = label.querySelector('input[type="radio"]');
       if (radio) {
         // Set default styling
-        label.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
-        label.classList.add('border-slate-300', 'bg-white', 'text-slate-900');
+        label.classList.remove('border-[#1A4D2E]', 'bg-[#1A4D2E]/5', 'text-[#1A4D2E]');
+        label.classList.add('border-slate-300', 'bg-white', 'text-[#1A4D2E]');
         
         // If checked, apply selected styling
         if (radio.checked) {
-          label.classList.remove('border-slate-300', 'bg-white', 'text-slate-900');
-          label.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+          label.classList.remove('border-slate-300', 'bg-white', 'text-[#1A4D2E]');
+          label.classList.add('border-[#1A4D2E]', 'bg-[#1A4D2E]/5', 'text-[#1A4D2E]');
         }
       }
     });
@@ -798,7 +798,8 @@ function closePreScreeningModal() {
     return;
   }
   document.getElementById('pre-screening-modal').classList.add('hidden');
-  document.body.style.overflow = 'auto';
+  document.getElementById('pre-screening-modal').classList.remove('z-[80]', 'backdrop-blur-sm', 'bg-slate-900/60');
+  document.body.style.overflow = '';
   currentStep = 1;
   formData = {};
   document.getElementById('pre-screening-form').reset();
@@ -1129,11 +1130,11 @@ function populateSummary() {
     appointmentBlock = `
     <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div class="mb-4 flex items-center justify-between">
-        <h4 class="text-base font-bold text-slate-900">Appointment</h4>
-        <button type="button" onclick="goToStep(3)" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">Edit</button>
+        <h4 class="text-base font-bold text-[#1A4D2E]">Appointment</h4>
+        <button type="button" onclick="goToStep(3)" class="text-sm font-medium text-[#1A4D2E] hover:text-[#1A4D2E]">Edit</button>
       </div>
       <p class="text-xs text-slate-500">Date &amp; time</p>
-      <p class="font-semibold text-slate-900">${formatAppointmentDisplay(formData.appointment_datetime)}</p>
+      <p class="font-semibold text-[#1A4D2E]">${formatAppointmentDisplay(formData.appointment_datetime)}</p>
     </div>
     `;
   }
@@ -1145,49 +1146,49 @@ function populateSummary() {
   summaryContent.innerHTML = `
     <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div class="mb-4 flex items-center justify-between">
-        <h4 class="text-base font-bold text-slate-900">Patient Information</h4>
-        <button type="button" onclick="goToStep(2)" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">Edit</button>
+        <h4 class="text-base font-bold text-[#1A4D2E]">Patient Information</h4>
+        <button type="button" onclick="goToStep(2)" class="text-sm font-medium text-[#1A4D2E] hover:text-[#1A4D2E]">Edit</button>
       </div>
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <p class="text-xs text-slate-500">Name</p>
-          <p class="font-semibold text-slate-900">${[formData.victim_first_name, formData.victim_middle_initial, formData.victim_last_name].filter(Boolean).join(' ') || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${[formData.victim_first_name, formData.victim_middle_initial, formData.victim_last_name].filter(Boolean).join(' ') || 'N/A'}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Birthday</p>
-          <p class="font-semibold text-slate-900">${formData.date_of_birth ? new Date(formData.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.date_of_birth ? new Date(formData.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Gender</p>
-          <p class="font-semibold text-slate-900">${formData.gender || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.gender || 'N/A'}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Age</p>
-          <p class="font-semibold text-slate-900">${formData.age || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.age || 'N/A'}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Contact Number</p>
-          <p class="font-semibold text-slate-900">${formData.contact_number || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.contact_number || 'N/A'}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Email Address</p>
-          <p class="font-semibold text-slate-900">${formData.email_address || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.email_address || 'N/A'}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Barangay</p>
-          <p class="font-semibold text-slate-900">${formData.barangay || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.barangay || 'N/A'}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Address</p>
-          <p class="font-semibold text-slate-900">${formData.victim_address || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.victim_address || 'N/A'}</p>
         </div>
       </div>
     </div>
     ${appointmentBlock}
     <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div class="mb-4 flex items-center justify-between">
-        <h4 class="text-base font-bold text-slate-900">Bite Details</h4>
-        <button type="button" onclick="goToStep(1)" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">Edit</button>
+        <h4 class="text-base font-bold text-[#1A4D2E]">Bite Details</h4>
+        <button type="button" onclick="goToStep(1)" class="text-sm font-medium text-[#1A4D2E] hover:text-[#1A4D2E]">Edit</button>
       </div>
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div class="md:col-span-2">
@@ -1196,67 +1197,67 @@ function populateSummary() {
         </div>
         <div>
           <p class="text-xs text-slate-500">Type of Exposure</p>
-          <p class="font-semibold text-slate-900">${formData.type_of_exposure || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.type_of_exposure || 'N/A'}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Type of Animal</p>
-          <p class="font-semibold text-slate-900">${formData.animal_type || 'N/A'}${formData.other_animal ? ' (' + formData.other_animal + ')' : ''}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.animal_type || 'N/A'}${formData.other_animal ? ' (' + formData.other_animal + ')' : ''}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Animal Status</p>
-          <p class="font-semibold text-slate-900">${formData.animal_status || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.animal_status || 'N/A'}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Date Exposed</p>
-          <p class="font-semibold text-slate-900">${formData.exposure_date || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.exposure_date || 'N/A'}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Time Exposed</p>
-          <p class="font-semibold text-slate-900">${formData.exposure_time || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.exposure_time || 'N/A'}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Place of Exposure</p>
-          <p class="font-semibold text-slate-900">${formData.place_of_exposure || 'N/A'}${formData.place_of_exposure_other ? ' (' + formData.place_of_exposure_other + ')' : ''}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.place_of_exposure || 'N/A'}${formData.place_of_exposure_other ? ' (' + formData.place_of_exposure_other + ')' : ''}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Affected Area</p>
-          <p class="font-semibold text-slate-900">${formatAffectedAreaSummary(formData)}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formatAffectedAreaSummary(formData)}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Prev Anti-Rabies Immunization</p>
-          <p class="font-semibold text-slate-900">${formData.patient_prev_immunization || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.patient_prev_immunization || 'N/A'}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Date of Prev Vaccine</p>
-          <p class="font-semibold text-slate-900">${formData.prev_vaccine_date || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.prev_vaccine_date || 'N/A'}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Anti-Rabies Vaccination of Animal</p>
-          <p class="font-semibold text-slate-900">${formData.animal_vaccination || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.animal_vaccination || 'N/A'}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Physical Examination Findings</p>
-          <p class="font-semibold text-slate-900">${formData.wound_description || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.wound_description || 'N/A'}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Local Wound Treatment</p>
-          <p class="font-semibold text-slate-900">${formData.local_treatment || 'N/A'}${formData.other_treatment ? ' (' + formData.other_treatment + ')' : ''}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.local_treatment || 'N/A'}${formData.other_treatment ? ' (' + formData.other_treatment + ')' : ''}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Tetanus Immunization</p>
-          <p class="font-semibold text-slate-900">${formData.tetanus_immunization || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.tetanus_immunization || 'N/A'}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Date (for Tetanus Immunization)</p>
-          <p class="font-semibold text-slate-900">${formData.tetanus_date || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.tetanus_date || 'N/A'}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">Human Tetanus Immunoglobulin</p>
-          <p class="font-semibold text-slate-900">${formData.hrtig_immunization || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.hrtig_immunization || 'N/A'}</p>
         </div>
         <div>
           <p class="text-xs text-slate-500">HRIG Date</p>
-          <p class="font-semibold text-slate-900">${formData.hrtig_date || 'N/A'}</p>
+          <p class="font-semibold text-[#1A4D2E]">${formData.hrtig_date || 'N/A'}</p>
         </div>
       </div>
     </div>
@@ -1377,7 +1378,7 @@ function renderCalendarGrid(calEl, monthStart) {
     var clickable = hasSlots && !isPast;
     var cls = 'rounded p-1 text-sm ';
     if (clickable) {
-      cls += 'cursor-pointer bg-emerald-100 text-emerald-800 hover:bg-emerald-200';
+      cls += 'cursor-pointer bg-[#1A4D2E]/10 text-[#1A4D2E] hover:bg-[#1A4D2E]';
     } else if (isPast) {
       cls += 'text-slate-300';
     } else {
@@ -1416,10 +1417,10 @@ function prevCalendarMonth() {
 
 function onAvailabilityDateClick(dateStr) {
   document.querySelectorAll('#availability-calendar [data-date]').forEach(function(el) {
-    el.classList.remove('ring', 'ring-2', 'ring-emerald-500');
+    el.classList.remove('ring', 'ring-2', 'ring-[#1A4D2E]');
   });
   var el = document.querySelector('#availability-calendar [data-date="' + dateStr + '"]');
-  if (el) el.classList.add('ring', 'ring-2', 'ring-emerald-500');
+  if (el) el.classList.add('ring', 'ring-2', 'ring-[#1A4D2E]');
   var container = document.getElementById('availability-times');
   var placeholder = document.getElementById('availability-times-placeholder');
   var noSlots = document.getElementById('availability-no-slots');
@@ -1453,17 +1454,17 @@ function onAvailabilityDateClick(dateStr) {
   slots.forEach(function(s) {
     var btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'rounded-lg border-2 border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-emerald-500 hover:bg-emerald-50';
+    btn.className = 'rounded-lg border-2 border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-[#1A4D2E] hover:bg-[#1A4D2E]/5';
     btn.textContent = s.time_display;
     btn.dataset.slotId = s.id;
     btn.dataset.slotDatetime = s.slot_datetime || '';
     btn.addEventListener('click', function() {
       document.querySelectorAll('#availability-times button').forEach(function(b) {
-        b.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+        b.classList.remove('border-[#1A4D2E]', 'bg-[#1A4D2E]/5', 'text-[#1A4D2E]');
         b.classList.add('border-slate-300', 'bg-white', 'text-slate-700');
       });
       this.classList.remove('border-slate-300', 'bg-white', 'text-slate-700');
-      this.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+      this.classList.add('border-[#1A4D2E]', 'bg-[#1A4D2E]/5', 'text-[#1A4D2E]');
       document.getElementById('appointment_slot_id').value = this.dataset.slotId || '';
       document.getElementById('appointment_datetime').value = this.dataset.slotDatetime || '';
       selDisplay.textContent = 'Selected: ' + (s.slot_datetime ? formatAppointmentDisplay(s.slot_datetime) : s.time_display);
@@ -1492,19 +1493,19 @@ document.addEventListener('DOMContentLoaded', function() {
       if (radio) {
         // Initialize styling
         if (!radio.checked) {
-          label.classList.add('border-slate-300', 'bg-white', 'text-slate-900');
+          label.classList.add('border-slate-300', 'bg-white', 'text-[#1A4D2E]');
         }
         
         radio.addEventListener('change', function() {
           // Remove selected state and validation red from siblings
           document.querySelectorAll('.' + groupClass).forEach(l => {
-            l.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-700', 'border-red-500');
-            l.classList.add('border-slate-300', 'bg-white', 'text-slate-900');
+            l.classList.remove('border-[#1A4D2E]', 'bg-[#1A4D2E]/5', 'text-[#1A4D2E]', 'border-red-500');
+            l.classList.add('border-slate-300', 'bg-white', 'text-[#1A4D2E]');
           });
           // Add selected state to current
           if (this.checked) {
-            label.classList.remove('border-slate-300', 'bg-white', 'text-slate-900', 'border-red-500');
-            label.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+            label.classList.remove('border-slate-300', 'bg-white', 'text-[#1A4D2E]', 'border-red-500');
+            label.classList.add('border-[#1A4D2E]', 'bg-[#1A4D2E]/5', 'text-[#1A4D2E]');
           }
         });
       }

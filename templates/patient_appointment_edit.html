@@ -6,7 +6,7 @@
   <div class="flex h-full min-h-0 flex-col space-y-4">
     <div class="flex items-center justify-between border-b border-slate-200 pb-3">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">Reschedule Appointment #{{ appointment.id }}</h1>
+        <h1 class="text-2xl font-bold text-[#1A4D2E]">Reschedule Appointment #{{ appointment.id }}</h1>
         <p class="mt-1 text-sm text-slate-600">
           Current: {{ current_datetime_display or 'N/A' }}
         </p>
@@ -18,14 +18,14 @@
 
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <section class="lg:col-span-2 space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 class="text-lg font-semibold text-slate-900">Choose a new date &amp; time</h2>
+        <h2 class="text-lg font-semibold text-[#1A4D2E]">Choose a new date &amp; time</h2>
 
         <form method="post" action="{{ url_for('patient_appointment_edit', appointment_id=appointment.id) }}" class="space-y-4">
           <input type="hidden" name="appointment_slot_id" id="resched-appointment-slot-id" value="" />
 
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label class="mb-2 block text-sm font-semibold text-slate-900">Select date</label>
+              <label class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Select date</label>
               <div class="mb-2 flex items-center justify-between">
                 <button
                   type="button"
@@ -52,18 +52,18 @@
             </div>
 
             <div>
-              <label class="mb-2 block text-sm font-semibold text-slate-900">Available times</label>
+              <label class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Available times</label>
               <div id="resched-availability-times" class="flex flex-wrap gap-2">
                 <span id="resched-availability-times-placeholder" class="text-sm text-slate-500">Select a date on the calendar.</span>
               </div>
               <p id="resched-availability-no-slots" class="mt-2 hidden text-sm text-amber-600">No available times. Please contact the clinic or try another date.</p>
-              <div id="resched-selected-slot-display" class="mt-2 hidden rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium text-emerald-800"></div>
+              <div id="resched-selected-slot-display" class="mt-2 hidden rounded-lg border border-[#1A4D2E]/20 bg-[#1A4D2E]/5 p-3 text-xs font-medium text-[#1A4D2E]"></div>
             </div>
           </div>
 
           <button
             type="submit"
-            class="inline-flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
+            class="inline-flex items-center rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A4D2E]"
           >
             Save new time
           </button>
@@ -71,7 +71,7 @@
       </section>
 
       <section class="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm text-sm">
-        <h2 class="text-lg font-semibold text-slate-900">Summary</h2>
+        <h2 class="text-lg font-semibold text-[#1A4D2E]">Summary</h2>
         <p><span class="font-medium text-slate-700">Status:</span> {{ appointment.status or 'Scheduled' }}</p>
         <p><span class="font-medium text-slate-700">Clinic ID:</span> {{ appointment.clinic_id }}</p>
         <p><span class="font-medium text-slate-700">Case ID:</span> {{ appointment.case_id }}</p>
@@ -155,7 +155,7 @@
         const clickable = hasSlots && !isPast;
         let cls = 'rounded p-1 text-sm ';
         if (clickable) {
-          cls += 'cursor-pointer bg-emerald-100 text-emerald-800 hover:bg-emerald-200';
+          cls += 'cursor-pointer bg-[#1A4D2E]/10 text-[#1A4D2E] hover:bg-[#1A4D2E]';
         } else if (isPast) {
           cls += 'text-slate-300';
         } else {
@@ -192,10 +192,10 @@
 
     function reschedOnAvailabilityDateClick(dateStr) {
       document.querySelectorAll('#resched-availability-calendar [data-date]').forEach(el => {
-        el.classList.remove('ring', 'ring-2', 'ring-emerald-500');
+        el.classList.remove('ring', 'ring-2', 'ring-[#1A4D2E]');
       });
       const el = document.querySelector('#resched-availability-calendar [data-date="' + dateStr + '"]');
-      if (el) el.classList.add('ring', 'ring-2', 'ring-emerald-500');
+      if (el) el.classList.add('ring', 'ring-2', 'ring-[#1A4D2E]');
 
       const container = document.getElementById('resched-availability-times');
       const placeholder = document.getElementById('resched-availability-times-placeholder');
@@ -222,16 +222,16 @@
       slots.forEach(s => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'rounded-lg border-2 border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-emerald-500 hover:bg-emerald-50';
+        btn.className = 'rounded-lg border-2 border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-[#1A4D2E] hover:bg-[#1A4D2E]/5';
         btn.textContent = s.time_display || s.slot_datetime;
         btn.dataset.slotId = s.id;
         btn.addEventListener('click', function() {
           document.querySelectorAll('#resched-availability-times button').forEach(b => {
-            b.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+            b.classList.remove('border-[#1A4D2E]', 'bg-[#1A4D2E]/5', 'text-[#1A4D2E]');
             b.classList.add('border-slate-300', 'bg-white', 'text-slate-700');
           });
           this.classList.remove('border-slate-300', 'bg-white', 'text-slate-700');
-          this.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+          this.classList.add('border-[#1A4D2E]', 'bg-[#1A4D2E]/5', 'text-[#1A4D2E]');
           hiddenSlotId.value = this.dataset.slotId || '';
           if (selDisplay) {
             selDisplay.textContent = 'Selected: ' + (s.slot_datetime || s.time_display);

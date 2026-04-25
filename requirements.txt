@@ -6,6 +6,13 @@
 #   pip install -r requirements.txt
 #   $env:FLASK_ENV="development"
 #   flask --app app:create_app --debug run
+#   
+#   for macOS:
+#   python3 -m venv .venv
+#   source .venv/bin/activate
+#   pip install -r requirements.txt (optional, disregard if requirements are met.)
+#   
+#   flask --app app:create_app --debug run
 #
 # If you want a specific host/port:
 #   flask --app app:create_app --debug run --host 0.0.0.0 --port 5000

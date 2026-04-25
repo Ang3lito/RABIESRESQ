@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html
   lang="en"
   data-notification-sound-role="patient"
@@ -20,37 +20,69 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     />
+    {% block head_extra %}{% endblock %}
+    <style>
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .page-fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+      }
+      .sidebar-link-transition {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .nav-link-hover:hover {
+        transform: translateX(8px);
+      }
+      .nav-link-hover:not(.bg-\[\#1A4D2E\]):not(.bg-red-500):hover {
+        background-color: rgba(26, 77, 46, 0.08);
+      }
+      .nav-link-hover:hover i, .nav-link-hover:hover svg {
+        transform: scale(1.15) rotate(-5deg);
+      }
+      .nav-link-hover i, .nav-link-hover svg {
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+    </style>
   </head>
-  <body class="min-h-screen bg-slate-100 text-slate-900">
+  <body class="min-h-screen bg-slate-100 text-[#1A4D2E]">
     <div class="flex min-h-screen flex-col lg:flex-row">
       <!-- Mobile overlay -->
       <div id="patient-sidebar-overlay" class="fixed inset-0 z-40 hidden bg-black/40 lg:hidden" onclick="closePatientSidebar()"></div>
 
       <aside
         id="patient-sidebar"
-        class="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] -translate-x-full border-r border-slate-200 bg-white pb-[env(safe-area-inset-bottom,0px)] transition-transform duration-200 ease-out lg:fixed lg:inset-y-0 lg:left-0 lg:z-10 lg:h-screen lg:max-w-none lg:w-64 lg:translate-x-0 lg:overflow-y-auto lg:pb-0"
+        class="fixed inset-y-0 left-0 z-50 w-64 -translate-x-full bg-slate-100 pb-[env(safe-area-inset-bottom,0px)] transition-transform duration-200 ease-out lg:fixed lg:inset-y-0 lg:left-0 lg:z-10 lg:h-screen lg:w-64 lg:translate-x-0 lg:overflow-y-auto lg:pb-0"
         aria-hidden="true"
       >
         <div class="flex h-full flex-col p-6">
-          <a href="{{ url_for('patient_dashboard') }}" class="text-2xl font-bold text-blue-800">RabiesResQ</a>
+          <a href="{{ url_for('patient_dashboard') }}" class="flex items-center gap-3 text-2xl font-bold text-[#1A4D2E]">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1A4D2E] text-white shadow-lg shadow-[#1A4D2E]/20">
+              <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+            </div>
+            <span>RabiesResQ</span>
+          </a>
 
           <a
             href="{{ url_for('patient_profile') }}"
-            class="mt-6 flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3 text-left transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+            class="mt-6 flex items-center gap-3 rounded-md border border-slate-100 bg-slate-50 p-3 text-left sidebar-link-transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1A4D2E] focus-visible:ring-offset-2"
           >
-            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-800">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#1A4D2E]/10 text-sm font-bold text-[#1A4D2E]">
               {{ patient_initials|default('P') }}
             </div>
             <div class="min-w-0 leading-tight">
-              <p class="truncate text-sm font-semibold text-slate-900">{{ patient_display_name or session.username }}</p>
+              <p class="truncate text-sm font-semibold text-[#1A4D2E]">{{ patient_display_name or session.username }}</p>
               <p class="truncate text-xs text-slate-500">{{ patient_account_type_label|default('Patient') }}</p>
             </div>
           </a>
 
-          <nav class="mt-6 space-y-2 text-sm">
+          <nav class="mt-6 space-y-1 text-sm">
             <a
               href="{{ url_for('patient_dashboard') }}"
-              class="flex items-center justify-between rounded-xl px-4 py-3 {{ 'bg-emerald-100 font-medium text-emerald-700' if active_page == 'dashboard' else 'text-slate-600 hover:bg-slate-100' }}"
+              class="flex items-center justify-between rounded-md px-4 py-3.5 sidebar-link-transition nav-link-hover {{ 'bg-[#1A4D2E] font-medium text-white shadow-lg shadow-[#1A4D2E]/20' if active_page == 'dashboard' else 'text-slate-500 hover:bg-slate-100' }}"
             >
               <div class="flex items-center gap-3">
                 <i class="fa-solid fa-table-columns"></i>
@@ -58,14 +90,14 @@
               </div>
               {% set dash_unread = (unread_appointments_count|default(0)) + (unread_schedule_count|default(0)) %}
               {% if dash_unread > 0 %}
-              <span class="ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+              <span class="ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
                 {{ dash_unread if dash_unread < 100 else '99+' }}
               </span>
               {% endif %}
             </a>
             <a
               href="{{ url_for('patient_vaccinations') }}"
-              class="flex items-center justify-between rounded-xl px-4 py-3 {{ 'bg-emerald-100 font-medium text-emerald-700' if active_page == 'vaccinations' else 'text-slate-600 hover:bg-slate-100' }}"
+              class="flex items-center justify-between rounded-md px-4 py-3.5 sidebar-link-transition nav-link-hover {{ 'bg-[#1A4D2E] font-medium text-white shadow-lg shadow-[#1A4D2E]/20' if active_page == 'vaccinations' else 'text-slate-500 hover:bg-slate-100' }}"
             >
               <div class="flex items-center gap-3">
                 <i class="fa-solid fa-syringe"></i>
@@ -73,14 +105,14 @@
               </div>
               {% set vacc_unread = (unread_vaccinations_count|default(0)) %}
               {% if vacc_unread > 0 %}
-              <span class="ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+              <span class="ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
                 {{ vacc_unread if vacc_unread < 100 else '99+' }}
               </span>
               {% endif %}
             </a>
             <a
               href="{{ url_for('patient_help') }}"
-              class="flex items-center gap-3 rounded-xl px-4 py-3 {{ 'bg-emerald-100 font-medium text-emerald-700' if active_page == 'help' else 'text-slate-600 hover:bg-slate-100' }}"
+              class="flex items-center gap-3 rounded-md px-4 py-3.5 sidebar-link-transition nav-link-hover {{ 'bg-[#1A4D2E] font-medium text-white shadow-lg shadow-[#1A4D2E]/20' if active_page == 'help' else 'text-slate-500 hover:bg-slate-100' }}"
             >
               <i class="fa-solid fa-circle-question"></i>
               Help
@@ -91,15 +123,16 @@
             <button
               type="button"
               onclick="openPreScreeningModal('appointment')"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#1A4D2E] px-4 py-3.5 text-sm font-bold text-white sidebar-link-transition nav-link-hover shadow-lg shadow-[#1A4D2E]/20"
             >
               <i class="fa-solid fa-plus"></i>
               New Appointment
             </button>
             <div class="mt-4 space-y-2 text-sm">
               <a
-                href="{{ url_for('auth.logout') }}"
-                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 font-semibold text-white transition hover:bg-red-600"
+                href="#"
+                onclick="openLogoutModal(event)"
+                class="inline-flex w-full items-center justify-center gap-2 rounded-md bg-red-500 px-4 py-3 font-bold text-white transition hover:bg-red-600 shadow-lg shadow-red-500/20"
               >
                 <i class="fa-solid fa-arrow-right-from-bracket"></i>
                 Logout
@@ -109,23 +142,41 @@
         </div>
       </aside>
 
-      <main class="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6 lg:ml-64 lg:p-8">
+      <main class="relative z-10 min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6 lg:ml-64 lg:p-10">
         <!-- Mobile top bar -->
-        <div class="mb-4 flex items-center justify-between gap-3 lg:hidden">
-          <button type="button" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white p-2.5 text-slate-700 shadow-sm hover:bg-slate-50" onclick="togglePatientSidebar()" aria-label="Open menu">
-            <i class="fa-solid fa-bars"></i>
+        <div class="mb-8 flex items-center justify-between gap-3 lg:hidden">
+          <button type="button" class="inline-flex items-center justify-center rounded-[2rem] border border-slate-200 bg-white p-3 text-slate-700 shadow-sm hover:bg-slate-50" onclick="togglePatientSidebar()" aria-label="Open menu">
+            <i class="fa-solid fa-bars text-lg"></i>
           </button>
-          <a href="{{ url_for('patient_dashboard') }}" class="truncate text-base font-semibold text-blue-900">RabiesResQ</a>
+          <a href="{{ url_for('patient_dashboard') }}" class="flex items-center gap-2 truncate text-lg font-bold text-[#1A4D2E]">
+            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1A4D2E] text-white">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+            </div>
+            <span>RabiesResQ</span>
+          </a>
           <div class="w-10"></div>
         </div>
-        <div class="min-w-0 rounded-2xl bg-white p-4 shadow-sm sm:p-6">
-          {% include "_flash.html" %}
+
+        {% include "_flash.html" %}
+        
+        {% if banner_status %}
+          <div class="mb-8">
+            {% include "_support_banner.html" with context %}
+          </div>
+        {% endif %}
+        
+        <div class="space-y-8 page-fade-in">
           {% block content %}{% endblock %}
         </div>
       </main>
     </div>
 
-    {% include "pre_screening_form.html" %}
+
+    {% block extra_modals %}
+      {% include "pre_screening_form.html" %}
+    {% endblock %}
     {% include "_alert_modal.html" %}
     {% include "_confirm_modal.html" %}
     {% block scripts %}
@@ -169,5 +220,6 @@
       <script src="{{ url_for('static', filename='js/notification_sound.js') }}"></script>
       {% block extra_scripts %}{% endblock %}
     {% endblock %}
+    {% include "_logout_modal.html" %}
   </body>
 </html>

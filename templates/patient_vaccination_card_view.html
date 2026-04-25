@@ -6,7 +6,7 @@
   <div class="flex h-full min-h-0 flex-col space-y-4">
     <div class="flex items-center justify-between border-b border-slate-200 pb-3">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">Vaccination Card</h1>
+        <h1 class="text-2xl font-bold text-[#1A4D2E]">Vaccination Card</h1>
         <p class="mt-1 text-sm text-slate-600">
           {{ victim_label }}
         </p>
@@ -14,13 +14,13 @@
       <div class="flex items-center gap-2">
         <a
           href="{{ url_for('patient_vaccinations') }}"
-          class="inline-flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
+          class="inline-flex items-center rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A4D2E]"
         >
           Back to Vaccinations
         </a>
         <a
           href="{{ url_for('patient_vaccination_card_pdf', appointment_id=appointment_id) }}"
-          class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          class="inline-flex items-center rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A4D2E]"
         >
           <i class="fa-solid fa-download mr-2 text-[11px]"></i>
           Download Vaccination Card (PDF)
@@ -29,14 +29,14 @@
     </div>
 
     <div class="flex-1">
-      <div class="mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:p-6">
+      <div class="mx-auto max-w-4xl rounded-[2rem] border border-slate-200 bg-slate-50 p-4 lg:p-6">
         <div class="mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:p-6">
-          <div class="flex items-start justify-between border-b border-emerald-600 pb-3">
+          <div class="flex items-start justify-between border-b border-[#1A4D2E] pb-3">
             <div>
-              <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+              <p class="text-xs font-semibold uppercase tracking-wide text-[#1A4D2E]">
                 Animal Bite Center
               </p>
-              <h2 class="mt-1 text-xl font-bold text-slate-900">Rabies Vaccination Card</h2>
+              <h2 class="mt-1 text-xl font-bold text-[#1A4D2E]">Rabies Vaccination Card</h2>
               <p class="mt-1 text-sm text-slate-700">
                 {{ victim_label }}
               </p>
@@ -44,27 +44,27 @@
             <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-xs max-w-md">
               <div>
                 <p class="text-slate-500">Name</p>
-                <p class="font-semibold text-slate-900">{{ victim_full_name }}</p>
+                <p class="font-semibold text-[#1A4D2E]">{{ victim_full_name }}</p>
               </div>
               <div>
                 <p class="text-slate-500">Gender</p>
-                <p class="font-semibold text-slate-900">{{ victim_gender }}</p>
+                <p class="font-semibold text-[#1A4D2E]">{{ victim_gender }}</p>
               </div>
               <div>
                 <p class="text-slate-500">Birthday</p>
-                <p class="font-semibold text-slate-900">{{ victim_birthday }}</p>
+                <p class="font-semibold text-[#1A4D2E]">{{ victim_birthday }}</p>
               </div>
               <div>
                 <p class="text-slate-500">Contact No.</p>
-                <p class="font-semibold text-slate-900">{{ victim_contact_number }}</p>
+                <p class="font-semibold text-[#1A4D2E]">{{ victim_contact_number }}</p>
               </div>
               <div>
                 <p class="text-slate-500">Age</p>
-                <p class="font-semibold text-slate-900">{{ victim_age or '—' }}</p>
+                <p class="font-semibold text-[#1A4D2E]">{{ victim_age or '—' }}</p>
               </div>
               <div>
                 <p class="text-slate-500">Address</p>
-                <p class="font-semibold text-slate-900 break-words">{{ victim_address }}</p>
+                <p class="font-semibold text-[#1A4D2E] break-words">{{ victim_address }}</p>
               </div>
             </div>
           </div>
@@ -77,23 +77,23 @@
               <dl class="mt-2 space-y-1 text-xs sm:text-sm">
                 <div class="flex justify-between gap-2">
                   <dt class="text-slate-500">Date &amp; Time</dt>
-                  <dd class="font-semibold text-slate-900">{{ appt_datetime_display or 'N/A' }}</dd>
+                  <dd class="font-semibold text-[#1A4D2E]">{{ appt_datetime_display or 'N/A' }}</dd>
                 </div>
                 <div class="flex justify-between gap-2">
                   <dt class="text-slate-500">Risk Category</dt>
-                  <dd class="font-semibold text-slate-900">{{ category_value or 'N/A' }}</dd>
+                  <dd class="font-semibold text-[#1A4D2E]">{{ category_value or 'N/A' }}</dd>
                 </div>
                 <div class="flex justify-between gap-2">
                   <dt class="text-slate-500">Type of Exposure</dt>
-                  <dd class="font-semibold text-slate-900">{{ type_of_exposure or 'N/A' }}</dd>
+                  <dd class="font-semibold text-[#1A4D2E]">{{ type_of_exposure or 'N/A' }}</dd>
                 </div>
                 <div class="flex justify-between gap-2">
                   <dt class="text-slate-500">Affected Area</dt>
-                  <dd class="font-semibold text-slate-900">{{ affected_area or 'N/A' }}</dd>
+                  <dd class="font-semibold text-[#1A4D2E]">{{ affected_area or 'N/A' }}</dd>
                 </div>
                 <div class="flex justify-between gap-2">
                   <dt class="text-slate-500">Bleeding Type</dt>
-                  <dd class="font-semibold text-slate-900">{{ bleeding_type or 'N/A' }}</dd>
+                  <dd class="font-semibold text-[#1A4D2E]">{{ bleeding_type or 'N/A' }}</dd>
                 </div>
                 <div>
                   <dt class="text-slate-500">Wound / Local Treatment</dt>
@@ -111,45 +111,45 @@
               <dl class="mt-2 space-y-1 text-xs sm:text-sm">
                 <div class="flex justify-between gap-2">
                   <dt class="text-slate-500">Anti-Rabies</dt>
-                  <dd class="font-semibold text-slate-900">{{ vaccination_card.anti_rabies or '—' }}</dd>
+                  <dd class="font-semibold text-[#1A4D2E]">{{ vaccination_card.anti_rabies or '—' }}</dd>
                 </div>
                 <div class="flex justify-between gap-2">
                   <dt class="text-slate-500">Vaccine (PVRV / PCEC / ERIG / HRIG)</dt>
-                  <dd class="font-semibold text-slate-900">{{ vaccination_card.get('form_vc_anti_rabies_vaccine') or '—' }}</dd>
+                  <dd class="font-semibold text-[#1A4D2E]">{{ vaccination_card.get('form_vc_anti_rabies_vaccine') or '—' }}</dd>
                 </div>
                 <div class="flex justify-between gap-2">
                   <dt class="text-slate-500">Batch No.</dt>
-                  <dd class="font-semibold text-slate-900">{{ vaccination_card.pcec_batch or '—' }}</dd>
+                  <dd class="font-semibold text-[#1A4D2E]">{{ vaccination_card.pcec_batch or '—' }}</dd>
                 </div>
                 <div class="flex justify-between gap-2">
                   <dt class="text-slate-500">Mfg / Expiry</dt>
-                  <dd class="font-semibold text-slate-900">
+                  <dd class="font-semibold text-[#1A4D2E]">
                     {{ vaccination_card.pcec_mfg_date or '—' }} / {{ vaccination_card.pcec_expiry or '—' }}
                   </dd>
                 </div>
                 <div class="flex justify-between gap-2">
                   <dt class="text-slate-500">Tetanus Prophylaxis</dt>
-                  <dd class="font-semibold text-slate-900">{{ vaccination_card.tetanus_prophylaxis or '—' }}</dd>
+                  <dd class="font-semibold text-[#1A4D2E]">{{ vaccination_card.tetanus_prophylaxis or '—' }}</dd>
                 </div>
                 <div class="flex justify-between gap-2">
                   <dt class="text-slate-500">Tetanus Toxoid / ATS / HTIG</dt>
-                  <dd class="font-semibold text-slate-900">
+                  <dd class="font-semibold text-[#1A4D2E]">
                     {{ vaccination_card.tetanus_toxoid or vaccination_card.ats or vaccination_card.htig or '—' }}
                   </dd>
                 </div>
                 <div class="flex justify-between gap-2">
                   <dt class="text-slate-500">Tetanus Batch</dt>
-                  <dd class="font-semibold text-slate-900">{{ vaccination_card.tetanus_batch or '—' }}</dd>
+                  <dd class="font-semibold text-[#1A4D2E]">{{ vaccination_card.tetanus_batch or '—' }}</dd>
                 </div>
                 <div class="flex justify-between gap-2">
                   <dt class="text-slate-500">Tetanus Mfg / Expiry</dt>
-                  <dd class="font-semibold text-slate-900">
+                  <dd class="font-semibold text-[#1A4D2E]">
                     {{ vaccination_card.tetanus_mfg_date or '—' }} / {{ vaccination_card.tetanus_expiry or '—' }}
                   </dd>
                 </div>
                 {% if pre_screening_vaccination_note %}
-                <div class="mt-2 rounded-lg border border-emerald-200 bg-emerald-50/80 p-2 text-xs text-slate-800">
-                  <span class="font-semibold text-emerald-800">Pre-screening (history):</span>
+                <div class="mt-2 rounded-lg border border-[#1A4D2E]/20 bg-[#1A4D2E]/5/80 p-2 text-xs text-slate-800">
+                  <span class="font-semibold text-[#1A4D2E]">Pre-screening (history):</span>
                   {{ pre_screening_vaccination_note }}
                 </div>
                 {% endif %}
@@ -164,8 +164,8 @@
                 Dose Record ({{ sec.course_label }})
               </h3>
               <p class="text-xs text-slate-600">
-                Completed doses: <span class="font-semibold text-slate-900">{{ sec.doses_completed }}</span> of
-                <span class="font-semibold text-slate-900">{{ sec.expected_doses }}</span>
+                Completed doses: <span class="font-semibold text-[#1A4D2E]">{{ sec.doses_completed }}</span> of
+                <span class="font-semibold text-[#1A4D2E]">{{ sec.expected_doses }}</span>
               </p>
             </div>
             <div class="mt-2 overflow-x-auto rounded-xl border border-slate-200">

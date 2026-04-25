@@ -9,14 +9,14 @@
 {% block main_content %}
   <section class="mt-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
     <div>
-      <h1 class="text-2xl font-bold text-blue-900 sm:text-4xl">User Management</h1>
+      <h1 class="text-2xl font-bold text-[#1A4D2E] sm:text-4xl">User Management</h1>
       <p class="mt-1 text-slate-500">{{ clinic.name if clinic else '—' }}</p>
     </div>
     <div class="flex flex-wrap gap-2">
       <button
         type="button"
         onclick="openAdminNewStaffModal()"
-        class="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600"
+        class="inline-flex items-center gap-2 rounded-xl bg-[#1A4D2E] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1A4D2E]"
       >
         <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
         Add Clinic Staff
@@ -25,17 +25,17 @@
   </section>
 
   <section class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
       <p class="text-sm text-slate-500">Total Staff</p>
-      <p class="mt-2 text-3xl font-bold text-blue-900">{{ staff_total }}</p>
+      <p class="mt-2 text-3xl font-bold text-[#1A4D2E]">{{ staff_total }}</p>
     </article>
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
       <p class="text-sm text-slate-500">Total Patients</p>
-      <p class="mt-2 text-3xl font-bold text-blue-900">{{ patient_total }}</p>
+      <p class="mt-2 text-3xl font-bold text-[#1A4D2E]">{{ patient_total }}</p>
     </article>
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
       <p class="text-sm text-slate-500">Active accounts (listed)</p>
-      <p class="mt-2 text-3xl font-bold text-blue-900">{{ active_users_total }}</p>
+      <p class="mt-2 text-3xl font-bold text-[#1A4D2E]">{{ active_users_total }}</p>
     </article>
   </section>
 
@@ -49,19 +49,19 @@
           name="search"
           value="{{ search }}"
           placeholder="Search by name or email..."
-          class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none ring-emerald-300 transition focus:ring"
+          class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
         />
       </form>
     </div>
   </section>
 
   <section class="mt-3 flex flex-wrap items-center gap-2 text-sm">
-    <a href="{{ url_for('admin_users', search=search, role_filter='all', page=1) }}" class="rounded-full border px-3 py-1.5 font-medium {{ 'border-emerald-500 bg-emerald-500 text-white' if role_filter == 'all' else 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' }}">All</a>
-    <a href="{{ url_for('admin_users', search=search, role_filter='staff', page=1) }}" class="rounded-full border px-3 py-1.5 font-medium {{ 'border-emerald-500 bg-emerald-500 text-white' if role_filter == 'staff' else 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' }}">Staff</a>
-    <a href="{{ url_for('admin_users', search=search, role_filter='patients', page=1) }}" class="rounded-full border px-3 py-1.5 font-medium {{ 'border-emerald-500 bg-emerald-500 text-white' if role_filter == 'patients' else 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' }}">Patients</a>
+    <a href="{{ url_for('admin_users', search=search, role_filter='all', page=1) }}" class="rounded-full border px-3 py-1.5 font-medium {{ 'border-[#1A4D2E] bg-[#1A4D2E] text-white' if role_filter == 'all' else 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' }}">All</a>
+    <a href="{{ url_for('admin_users', search=search, role_filter='staff', page=1) }}" class="rounded-full border px-3 py-1.5 font-medium {{ 'border-[#1A4D2E] bg-[#1A4D2E] text-white' if role_filter == 'staff' else 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' }}">Staff</a>
+    <a href="{{ url_for('admin_users', search=search, role_filter='patients', page=1) }}" class="rounded-full border px-3 py-1.5 font-medium {{ 'border-[#1A4D2E] bg-[#1A4D2E] text-white' if role_filter == 'patients' else 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' }}">Patients</a>
   </section>
 
-  <section class="mt-4 overflow-x-auto rounded-2xl border border-slate-200">
+  <section class="mt-4 overflow-x-auto rounded-[2rem] border border-slate-200">
     <table class="min-w-full divide-y divide-slate-200 text-sm">
       <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
         <tr>
@@ -77,7 +77,7 @@
         {% if users.items %}
           {% for row in users.items %}
             <tr>
-              <td class="px-4 py-3 font-semibold text-blue-900">{{ row.name }}</td>
+              <td class="px-4 py-3 font-semibold text-[#1A4D2E]">{{ row.name }}</td>
               <td class="px-4 py-3 text-slate-700">{{ row.email }}</td>
               <td class="px-4 py-3 text-slate-700">{{ row.role_label }}</td>
               <td class="px-4 py-3">{{ admin.status_badge(row.status) }}</td>
@@ -110,7 +110,7 @@
                         <input type="hidden" name="active" value="1" />
                         <button
                           type="submit"
-                          class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
+                          class="rounded-lg border border-[#1A4D2E]/20 bg-[#1A4D2E]/5 px-3 py-1.5 text-sm font-semibold text-[#1A4D2E] hover:bg-[#1A4D2E]/10"
                         >
                           Activate
                         </button>
@@ -136,26 +136,30 @@
     {{ admin.pagination_users(users, search, role_filter) }}
   {% endif %}
 
+  <div id="staff-modal-trigger" data-should-open="{{ 'true' if open_staff_modal|default(false) else 'false' }}"></div>
+{% endblock %}
+
+{% block extra_modals %}
   {% set sf = new_staff_prefill|default({}) %}
   <div
     id="admin-new-staff-modal"
-    class="fixed inset-0 z-[70] hidden"
+    class="fixed inset-0 z-[80] hidden"
     role="dialog"
     aria-modal="true"
     aria-labelledby="admin-new-staff-title"
   >
-    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px]" onclick="closeAdminNewStaffModal()" aria-hidden="true"></div>
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeAdminNewStaffModal()" aria-hidden="true"></div>
     <div class="fixed inset-0 flex items-end justify-center p-4 sm:items-center sm:p-6">
       <div
-        class="relative flex max-h-[min(90vh,720px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+        class="relative flex max-h-[min(90vh,720px)] w-full max-w-lg flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl"
         onclick="event.stopPropagation()"
       >
-        <div class="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-emerald-50/80 to-white px-5 py-4">
+        <div class="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-[#1A4D2E]/5 to-white px-5 py-4">
           <div class="flex min-w-0 flex-1 items-center gap-3">
-            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#1A4D2E]/10 text-[#1A4D2E]">
               <i class="fa-solid fa-user-nurse text-xl" aria-hidden="true"></i>
             </div>
-            <h2 id="admin-new-staff-title" class="text-xl font-bold leading-tight tracking-tight text-slate-900 sm:text-2xl">
+            <h2 id="admin-new-staff-title" class="text-xl font-bold leading-tight tracking-tight text-[#1A4D2E] sm:text-2xl">
               Add Clinic Staff
             </h2>
           </div>
@@ -190,7 +194,7 @@
                   value="{{ sf.username|default('', true) }}"
                   required
                   autocomplete="username"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
                 />
               </div>
               <div class="sm:col-span-2">
@@ -205,7 +209,7 @@
                   value="{{ sf.email|default('', true) }}"
                   required
                   autocomplete="email"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
                 />
               </div>
               <div>
@@ -219,7 +223,7 @@
                   name="employee_id"
                   value="{{ sf.employee_id|default('', true) }}"
                   required
-                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
                 />
               </div>
               <div>
@@ -231,7 +235,7 @@
                   id="ns-title"
                   name="title"
                   required
-                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
                 >
                   <option value="">— Select —</option>
                   <option value="Doctor" {% if (sf.title|default('')) == 'Doctor' %}selected{% endif %}>Doctor</option>
@@ -248,7 +252,7 @@
                   type="text"
                   name="first_name"
                   value="{{ sf.first_name|default('', true) }}"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
                 />
               </div>
               <div>
@@ -261,7 +265,7 @@
                   type="text"
                   name="last_name"
                   value="{{ sf.last_name|default('', true) }}"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
                 />
               </div>
               <div>
@@ -274,7 +278,7 @@
                   type="date"
                   name="date_of_birth"
                   value="{{ sf.date_of_birth|default('', true) }}"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
                 />
               </div>
               <div>
@@ -286,7 +290,7 @@
                 <select
                   id="ns-gender"
                   name="gender"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
                 >
                   <option value="" {% if not ns_gender %}selected{% endif %}>Select</option>
                   <option value="Male" {% if ns_gender == 'Male' %}selected{% endif %}>Male</option>
@@ -304,12 +308,12 @@
                   type="text"
                   name="license_number"
                   value="{{ sf.license_number|default('', true) }}"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-emerald-300 transition focus:ring"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
                 />
               </div>
             </div>
             <p class="flex items-start gap-2 text-xs text-slate-500">
-              <i class="fa-solid fa-paper-plane mt-0.5 shrink-0 text-emerald-600" aria-hidden="true"></i>
+              <i class="fa-solid fa-paper-plane mt-0.5 shrink-0 text-[#1A4D2E]" aria-hidden="true"></i>
               <span>Credentials are sent by email when outgoing mail is configured. The user must change the temporary password at first login.</span>
             </p>
           </div>
@@ -323,7 +327,7 @@
             </button>
             <button
               type="submit"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 sm:w-auto"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1A4D2E] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#1A4D2E] sm:w-auto"
             >
               <i class="fa-solid fa-user-check" aria-hidden="true"></i>
               Create Staff Account
@@ -356,11 +360,12 @@
         m.classList.add("hidden");
         document.body.classList.remove("overflow-hidden");
       };
-      {% if open_staff_modal|default(false) %}
-      document.addEventListener("DOMContentLoaded", function () {
-        openAdminNewStaffModal();
-      });
-      {% endif %}
+      var trigger = document.getElementById("staff-modal-trigger");
+      if (trigger && trigger.getAttribute("data-should-open") === "true") {
+        document.addEventListener("DOMContentLoaded", function () {
+          openAdminNewStaffModal();
+        });
+      }
       document.addEventListener(
         "keydown",
         function (e) {

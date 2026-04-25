@@ -3,306 +3,235 @@
 {% block title %}Help - RabiesResQ{% endblock %}
 
 {% block content %}
-  <div class="flex h-full min-h-0 flex-col space-y-6">
-    <!-- Sticky header -->
-    <div class="sticky top-0 z-50 mb-4 flex items-center bg-white py-2 border-b border-slate-200">
-      <h1 class="text-2xl font-bold text-slate-900">Patient Guidance</h1>
-    </div>
-
-    <!-- Hero / intro -->
-    <section class="rounded-2xl border border-slate-200 bg-gradient-to-r from-emerald-50 to-blue-50 p-5 sm:p-6">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 class="text-xl font-bold text-slate-900 sm:text-2xl">Rabies Guidance Center</h2>
-          <p class="mt-1 text-sm text-slate-600">
-            Quickly see what to do based on your exposure level and where you are in your vaccination journey.
-          </p>
-        </div>
-        <div class="flex items-center gap-2 text-xs text-slate-500">
-          <span class="inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
-          Always follow your doctor&#39;s advice.
-        </div>
-      </div>
-    </section>
-
-    <!-- Risk category cards -->
-    <section class="space-y-3">
-      <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Risk categories</h3>
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <!-- Category I -->
-        <button
-          type="button"
-          data-category="1"
-          class="category-btn flex flex-col items-start gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-md"
-        >
-          <div class="flex items-center gap-2">
-            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-              <span class="text-sm font-bold">I</span>
-            </div>
-            <p class="text-sm font-semibold text-slate-900">Category I</p>
-          </div>
-          <p class="text-xs text-slate-600">
-            Touching or feeding animals, intact skin contact. Usually no vaccine needed, but still review the details.
-          </p>
-          <span class="mt-1 text-xs font-medium text-emerald-600">View details →</span>
-        </button>
-
-        <!-- Category II -->
-        <button
-          type="button"
-          data-category="2"
-          class="category-btn flex flex-col items-start gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-amber-400 hover:shadow-md"
-        >
-          <div class="flex items-center gap-2">
-            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700">
-              <span class="text-sm font-bold">II</span>
-            </div>
-            <p class="text-sm font-semibold text-slate-900">Category II</p>
-          </div>
-          <p class="text-xs text-slate-600">
-            Minor scratches or nibbling without bleeding. Vaccine is usually recommended.
-          </p>
-          <span class="mt-1 text-xs font-medium text-amber-600">View details →</span>
-        </button>
-
-        <!-- Category III -->
-        <button
-          type="button"
-          data-category="3"
-          class="category-btn flex flex-col items-start gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-red-400 hover:shadow-md"
-        >
-          <div class="flex items-center gap-2">
-            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-700">
-              <span class="text-sm font-bold">III</span>
-            </div>
-            <p class="text-sm font-semibold text-slate-900">Category III</p>
-          </div>
-          <p class="text-xs text-slate-600">
-            Bites with bleeding, mucous exposure, or severe wounds. Immediate vaccine and HRIG may be needed.
-          </p>
-          <span class="mt-1 text-xs font-medium text-red-600">View details →</span>
-        </button>
-      </div>
-    </section>
-
-    <!-- Guidance buttons -->
-    <section class="space-y-3">
-      <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Practical guidance</h3>
-      <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <!-- Guidance After a Bite -->
-        <button
-          type="button"
-          onclick="openGuidanceModal('bite')"
-          class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-md"
-        >
-          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 8v4l2 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-sm font-semibold text-slate-900">Guidance After a Bite</p>
-            <p class="text-xs text-slate-600">
-              Immediate steps after exposure, from washing the wound to seeking medical care.
-            </p>
-          </div>
-        </button>
-
-        <!-- Guidance After Vaccination -->
-        <button
-          type="button"
-          onclick="openGuidanceModal('vaccination')"
-          class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-md"
-        >
-          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 12l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-sm font-semibold text-slate-900">Guidance After Vaccination</p>
-            <p class="text-xs text-slate-600">
-              How to take care of yourself after doses and when to return for your next shot.
-            </p>
-          </div>
-        </button>
-      </div>
-    </section>
-
-    <!-- Clinic information: hours, pricing, contact -->
-    <section class="space-y-4" aria-labelledby="clinic-info-heading">
-      <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <h3 id="clinic-info-heading" class="text-sm font-semibold uppercase tracking-wide text-slate-500">Clinic information</h3>
-        <p class="text-xs text-slate-500">Hours, fees, and how to reach us</p>
-      </div>
-
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div class="rounded-2xl border border-violet-200 bg-violet-50 p-4 shadow-sm">
-          <p class="text-xs font-semibold uppercase tracking-wide text-violet-800">Monday – Saturday</p>
-          <p class="mt-2 text-sm font-semibold text-slate-900">8:00 AM – 10:00 PM</p>
-          <p class="mt-2 text-xs text-slate-600">
-            Cut-off: <span class="font-semibold text-red-600">9:30 PM</span>
-          </p>
-        </div>
-        <div class="rounded-2xl border border-lime-200 bg-lime-50 p-4 shadow-sm">
-          <p class="text-xs font-semibold uppercase tracking-wide text-lime-900">Sunday</p>
-          <p class="mt-2 text-sm font-semibold text-slate-900">8:00 AM – 6:00 PM</p>
-          <p class="mt-2 text-xs text-slate-600">
-            Cut-off: <span class="font-semibold text-red-600">5:30 PM</span>
-          </p>
-        </div>
-      </div>
-
-      <p class="text-xs leading-relaxed text-slate-600">
-        Clinic hours may be subjected to changes. If unable to schedule an appointment, you may directly contact the clinic for assistance.
+<div class="flex h-full flex-col space-y-10 pb-12">
+  <!-- Page Header -->
+  <header class="relative overflow-hidden rounded-[2.5rem] bg-[#1A4D2E] p-8 text-white shadow-lg shadow-[#1A4D2E]/10">
+    <div class="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/10 blur-3xl"></div>
+    <div class="relative z-10">
+      <h1 class="text-3xl font-bold sm:text-4xl tracking-tight">Patient Guidance</h1>
+      <p class="mt-2 text-white/80 max-w-2xl">
+        Everything you need to know about rabies prevention, treatment schedules, and clinic information.
       </p>
+    </div>
+  </header>
 
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Daily breaks</p>
-        <ul class="mt-2 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
-          <li class="flex items-start gap-2">
-            <span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-700">L</span>
-            <span><span class="font-medium text-slate-900">Lunch:</span> 12:00 – 1:00 PM</span>
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-700">D</span>
-            <span><span class="font-medium text-slate-900">Dinner:</span> 6:30 – 7:30 PM</span>
-          </li>
-        </ul>
-      </div>
-
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 class="text-sm font-semibold text-slate-900">Services &amp; fees</h3>
-        <p class="mt-1 text-xs text-slate-500">Amounts in Philippine pesos (PHP). Session or visit counts are typical schedules—confirm with staff.</p>
-        <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200">
-          <table class="w-full min-w-[280px] text-left text-sm">
-            <thead>
-              <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-600">
-                <th class="px-3 py-2.5">Service</th>
-                <th class="px-3 py-2.5 whitespace-nowrap">Price</th>
-                <th class="px-3 py-2.5">Notes</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 text-slate-800">
-              <tr class="hover:bg-slate-50">
-                <td class="px-3 py-2.5 font-medium">Pre-exposure</td>
-                <td class="px-3 py-2.5 whitespace-nowrap">P500 / session</td>
-                <td class="px-3 py-2.5 text-slate-600">3 sessions</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="px-3 py-2.5 font-medium">Antirabies</td>
-                <td class="px-3 py-2.5 whitespace-nowrap">P650 / visit</td>
-                <td class="px-3 py-2.5 text-slate-600">4 visits</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="px-3 py-2.5 font-medium">Post-exposure</td>
-                <td class="px-3 py-2.5 whitespace-nowrap">P650 / visit</td>
-                <td class="px-3 py-2.5 text-slate-600">4 visits (PEP course; confirm schedule)</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="px-3 py-2.5 font-medium">TIG</td>
-                <td class="px-3 py-2.5 whitespace-nowrap">—</td>
-                <td class="px-3 py-2.5 text-slate-600">Tetanus immunoglobulin; pricing per protocol—confirm with staff</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="px-3 py-2.5 font-medium">HRIG</td>
-                <td class="px-3 py-2.5 whitespace-nowrap">P2,000</td>
-                <td class="px-3 py-2.5 text-slate-600">Human rabies immunoglobulin; once as indicated</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="px-3 py-2.5 font-medium">Tetanus toxoid</td>
-                <td class="px-3 py-2.5 whitespace-nowrap">P200 / visit</td>
-                <td class="px-3 py-2.5 text-slate-600">—</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="px-3 py-2.5 font-medium">ERIG infiltration</td>
-                <td class="px-3 py-2.5 whitespace-nowrap">P2,000</td>
-                <td class="px-3 py-2.5 text-slate-600">Once only</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="px-3 py-2.5 font-medium">Booster dose</td>
-                <td class="px-3 py-2.5 whitespace-nowrap">P650 / session</td>
-                <td class="px-3 py-2.5 text-slate-600">2 sessions</td>
-              </tr>
-            </tbody>
-          </table>
+  <div class="grid grid-cols-1 gap-10 lg:grid-cols-12">
+    <!-- Left Column: Main Instructions -->
+    <div class="lg:col-span-8 space-y-10">
+      <!-- Risk Categories -->
+      <section class="space-y-6">
+        <div class="flex items-center gap-3 px-2">
+          <div class="h-8 w-1.5 rounded-full bg-[#1A4D2E]"></div>
+          <h2 class="text-xl font-bold text-slate-800">Identify Your Risk Level</h2>
         </div>
-      </div>
 
-      <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-        <p class="text-sm font-semibold text-amber-900">
-          <span class="mr-2 inline-flex rounded-full bg-amber-200 px-2 py-0.5 text-xs font-bold text-amber-900">Discount</span>
-          PWD / Senior / Veterinary students / Pet groomers: 20% off
-        </p>
-        <p class="mt-1 text-xs text-amber-800/90">Bring valid ID or proof of status where applicable. Staff will confirm eligibility.</p>
-      </div>
-
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 class="text-sm font-semibold text-slate-900">Contact</h3>
-        <p class="mt-1 text-sm text-slate-600">For more info, kindly call or message us.</p>
-        <ul class="mt-3 space-y-2 text-sm">
-          <li class="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span class="inline-flex items-center gap-2 text-slate-500" title="Mobile">
-              <i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i>
-              <span class="sr-only">Mobile</span>
-            </span>
-            <a href="tel:+639054134420" class="font-medium text-emerald-700 underline decoration-emerald-300 underline-offset-2 hover:text-emerald-800">0905-413-4420</a>
-            <span class="text-slate-300">/</span>
-            <a href="tel:+639398885722" class="font-medium text-emerald-700 underline decoration-emerald-300 underline-offset-2 hover:text-emerald-800">0939-888-5722</a>
-            <a href="sms:+639054134420" class="ml-0 text-xs font-medium text-slate-500 hover:text-emerald-700 sm:ml-2">SMS</a>
-          </li>
-          <li class="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span class="inline-flex items-center gap-2 text-slate-500" title="Landline">
-              <i class="fa-solid fa-phone" aria-hidden="true"></i>
-              <span class="sr-only">Landline</span>
-            </span>
-            <a href="tel:+63272552529" class="font-medium text-emerald-700 underline decoration-emerald-300 underline-offset-2 hover:text-emerald-800">02-7-255-2529</a>
-          </li>
-        </ul>
-        <p class="mt-3 text-xs text-slate-500">Thank you.</p>
-      </div>
-    </section>
-
-    <!-- Category description modal -->
-    <div id="category-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-      <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onclick="closeCategoryModal()"></div>
-      <div class="flex min-h-full items-center justify-center p-4">
-        <div class="relative w-full max-w-2xl overflow-hidden rounded-xl bg-white shadow-xl">
-          <div class="border-b border-slate-200 bg-white px-6 py-4">
-            <div class="flex items-center justify-between">
-              <h2 id="category-modal-title" class="text-xl font-bold text-slate-900">CATEGORY I</h2>
-              <button type="button" onclick="closeCategoryModal()" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Close">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-              </button>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <!-- Category I -->
+          <button type="button" onclick="openCategoryModal('1')"
+            class="category-btn cursor-pointer group relative flex flex-col items-start rounded-[2rem] border border-slate-100 bg-white p-6 text-left shadow-sm transition-all hover:border-[#1A4D2E] hover:shadow-md">
+            <div
+              class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1A4D2E]/5 text-xl font-bold text-[#1A4D2E]">
+              I</div>
+            <h3 class="font-bold text-[#1A4D2E]">Category I</h3>
+            <p class="mt-2 text-sm text-slate-500 leading-relaxed">Touching, feeding, or intact skin contact. Usually
+              low risk.</p>
+            <div
+              class="mt-4 flex items-center gap-1 text-xs font-bold text-[#1A4D2E] opacity-0 group-hover:opacity-100 transition-opacity">
+              Details <i class="fa-solid fa-arrow-right ml-1"></i>
             </div>
+          </button>
+
+          <!-- Category II -->
+          <button type="button" onclick="openCategoryModal('2')"
+            class="category-btn cursor-pointer group relative flex flex-col items-start rounded-[2rem] border border-slate-100 bg-white p-6 text-left shadow-sm transition-all hover:border-amber-400 hover:shadow-md">
+            <div
+              class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-xl font-bold text-amber-600">
+              II</div>
+            <h3 class="font-bold text-slate-800">Category II</h3>
+            <p class="mt-2 text-sm text-slate-500 leading-relaxed">Minor scratches or nibbling without bleeding.
+              Recommended care.</p>
+            <div
+              class="mt-4 flex items-center gap-1 text-xs font-bold text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity">
+              Details <i class="fa-solid fa-arrow-right ml-1"></i>
+            </div>
+          </button>
+
+          <!-- Category III -->
+          <button type="button" onclick="openCategoryModal('3')"
+            class="category-btn cursor-pointer group relative flex flex-col items-start rounded-[2rem] border border-slate-100 bg-white p-6 text-left shadow-sm transition-all hover:border-red-400 hover:shadow-md">
+            <div
+              class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-xl font-bold text-red-600">
+              III</div>
+            <h3 class="font-bold text-slate-800">Category III</h3>
+            <p class="mt-2 text-sm text-slate-500 leading-relaxed">Bites with bleeding or mucous exposure. Immediate
+              action needed.</p>
+            <div
+              class="mt-4 flex items-center gap-1 text-xs font-bold text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
+              Details <i class="fa-solid fa-arrow-right ml-1"></i>
+            </div>
+          </button>
+        </div>
+      </section>
+
+      <!-- Practical Guidance -->
+      <section class="space-y-6">
+        <div class="flex items-center gap-3 px-2">
+          <div class="h-8 w-1.5 rounded-full bg-[#1A4D2E]"></div>
+          <h2 class="text-xl font-bold text-slate-800">Care Instructions</h2>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <button type="button" onclick="openGuidanceModal('bite')"
+            class="group flex items-center gap-5 rounded-[2.5rem] bg-[#1A4D2E] p-6 text-left text-white shadow-lg shadow-[#1A4D2E]/10 transition-transform hover:-translate-y-1">
+            <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl bg-white/10 text-2xl">
+              <i class="fa-solid fa-hand-holding-medical"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold">After a Bite</h3>
+              <p class="text-sm text-white/70">Immediate first-aid steps.</p>
+            </div>
+          </button>
+
+          <button type="button" onclick="openGuidanceModal('vaccination')"
+            class="group flex items-center gap-5 rounded-[2.5rem] bg-white p-6 text-left border border-slate-100 shadow-sm transition-transform hover:-translate-y-1 hover:shadow-md">
+            <div
+              class="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl bg-[#1A4D2E]/10 text-2xl text-[#1A4D2E]">
+              <i class="fa-solid fa-syringe"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-[#1A4D2E]">After Vaccination</h3>
+              <p class="text-sm text-slate-500">Post-care & return dates.</p>
+            </div>
+          </button>
+        </div>
+      </section>
+
+      <!-- Services & Fees -->
+      <section class="space-y-6">
+        <div class="flex items-center gap-3 px-2">
+          <div class="h-8 w-1.5 rounded-full bg-[#1A4D2E]"></div>
+          <h2 class="text-xl font-bold text-slate-800">Services & Pricing</h2>
+        </div>
+
+        <div class="overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead>
+                <tr class="bg-slate-50/50 text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <th class="px-6 py-4">Service</th>
+                  <th class="px-6 py-4">Price</th>
+                  <th class="px-6 py-4">Standard Course</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-50">
+                <tr class="hover:bg-slate-50/50 transition-colors">
+                  <td class="px-6 py-4 font-bold text-slate-700">Pre-exposure</td>
+                  <td class="px-6 py-4 text-[#1A4D2E] font-bold">₱500 / session</td>
+                  <td class="px-6 py-4 text-slate-500">3 sessions</td>
+                </tr>
+                <tr class="hover:bg-slate-50/50 transition-colors">
+                  <td class="px-6 py-4 font-bold text-slate-700">Post-exposure</td>
+                  <td class="px-6 py-4 text-[#1A4D2E] font-bold">₱650 / visit</td>
+                  <td class="px-6 py-4 text-slate-500">4 visits</td>
+                </tr>
+                <tr class="hover:bg-slate-50/50 transition-colors">
+                  <td class="px-6 py-4 font-bold text-slate-700">HRIG</td>
+                  <td class="px-6 py-4 text-[#1A4D2E] font-bold">₱2,000</td>
+                  <td class="px-6 py-4 text-slate-500">One-time</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <div id="category-modal-body" class="px-6 pb-6 pt-4">
-            <ul class="list-disc space-y-2 pl-6 text-sm text-slate-700">
-              <li>Touching and feeding of animal</li>
-              <li>Licking by the animal of intact skin (with reliable history and thorough physical examination)</li>
-              <li>Exposure to patient with signs and symptoms of rabies by sharing of eating or drinking utensils</li>
-              <li>Casual contact (talking to, visiting and feeding suspected rabies cases) and routine delivery of health care to patient with signs and symptoms of rabies</li>
-            </ul>
+          <div class="bg-amber-50/50 px-6 py-4 border-t border-amber-100/50">
+            <p class="text-xs text-amber-800 leading-relaxed">
+              <span class="font-bold uppercase mr-2">Discount:</span>
+              20% off for PWD, Seniors, Veterinary Students, and Pet Groomers. Please present a valid ID.
+            </p>
           </div>
         </div>
-      </div>
+      </section>
     </div>
 
-    {% block extra_scripts %}
-    {{ super() }}
-    <script>
-      const biteContentHtml = `
+    <!-- Right Column: Clinic Info & Sidebar Content -->
+    <aside class="lg:col-span-4 space-y-8">
+      <!-- Clinic Hours -->
+      <div class="rounded-[2.5rem] bg-slate-800 p-8 text-white shadow-xl">
+        <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+          <i class="fa-solid fa-clock opacity-50"></i>
+          Clinic Hours
+        </h3>
+        <div class="space-y-6">
+          <div class="relative pl-6 border-l-2 border-white/20">
+            <p class="text-xs font-bold uppercase tracking-widest text-white/40">Mon - Sat</p>
+            <p class="text-xl font-bold mt-1">8:00 AM - 10:00 PM</p>
+            <p class="text-xs text-white/50 mt-1">Cut-off: 9:30 PM</p>
+          </div>
+          <div class="relative pl-6 border-l-2 border-white/20">
+            <p class="text-xs font-bold uppercase tracking-widest text-white/40">Sunday</p>
+            <p class="text-xl font-bold mt-1">8:00 AM - 6:00 PM</p>
+            <p class="text-xs text-white/50 mt-1">Cut-off: 5:30 PM</p>
+          </div>
+        </div>
+
+        <div class="mt-8 rounded-2xl bg-white/5 p-4 border border-white/10">
+          <p class="text-xs font-bold uppercase tracking-widest text-white/40 mb-3">Daily Breaks</p>
+          <div class="flex justify-between text-sm">
+            <span>Lunch</span>
+            <span class="font-bold text-white/90">12:00 - 1:00 PM</span>
+          </div>
+          <div class="flex justify-between text-sm mt-2">
+            <span>Dinner</span>
+            <span class="font-bold text-white/90">6:30 - 7:30 PM</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Emergency Contact -->
+      <div class="rounded-[2.5rem] border border-slate-100 bg-white p-8 shadow-sm">
+        <h3 class="text-lg font-bold text-slate-800 mb-6">Need Assistance?</h3>
+        <div class="space-y-4">
+          <a href="tel:+639054134420" class="flex items-center gap-4 group">
+            <div
+              class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1A4D2E]/5 text-[#1A4D2E] transition-colors group-hover:bg-[#1A4D2E] group-hover:text-white">
+              <i class="fa-solid fa-phone"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Mobile</p>
+              <p class="font-bold text-slate-700">0905-413-4420</p>
+            </div>
+          </a>
+          <a href="tel:+63272552529" class="flex items-center gap-4 group">
+            <div
+              class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1A4D2E]/5 text-[#1A4D2E] transition-colors group-hover:bg-[#1A4D2E] group-hover:text-white">
+              <i class="fa-solid fa-tty"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Landline</p>
+              <p class="font-bold text-slate-700">02-7-255-2529</p>
+            </div>
+          </a>
+        </div>
+        <button type="button" onclick="openPreScreeningModal('case')"
+          class="mt-8 w-full rounded-2xl bg-[#1A4D2E] py-4 text-sm font-bold text-white shadow-lg shadow-[#1A4D2E]/20 hover:scale-[1.02] transition-transform">
+          Report a Bite Case
+        </button>
+      </div>
+    </aside>
+  </div>
+
+  {% block extra_scripts %}
+  {{ super() }}
+  <script>
+    const biteContentHtml = `
         <div class="space-y-4">
           <div class="flex gap-3">
-            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1A4D2E]">
               <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
               </svg>
             </div>
             <div class="flex-1">
-              <h3 class="font-semibold text-slate-900">Wash the Wound Immediately</h3>
+              <h3 class="font-semibold text-[#1A4D2E]">Wash the Wound Immediately</h3>
               <p class="mt-1 text-sm text-slate-600">
                 Vigorously wash and flush the wound with soap and water for at least 15 minutes. This is the most effective first-aid measure.
               </p>
@@ -310,13 +239,13 @@
           </div>
 
           <div class="flex gap-3">
-            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1A4D2E]">
               <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
               </svg>
             </div>
             <div class="flex-1">
-              <h3 class="font-semibold text-slate-900">Apply an Antiseptic</h3>
+              <h3 class="font-semibold text-[#1A4D2E]">Apply an Antiseptic</h3>
               <p class="mt-1 text-sm text-slate-600">
                 After washing, apply an antiseptic such as povidone-iodine or alcohol to the wound to help kill the virus.
               </p>
@@ -324,13 +253,13 @@
           </div>
 
           <div class="flex gap-3">
-            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1A4D2E]">
               <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
               </svg>
             </div>
             <div class="flex-1">
-              <h3 class="font-semibold text-slate-900">Seek Medical Attention Promptly</h3>
+              <h3 class="font-semibold text-[#1A4D2E]">Seek Medical Attention Promptly</h3>
               <p class="mt-1 text-sm text-slate-600">
                 Go to the nearest hospital or animal bite treatment center immediately, regardless of how minor the wound appears.
               </p>
@@ -338,13 +267,13 @@
           </div>
 
           <div class="flex gap-3">
-            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1A4D2E]">
               <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
               </svg>
             </div>
             <div class="flex-1">
-              <h3 class="font-semibold text-slate-900">Do Not Suture the Wound</h3>
+              <h3 class="font-semibold text-[#1A4D2E]">Do Not Suture the Wound</h3>
               <p class="mt-1 text-sm text-slate-600">
                 Bite wounds should ideally be left open. If suturing is necessary, it should be done after infiltration with rabies immunoglobulin.
               </p>
@@ -352,13 +281,13 @@
           </div>
 
           <div class="flex gap-3">
-            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1A4D2E]">
               <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
               </svg>
             </div>
             <div class="flex-1">
-              <h3 class="font-semibold text-slate-900">Get Post-Exposure Prophylaxis (PEP)</h3>
+              <h3 class="font-semibold text-[#1A4D2E]">Get Post-Exposure Prophylaxis (PEP)</h3>
               <p class="mt-1 text-sm text-slate-600">
                 This includes a series of rabies vaccine shots and, in some cases, Rabies Immunoglobulin (RIG). It's crucial to start this treatment as soon as possible.
               </p>
@@ -367,16 +296,16 @@
         </div>
       `;
 
-      const vaccinationContentHtml = `
+    const vaccinationContentHtml = `
         <div class="space-y-4">
           <div class="flex gap-3">
-            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1A4D2E]">
               <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
               </svg>
             </div>
             <div class="flex-1">
-              <h3 class="font-semibold text-slate-900">Complete the Full Course</h3>
+              <h3 class="font-semibold text-[#1A4D2E]">Complete the Full Course</h3>
               <p class="mt-1 text-sm text-slate-600">
                 It is essential to complete the entire vaccination schedule as prescribed by your doctor. Missing a dose can compromise the vaccine's effectiveness.
               </p>
@@ -384,13 +313,13 @@
           </div>
 
           <div class="flex gap-3">
-            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1A4D2E]">
               <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
               </svg>
             </div>
             <div class="flex-1">
-              <h3 class="font-semibold text-slate-900">Monitor for Side Effects</h3>
+              <h3 class="font-semibold text-[#1A4D2E]">Monitor for Side Effects</h3>
               <p class="mt-1 text-sm text-slate-600">
                 Common side effects include pain, redness, or swelling at the injection site, headache, and muscle aches. These are usually mild and temporary.
               </p>
@@ -398,13 +327,13 @@
           </div>
 
           <div class="flex gap-3">
-            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1A4D2E]">
               <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
               </svg>
             </div>
             <div class="flex-1">
-              <h3 class="font-semibold text-slate-900">Report Severe Reactions</h3>
+              <h3 class="font-semibold text-[#1A4D2E]">Report Severe Reactions</h3>
               <p class="mt-1 text-sm text-slate-600">
                 Inform your doctor immediately if you experience severe reactions like high fever, hives, difficulty breathing, or dizziness.
               </p>
@@ -412,13 +341,13 @@
           </div>
 
           <div class="flex gap-3">
-            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1A4D2E]">
               <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
               </svg>
             </div>
             <div class="flex-1">
-              <h3 class="font-semibold text-slate-900">Keep the Vaccination Card Safe</h3>
+              <h3 class="font-semibold text-[#1A4D2E]">Keep the Vaccination Card Safe</h3>
               <p class="mt-1 text-sm text-slate-600">
                 Your vaccination record is an important medical document. Keep it in a safe place and bring it to every follow-up appointment.
               </p>
@@ -426,13 +355,13 @@
           </div>
 
           <div class="flex gap-3">
-            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1A4D2E]">
               <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
               </svg>
             </div>
             <div class="flex-1">
-              <h3 class="font-semibold text-slate-900">Avoid Immunosuppressants</h3>
+              <h3 class="font-semibold text-[#1A4D2E]">Avoid Immunosuppressants</h3>
               <p class="mt-1 text-sm text-slate-600">
                 If possible, avoid taking immunosuppressive drugs during the vaccination course as they may interfere with the development of immunity.
               </p>
@@ -441,94 +370,131 @@
         </div>
       `;
 
-      function openGuidanceModal(type) {
-        const modal = document.getElementById('guidance-modal');
-        const titleEl = document.getElementById('guidance-modal-title');
-        const bodyEl = document.getElementById('guidance-modal-body');
-        if (!modal || !titleEl || !bodyEl) return;
+    function openGuidanceModal(type) {
+      const modal = document.getElementById('guidance-modal');
+      const titleEl = document.getElementById('guidance-modal-title');
+      const bodyEl = document.getElementById('guidance-modal-body');
+      if (!modal || !titleEl || !bodyEl) return;
 
-        if (type === 'bite') {
-          titleEl.textContent = 'Guidance After a Bite';
-          bodyEl.innerHTML = biteContentHtml;
-        } else if (type === 'vaccination') {
-          titleEl.textContent = 'Guidance After Vaccination';
-          bodyEl.innerHTML = vaccinationContentHtml;
-        } else {
-          titleEl.textContent = 'Guidance';
-          bodyEl.innerHTML = '';
-        }
+      if (type === 'bite') {
+        titleEl.textContent = 'Guidance After a Bite';
+        bodyEl.innerHTML = biteContentHtml;
+      } else if (type === 'vaccination') {
+        titleEl.textContent = 'Guidance After Vaccination';
+        bodyEl.innerHTML = vaccinationContentHtml;
+      } else {
+        titleEl.textContent = 'Guidance';
+        bodyEl.innerHTML = '';
+      }
 
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeGuidanceModal() {
+      const modal = document.getElementById('guidance-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+      }
+    }
+
+
+    const categoryTitles = { 1: 'CATEGORY I', 2: 'CATEGORY II', 3: 'CATEGORY III' };
+    const categoryContents = {
+      1: '<ul class="list-disc space-y-2 pl-6 text-sm text-slate-700"><li>Touching and feeding of animal</li><li>Licking by the animal of intact skin (with reliable history and thorough physical examination)</li><li>Exposure to patient with signs and symptoms of rabies by sharing of eating or drinking utensils</li><li>Casual contact (talking to, visiting and feeding suspected rabies cases) and routine delivery of health care to patient with signs and symptoms of rabies</li></ul>',
+      2: '<ul class="list-disc space-y-2 pl-6 text-sm text-slate-700"><li>Nibbling of uncovered skin with or without bruising/hematoma</li><li>Minor scratches or abrasions without bleeding (including those induced to bleed)</li><li>All Category II exposures on the head and neck area, face, spine and high innervated tissues such as fingers, hands and genital considered Category III and should be managed as such</li></ul>',
+      3: '<ul class="list-disc space-y-2 pl-6 text-sm text-slate-700"><li>Transdermal bites (puncture wounds, lacerations, avulsions) or scratches/abrasions with spontaneous bleeding</li><li>Licks on broken skin</li><li>Exposure to a rabies patient through bites, contamination of mucous membranes (eyes, oral/nasal mucosa, genital/anal mucous membrane) or open skin lesions with body fluids through splattering and mouth-to-mouth resuscitation</li><li>Handling of infected carcass or ingestion of raw infected meat</li><li>All category II exposures on head and neck area, face, spine and high innervated tissues such as fingers, hands and genital</li></ul>'
+    };
+
+    function openCategoryModal(cat) {
+      const modal = document.getElementById('category-modal');
+      const modalTitle = document.getElementById('category-modal-title');
+      const modalBody = document.getElementById('category-modal-body');
+
+      if (modalTitle && categoryTitles[cat]) modalTitle.textContent = categoryTitles[cat];
+      if (modalBody && categoryContents[cat]) modalBody.innerHTML = categoryContents[cat];
+
+      if (modal) {
         modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
       }
+    }
 
-      function closeGuidanceModal() {
-        const modal = document.getElementById('guidance-modal');
-        if (modal) {
-          modal.classList.add('hidden');
-        }
+    function closeCategoryModal() {
+      const modal = document.getElementById('category-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
       }
-    </script>
-    {% endblock %}
+    }
 
-    <!-- Guidance modal -->
-    <div id="guidance-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-      <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onclick="closeGuidanceModal()"></div>
-      <div class="flex min-h-full items-center justify-center p-4">
-        <div class="relative w-full max-w-2xl overflow-hidden rounded-xl bg-white shadow-xl">
-          <div class="border-b border-slate-200 bg-white px-6 py-4">
-            <div class="flex items-center justify-between">
-              <h2 id="guidance-modal-title" class="text-xl font-bold text-slate-900">
-                Guidance
-              </h2>
-              <button type="button" onclick="closeGuidanceModal()" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Close">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div id="guidance-modal-body" class="px-6 pb-6 pt-4 space-y-4 text-sm text-slate-700">
-            <!-- Content injected by JS -->
-          </div>
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        closeCategoryModal();
+        closeGuidanceModal();
+      }
+    });
+  </script>
+  {% endblock %}
+
+  <!-- The detailed cards below are now represented inside the guidance modal.
+         They can be removed or left as static reference if you want both. -->
+</div>
+{% endblock %}
+
+{% block extra_modals %}
+<!-- Category description modal -->
+<div id="category-modal" class="hidden fixed inset-0 z-[70] overflow-y-auto">
+  <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeCategoryModal()"></div>
+  <div class="flex min-h-full items-center justify-center p-4">
+    <div class="relative w-full max-w-2xl overflow-hidden rounded-xl bg-white shadow-xl">
+      <div class="border-b border-slate-200 bg-white px-6 py-4">
+        <div class="flex items-center justify-between">
+          <h2 id="category-modal-title" class="text-xl font-bold text-[#1A4D2E]">CATEGORY I</h2>
+          <button type="button" onclick="closeCategoryModal()" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+            aria-label="Close">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       </div>
+      <div id="category-modal-body" class="px-6 pb-6 pt-4">
+        <ul class="list-disc space-y-2 pl-6 text-sm text-slate-700">
+          <li>Touching and feeding of animal</li>
+          <li>Licking by the animal of intact skin (with reliable history and thorough physical examination)</li>
+          <li>Exposure to patient with signs and symptoms of rabies by sharing of eating or drinking utensils</li>
+          <li>Casual contact (talking to, visiting and feeding suspected rabies cases) and routine delivery of health
+            care to patient with signs and symptoms of rabies</li>
+        </ul>
+      </div>
     </div>
-
-    <!-- The detailed cards below are now represented inside the guidance modal.
-         They can be removed or left as static reference if you want both. -->
   </div>
-  <script>
-    function closeCategoryModal() {
-      var modal = document.getElementById('category-modal');
-      if (modal) modal.classList.add('hidden');
-      document.body.style.overflow = '';
-    }
-    (function() {
-      var modal = document.getElementById('category-modal');
-      var modalTitle = document.getElementById('category-modal-title');
-      var modalBody = document.getElementById('category-modal-body');
-      var buttons = document.querySelectorAll('.category-btn');
-      var titles = { 1: 'CATEGORY I', 2: 'CATEGORY II', 3: 'CATEGORY III' };
-      var contents = {
-        1: '<ul class="list-disc space-y-2 pl-6 text-sm text-slate-700"><li>Touching and feeding of animal</li><li>Licking by the animal of intact skin (with reliable history and thorough physical examination)</li><li>Exposure to patient with signs and symptoms of rabies by sharing of eating or drinking utensils</li><li>Casual contact (talking to, visiting and feeding suspected rabies cases) and routine delivery of health care to patient with signs and symptoms of rabies</li></ul>',
-        2: '<ul class="list-disc space-y-2 pl-6 text-sm text-slate-700"><li>Nibbling of uncovered skin with or without bruising/hematoma</li><li>Minor scratches or abrasions without bleeding (including those induced to bleed)</li><li>All Category II exposures on the head and neck area, face, spine and high innervated tissues such as fingers, hands and genital considered Category III and should be managed as such</li></ul>',
-        3: '<ul class="list-disc space-y-2 pl-6 text-sm text-slate-700"><li>Transdermal bites (puncture wounds, lacerations, avulsions) or scratches/abrasions with spontaneous bleeding</li><li>Licks on broken skin</li><li>Exposure to a rabies patient through bites, contamination of mucous membranes (eyes, oral/nasal mucosa, genital/anal mucous membrane) or open skin lesions with body fluids through splattering and mouth-to-mouth resuscitation</li><li>Handling of infected carcass or ingestion of raw infected meat</li><li>All category II exposures on head and neck area, face, spine and high innervated tissues such as fingers, hands and genital</li></ul>'
-      };
-      buttons.forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          var cat = this.getAttribute('data-category');
-          if (modalTitle && titles[cat]) modalTitle.textContent = titles[cat];
-          if (modalBody && contents[cat]) modalBody.innerHTML = contents[cat];
-          if (modal) {
-            modal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-          }
-        });
-      });
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') closeCategoryModal();
-      });
-    })();
-  </script>
+</div>
+
+<!-- Guidance modal -->
+<div id="guidance-modal" class="hidden fixed inset-0 z-[70] overflow-y-auto">
+  <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeGuidanceModal()"></div>
+  <div class="flex min-h-full items-center justify-center p-4">
+    <div class="relative w-full max-w-2xl overflow-hidden rounded-xl bg-white shadow-xl">
+      <div class="border-b border-slate-200 bg-white px-6 py-4">
+        <div class="flex items-center justify-between">
+          <h2 id="guidance-modal-title" class="text-xl font-bold text-[#1A4D2E]">
+            Guidance
+          </h2>
+          <button type="button" onclick="closeGuidanceModal()" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+            aria-label="Close">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div id="guidance-modal-body" class="px-6 pb-6 pt-4 space-y-4 text-sm text-slate-700">
+        <!-- Content injected by JS -->
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

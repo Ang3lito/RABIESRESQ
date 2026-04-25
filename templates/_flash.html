@@ -4,13 +4,13 @@
       {% for category, message in messages %}
         {% set base = "rounded-md border px-4 py-3 text-sm" %}
         {% if category == "success" %}
-          <div class="{{ base }} border-emerald-200 bg-emerald-50 text-emerald-900">{{ message }}</div>
+          <div class="{{ base }} border-[#1A4D2E]/20 bg-[#1A4D2E]/5 text-[#1A4D2E]">{{ message }}</div>
         {% elif category == "error" %}
           <div class="{{ base }} border-rose-200 bg-rose-50 text-rose-900">{{ message }}</div>
         {% elif category == "warning" %}
           <div class="{{ base }} border-amber-200 bg-amber-50 text-amber-950">{{ message }}</div>
         {% else %}
-          <div class="{{ base }} border-slate-200 bg-white text-slate-900">{{ message }}</div>
+          <div class="{{ base }} border-slate-200 bg-white text-[#1A4D2E]">{{ message }}</div>
         {% endif %}
       {% endfor %}
     </div>

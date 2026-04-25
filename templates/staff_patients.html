@@ -8,7 +8,7 @@
       {% if crumb.href %}
         <a href="{{ crumb.href }}" class="hover:text-slate-700">{{ crumb.label }}</a>
       {% else %}
-        <span class="font-bold text-blue-600">{{ crumb.label }}</span>
+        <span class="font-bold text-[#1A4D2E]">{{ crumb.label }}</span>
       {% endif %}
       {% if not loop.last %}
         <span>/</span>
@@ -55,7 +55,7 @@
 {% block main_content %}
   <section class="mt-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
     <div>
-      <h1 class="text-4xl font-bold text-blue-900">Patient Case Management</h1>
+      <h1 class="text-4xl font-bold text-[#1A4D2E]">Patient Case Management</h1>
       <p class="mt-1 text-slate-500">Manage and track all patient rabies exposure cases.</p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
@@ -90,7 +90,7 @@
     </div>
   </section>
 
-  <section class="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+  <section class="mt-6 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
     <div class="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
       <h2 class="text-sm font-semibold text-slate-800">Search &amp; filters</h2>
       <a
@@ -128,7 +128,7 @@
             name="search"
             value="{{ search }}"
             placeholder="Search by patient name or case ID…"
-            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm text-slate-900 outline-none ring-emerald-300 transition placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white focus:ring"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm text-[#1A4D2E] outline-none ring-[#1A4D2E]/30 transition placeholder:text-slate-400 focus:border-[#1A4D2E] focus:bg-white focus:ring"
           />
         </div>
         <button type="submit" class="shrink-0 rounded-xl bg-slate-800 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-900 sm:min-w-[6.5rem]">Search</button>
@@ -166,7 +166,7 @@
           <i class="fa-solid fa-sliders text-slate-500" aria-hidden="true"></i>
           Refine list
           {% if refine_active %}
-            <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">Filters on</span>
+            <span class="rounded-full bg-[#1A4D2E]/10 px-2 py-0.5 text-xs font-semibold text-[#1A4D2E]">Filters on</span>
           {% endif %}
         </span>
         <i
@@ -184,7 +184,7 @@
       <div class="grid grid-cols-1 gap-3 lg:grid-cols-4">
         <div class="min-w-0">
           <label class="mb-1 block text-xs font-medium text-slate-600" for="gender">Gender</label>
-          <select id="gender" name="gender" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring">
+          <select id="gender" name="gender" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring">
             <option value="all" {{ "selected" if (selected_gender or 'all')|lower == "all" else "" }}>All</option>
             <option value="Male" {{ "selected" if (selected_gender or '') == "Male" else "" }}>Male</option>
             <option value="Female" {{ "selected" if (selected_gender or '') == "Female" else "" }}>Female</option>
@@ -193,15 +193,15 @@
         </div>
         <div class="min-w-0">
           <label class="mb-1 block text-xs font-medium text-slate-600" for="age_min">Age (min)</label>
-          <input id="age_min" name="age_min" type="number" value="{{ selected_age_min or '' }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring" placeholder="e.g., 1" />
+          <input id="age_min" name="age_min" type="number" value="{{ selected_age_min or '' }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring" placeholder="e.g., 1" />
         </div>
         <div class="min-w-0">
           <label class="mb-1 block text-xs font-medium text-slate-600" for="age_max">Age (max)</label>
-          <input id="age_max" name="age_max" type="number" value="{{ selected_age_max or '' }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring" placeholder="e.g., 65" />
+          <input id="age_max" name="age_max" type="number" value="{{ selected_age_max or '' }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring" placeholder="e.g., 65" />
         </div>
         <div class="min-w-0">
           <label class="mb-1 block text-xs font-medium text-slate-600" for="barangay">Location (Barangay)</label>
-          <select id="barangay" name="barangay" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring">
+          <select id="barangay" name="barangay" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring">
             <option value="" {{ "selected" if not selected_barangay else "" }}>All</option>
             {% for b in ['Adlaon','Agsungot','Apas','Babag','Bacayan','Banilad','Basak Pardo','Basak San Nicolas','Binaliw','Bonbon','Budlaan','Buhisan','Bulacao','Buot','Busay','Calamba','Cambinocot','Capitol Site','Carreta','Cogon Pardo','Cogon Ramos','Day-as','Duljo Fatima','Ermita','Guadalupe','Guba','Hipodromo','Inayawan','Kalubihan','Kalunasan','Kamagayan','Kamputhaw','Kasambagan','Kinasang-an Pardo','Labangon','Lahug','Lorega San Miguel','Lusaran','Luz','Mabini','Mabolo','Malubog','Mambaling','Pahina Central','Pahina San Nicolas','Pamutan','Pari-an','Paril','Pasil','Pit-os','Poblacion Pardo','Pulangbato','Pung-ol Sibugay','Punta Princesa','Quiot Pardo','Sambag I','Sambag II','San Antonio','San Jose','San Nicolas Proper','San Roque','Santa Cruz','Santo Niño','Sapangdaku','Sawang Calero','Sinsin','Sirao','Suba','Sudlon I','Sudlon II','T. Padilla','Tabunan','Tagba-o','Talamban','Taptap','Tejero','Tinago','Tisa','To-ong','Zapatera'] %}
               <option value="{{ b }}" {{ "selected" if (selected_barangay or '') == b else "" }}>{{ b }}</option>
@@ -215,7 +215,7 @@
           <select
             id="category"
             name="category"
-            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring"
+            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring"
           >
             <option value="all" {{ "selected" if selected_category == "all" else "" }}>All categories</option>
             <option value="category i" {{ "selected" if selected_category == "category i" else "" }}>Category I</option>
@@ -228,7 +228,7 @@
           <select
             id="status"
             name="status"
-            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring"
+            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring"
           >
             <option value="all" {{ "selected" if selected_status == "all" else "" }}>All statuses</option>
             <option value="pending" {{ "selected" if selected_status == "pending" else "" }}>Pending</option>
@@ -241,7 +241,7 @@
       <div class="grid grid-cols-1 gap-3 lg:grid-cols-4">
         <div class="min-w-0">
           <label class="mb-1 block text-xs font-medium text-slate-600" for="site">Site of bite</label>
-          <select id="site" name="site" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring">
+          <select id="site" name="site" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring">
             <option value="" {{ "selected" if not selected_site else "" }}>All</option>
             {% for opt in ['Head/Face','Neck','Trunk','Right arm','Left arm','Right hand','Left hand','Right leg','Left leg','Right foot','Left foot','Other'] %}
               <option value="{{ opt }}" {{ "selected" if (selected_site or '') == opt else "" }}>{{ opt }}</option>
@@ -250,7 +250,7 @@
         </div>
         <div class="min-w-0">
           <label class="mb-1 block text-xs font-medium text-slate-600" for="animal_type">Animal type</label>
-          <select id="animal_type" name="animal_type" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring">
+          <select id="animal_type" name="animal_type" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring">
             <option value="all" {{ "selected" if (selected_animal_type or 'all')|lower == "all" else "" }}>All</option>
             <option value="Dog" {{ "selected" if (selected_animal_type or '') == "Dog" else "" }}>Dog</option>
             <option value="Cat" {{ "selected" if (selected_animal_type or '') == "Cat" else "" }}>Cat</option>
@@ -259,7 +259,7 @@
         </div>
         <div class="min-w-0">
           <label class="mb-1 block text-xs font-medium text-slate-600" for="animal_status">Animal status</label>
-          <select id="animal_status" name="animal_status" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring">
+          <select id="animal_status" name="animal_status" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring">
             <option value="all" {{ "selected" if (selected_animal_status or 'all')|lower == "all" else "" }}>All</option>
             {% for opt in ['Healthy','Killed','Sick','Lost','Died'] %}
               <option value="{{ opt }}" {{ "selected" if (selected_animal_status or '') == opt else "" }}>{{ opt }}</option>
@@ -268,7 +268,7 @@
         </div>
         <div class="min-w-0">
           <label class="mb-1 block text-xs font-medium text-slate-600" for="animal_vaccination">Animal vaccination</label>
-          <select id="animal_vaccination" name="animal_vaccination" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring">
+          <select id="animal_vaccination" name="animal_vaccination" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring">
             <option value="all" {{ "selected" if (selected_animal_vaccination or 'all')|lower == "all" else "" }}>All</option>
             {% for opt in ['Updated','Not Updated','None'] %}
               <option value="{{ opt }}" {{ "selected" if (selected_animal_vaccination or '') == opt else "" }}>{{ opt }}</option>
@@ -279,7 +279,7 @@
       <div class="grid grid-cols-1 gap-3 lg:grid-cols-4">
         <div class="min-w-0">
           <label class="mb-1 block text-xs font-medium text-slate-600" for="bio">Type of biologicals</label>
-          <select id="bio" name="bio" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring">
+          <select id="bio" name="bio" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring">
             <option value="all" {{ "selected" if (selected_bio or 'all')|lower == "all" else "" }}>All</option>
             <option value="Anti-rabies" {{ "selected" if (selected_bio or '') == "Anti-rabies" else "" }}>Anti-rabies</option>
             <option value="HRIG/ERIG" {{ "selected" if (selected_bio or '') == "HRIG/ERIG" else "" }}>HRIG / ERIG</option>
@@ -288,19 +288,19 @@
         </div>
         <div class="min-w-0">
           <label class="mb-1 block text-xs font-medium text-slate-600" for="batch">Batch / Lot number</label>
-          <input id="batch" name="batch" type="text" value="{{ selected_batch or '' }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring" placeholder="Search batch/lot…" />
+          <input id="batch" name="batch" type="text" value="{{ selected_batch or '' }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring" placeholder="Search batch/lot…" />
         </div>
         <div class="min-w-0">
           <label class="mb-1 block text-xs font-medium text-slate-600" for="date_from">Date from</label>
-          <input id="date_from" name="date_from" type="date" value="{{ selected_date_from or '' }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring" />
+          <input id="date_from" name="date_from" type="date" value="{{ selected_date_from or '' }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring" />
         </div>
         <div class="min-w-0">
           <label class="mb-1 block text-xs font-medium text-slate-600" for="date_to">Date to</label>
-          <input id="date_to" name="date_to" type="date" value="{{ selected_date_to or '' }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-emerald-300 focus:ring" />
+          <input id="date_to" name="date_to" type="date" value="{{ selected_date_to or '' }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring" />
         </div>
       </div>
       <div class="flex justify-end pt-1">
-        <button type="submit" class="w-full rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 sm:w-auto">
+        <button type="submit" class="w-full rounded-xl bg-[#1A4D2E] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#1A4D2E] sm:w-auto">
           Apply filters
         </button>
       </div>
@@ -308,7 +308,7 @@
     </form>
   </section>
 
-  <section class="mt-6 overflow-x-auto rounded-2xl border border-slate-200">
+  <section class="mt-6 overflow-x-auto rounded-[2rem] border border-slate-200">
     <table class="min-w-full divide-y divide-slate-200 text-sm">
       <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
         <tr>
@@ -330,13 +330,13 @@
             >
               <td class="px-4 py-3 font-medium text-slate-700">{{ case.case_code }}</td>
               <td class="px-4 py-3">
-                <a href="{{ url_for('view_patient_case', case_id=case.id) }}" class="font-medium text-blue-700 hover:text-blue-800">{{ case.patient_name|namecase }}</a>
+                <a href="{{ url_for('view_patient_case', case_id=case.id) }}" class="font-medium text-[#1A4D2E] hover:text-[#1A4D2E]">{{ case.patient_name|namecase }}</a>
               </td>
               <td class="px-4 py-3 text-slate-700">{{ case.exposure_date }}</td>
               <td class="px-4 py-3">
                 {% set category_lower = (case.category or '')|lower %}
                 {% if category_lower == 'category i' %}
-                  <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">{{ case.category }}</span>
+                  <span class="rounded-full bg-[#1A4D2E]/10 px-2.5 py-1 text-xs font-semibold text-[#1A4D2E]">{{ case.category }}</span>
                 {% elif category_lower == 'category ii' %}
                   <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">{{ case.category }}</span>
                 {% elif category_lower == 'category iii' %}
@@ -348,9 +348,9 @@
               <td class="px-4 py-3">
                 {% set status_lower = (case.case_status or '')|lower %}
                 {% if status_lower == 'pending' %}
-                  <span class="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">Pending</span>
+                  <span class="rounded-full bg-[#1A4D2E]/10 px-2.5 py-1 text-xs font-semibold text-[#1A4D2E]">Pending</span>
                 {% elif status_lower == 'completed' %}
-                  <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">Completed</span>
+                  <span class="rounded-full bg-[#1A4D2E]/10 px-2.5 py-1 text-xs font-semibold text-[#1A4D2E]">Completed</span>
                 {% elif status_lower == 'no show' %}
                   <span class="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">No Show</span>
                 {% else %}
@@ -381,7 +381,7 @@
       {% for p in cases.iter_pages() %}
         <a
           href="{{ url_for('staff_patients', search=search, category=selected_category, status=selected_status, gender=selected_gender, age_min=selected_age_min, age_max=selected_age_max, barangay=selected_barangay, site=selected_site, animal_type=selected_animal_type, animal_status=selected_animal_status, animal_vaccination=selected_animal_vaccination, bio=selected_bio, batch=selected_batch, date_from=selected_date_from, date_to=selected_date_to, page=p) }}"
-          class="rounded-lg px-3 py-1 {{ 'bg-emerald-500 text-white' if p == cases.page else 'text-slate-700 hover:bg-slate-100' }}"
+          class="rounded-lg px-3 py-1 {{ 'bg-[#1A4D2E] text-white' if p == cases.page else 'text-slate-700 hover:bg-slate-100' }}"
         >
           {{ p }}
         </a>

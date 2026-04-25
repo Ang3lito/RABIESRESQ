@@ -1,0 +1,72 @@
+<!-- Logout Confirmation Modal -->
+<div id="logoutModal" class="fixed inset-0 z-[100] hidden">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeLogoutModal()"></div>
+  
+  <!-- Modal Content -->
+  <div class="fixed inset-0 z-10 flex items-center justify-center p-4">
+    <div class="w-full max-w-sm transform overflow-hidden rounded-[2.5rem] bg-white p-8 shadow-2xl transition-all scale-fade-in">
+      <div class="text-center">
+        <!-- Icon -->
+        <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-600 shadow-inner">
+          <i class="fa-solid fa-right-from-bracket text-2xl"></i>
+        </div>
+        
+        <h3 class="text-xl font-bold text-slate-900">Are you sure you want to log out?</h3>
+        <p class="mt-3 text-sm font-medium text-slate-500 leading-relaxed">
+          You'll need to sign in again to continue.
+        </p>
+      </div>
+      
+      <div class="mt-8 flex flex-col gap-3">
+        <a href="{{ url_for('auth.logout') }}" 
+           class="flex w-full items-center justify-center rounded-2xl bg-red-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-red-500/20 transition-all hover:bg-red-700 active:scale-95">
+          Log out
+        </a>
+        <button type="button" onclick="closeLogoutModal()"
+                class="flex w-full items-center justify-center rounded-2xl bg-slate-100 px-6 py-3.5 text-sm font-bold text-slate-600 transition-all hover:bg-slate-200 active:scale-95">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openLogoutModal(event) {
+  if (event) event.preventDefault();
+  const modal = document.getElementById('logoutModal');
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLogoutModal() {
+  const modal = document.getElementById('logoutModal');
+  modal.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+// Close on Escape key
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    closeLogoutModal();
+  }
+});
+</script>
+
+<style>
+.scale-fade-in {
+  animation: scaleFadeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes scaleFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+</style>

@@ -8,7 +8,7 @@
       {% if crumb.href %}
         <a href="{{ crumb.href }}" class="hover:text-slate-700">{{ crumb.label }}</a>
       {% else %}
-        <span class="font-bold text-blue-600">{{ crumb.label }}</span>
+        <span class="font-bold text-[#1A4D2E]">{{ crumb.label }}</span>
       {% endif %}
       {% if not loop.last %}
         <span>/</span>
@@ -19,12 +19,12 @@
 
 {% block main_content %}
   <section class="mt-6">
-    <h1 class="text-2xl font-bold text-blue-900 sm:text-3xl lg:text-4xl">Manage availability</h1>
+    <h1 class="text-2xl font-bold text-[#1A4D2E] sm:text-3xl lg:text-4xl">Manage availability</h1>
     <p class="mt-1 text-slate-600">Add slots or remove them from the booking schedule for your clinic (45-minute intervals; lunch break excluded). Removed slots stay in the system as inactive and are not offered for booking.</p>
   </section>
 
   <section class="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
-    <h2 class="text-lg font-semibold text-slate-900">Add slots for a date range</h2>
+    <h2 class="text-lg font-semibold text-[#1A4D2E]">Add slots for a date range</h2>
     <form
       method="post"
       action="{{ url_for('staff_availability_post') }}"
@@ -35,42 +35,42 @@
       <div class="space-y-3">
         <div>
           <label for="slot_date_from" class="mb-1 block text-sm font-medium text-slate-700">From date</label>
-          <input type="date" id="slot_date_from" name="slot_date_from" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+          <input type="date" id="slot_date_from" name="slot_date_from" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[#1A4D2E]" />
         </div>
         <div>
           <label for="slot_date_to" class="mb-1 block text-sm font-medium text-slate-700">To date</label>
-          <input type="date" id="slot_date_to" name="slot_date_to" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+          <input type="date" id="slot_date_to" name="slot_date_to" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[#1A4D2E]" />
         </div>
       </div>
       <div class="space-y-3">
         <div>
           <label for="start_time" class="mb-1 block text-sm font-medium text-slate-700">Start time</label>
-          <input type="time" id="start_time" name="start_time" value="08:00" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+          <input type="time" id="start_time" name="start_time" value="08:00" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[#1A4D2E]" />
         </div>
         <div>
           <label for="end_time" class="mb-1 block text-sm font-medium text-slate-700">End time</label>
-          <input type="time" id="end_time" name="end_time" value="17:00" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+          <input type="time" id="end_time" name="end_time" value="17:00" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[#1A4D2E]" />
         </div>
       </div>
       <div class="space-y-3">
         <div>
           <label for="lunch_start" class="mb-1 block text-sm font-medium text-slate-700">Lunch start</label>
-          <input type="time" id="lunch_start" name="lunch_start" value="12:00" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+          <input type="time" id="lunch_start" name="lunch_start" value="12:00" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[#1A4D2E]" />
         </div>
         <div>
           <label for="lunch_end" class="mb-1 block text-sm font-medium text-slate-700">Lunch end</label>
-          <input type="time" id="lunch_end" name="lunch_end" value="13:00" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+          <input type="time" id="lunch_end" name="lunch_end" value="13:00" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[#1A4D2E]" />
         </div>
       </div>
       <div class="flex flex-col items-stretch justify-end space-y-2">
-        <button type="submit" class="w-full rounded-lg bg-emerald-500 px-4 py-2.5 font-medium text-white hover:bg-emerald-600">Add slots</button>
+        <button type="submit" class="w-full rounded-lg bg-[#1A4D2E] px-4 py-2.5 font-medium text-white hover:bg-[#1A4D2E]">Add slots</button>
         <input type="hidden" name="duration_minutes" value="45" />
         <input type="hidden" name="max_bookings" value="1" />
       </div>
     </form>
   </section>
 
-  <section class="mt-4 w-full overflow-x-auto rounded-2xl border border-slate-200">
+  <section class="mt-4 w-full overflow-x-auto rounded-[2rem] border border-slate-200">
     <table class="min-w-full divide-y divide-slate-200 text-sm">
       <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
         <tr>
@@ -78,7 +78,7 @@
             <div class="flex items-center gap-2">
               <span>Date &amp; time</span>
               <form method="get" action="{{ url_for('staff_availability') }}" class="text-xs font-normal">
-                <input type="date" name="filter_date" value="{{ filter_date or from_date }}" class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-900" onchange="this.form.submit()" />
+                <input type="date" name="filter_date" value="{{ filter_date or from_date }}" class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] text-[#1A4D2E]" onchange="this.form.submit()" />
               </form>
             </div>
           </th>
@@ -99,7 +99,7 @@
                 {% elif slot.is_taken %}
                   <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">Booked</span>
                 {% else %}
-                  <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">Available</span>
+                  <span class="rounded-full bg-[#1A4D2E]/10 px-2.5 py-1 text-xs font-medium text-[#1A4D2E]">Available</span>
                 {% endif %}
               </td>
               <td class="px-4 py-3">

@@ -18,895 +18,1138 @@
 {%- endmacro %}
 
 {% macro reporting_url(t) -%}
-{{ url_for('admin_analytics') }}?tab={{ t }}&period={{ period }}&date_from={{ date_from }}&date_to={{ date_to }}{% if yearly_year is not none %}&year={{ yearly_year }}{% endif %}{% if t == 'insights' %}{{ insights_filter_query() }}{% endif %}
+{{ url_for('admin_analytics') }}?tab={{ t }}&period={{ period }}&date_from={{ date_from }}&date_to={{ date_to }}{% if
+yearly_year is not none %}&year={{ yearly_year }}{% endif %}{% if t == 'insights' %}{{ insights_filter_query() }}{%
+endif %}
 {%- endmacro %}
 
 {% macro insights_export_url(dataset) -%}
-{{ url_for('admin_insights_export_csv') }}?dataset={{ dataset }}&period={{ period }}&date_from={{ date_from }}&date_to={{ date_to }}{% if yearly_year is not none %}&year={{ yearly_year }}{% endif %}{{ insights_filter_query() }}
+{{ url_for('admin_insights_export_csv') }}?dataset={{ dataset }}&period={{ period }}&date_from={{ date_from
+}}&date_to={{ date_to }}{% if yearly_year is not none %}&year={{ yearly_year }}{% endif %}{{ insights_filter_query() }}
 {%- endmacro %}
 
 {% block main_content %}
-  <section class="mt-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-    <div>
-      <h1 class="text-2xl font-bold text-blue-900 sm:text-3xl">Reporting</h1>
-      <p class="mt-1 text-slate-600">Overview, clinic profile, and program insights in one place.</p>
-    </div>
-  </section>
+<section class="mt-6 page-fade-in">
+  <div class="relative overflow-hidden rounded-[2.5rem] bg-slate-900 p-8 sm:p-10 text-white shadow-xl">
+    <!-- Abstract background deco -->
+    <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl"></div>
+    <div class="absolute -left-10 -bottom-10 h-40 w-40 rounded-full bg-white/5 blur-2xl"></div>
 
-  <nav class="mt-6 flex flex-wrap gap-2 border-b border-slate-200 pb-3">
-    <a
-      href="{{ reporting_url('overview') }}"
-      class="rounded-xl px-4 py-2 text-sm font-semibold {{ 'bg-emerald-100 text-emerald-800' if tab == 'overview' else 'text-slate-600 hover:bg-slate-100' }}"
-    >Overview</a>
-    <a
-      href="{{ reporting_url('clinic') }}"
-      class="rounded-xl px-4 py-2 text-sm font-semibold {{ 'bg-emerald-100 text-emerald-800' if tab == 'clinic' else 'text-slate-600 hover:bg-slate-100' }}"
-    >Clinic</a>
-    <a
-      href="{{ reporting_url('insights') }}"
-      class="rounded-xl px-4 py-2 text-sm font-semibold {{ 'bg-emerald-100 text-emerald-800' if tab == 'insights' else 'text-slate-600 hover:bg-slate-100' }}"
-    >Program insights</a>
-  </nav>
-
-  <div class="mt-4 flex flex-wrap items-center gap-2">
-    <a href="{{ url_for('admin_analytics', tab=tab, period='30d') }}{% if tab == 'insights' %}{{ insights_filter_query() }}{% endif %}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium {{ 'border-emerald-500 bg-emerald-50 text-emerald-800' if period == '30d' else 'text-slate-700 hover:bg-slate-50' }}">Last 30 Days</a>
-    <label class="flex items-center gap-2 text-sm text-slate-600">
-      <span>Yearly</span>
-      <select
-        class="rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm font-medium outline-none ring-emerald-300 focus:ring {{ 'border-emerald-500 bg-emerald-50 text-emerald-800' if period == 'yearly' else '' }}"
-        onchange="if (this.value) { var _h='{{ url_for('admin_analytics') }}?tab={{ tab }}&period=yearly&year=' + encodeURIComponent(this.value); window.location.href = _h + ({{ (insights_filter_query_js or '')|tojson }}); }"
-      >
-        <option value="" {% if period != 'yearly' %}selected{% endif %}>—</option>
-        {% for y in admin_year_options %}
-          <option value="{{ y }}" {% if period == 'yearly' and yearly_year == y %}selected{% endif %}>{{ y }}</option>
-        {% endfor %}
-      </select>
-    </label>
-    <form method="get" action="{{ url_for('admin_analytics') }}" class="flex flex-wrap items-center gap-2">
-      <input type="hidden" name="tab" value="{{ tab }}" />
-      <input type="hidden" name="period" value="custom" />
-      {% if tab == 'insights' and insights_filters is defined %}
-        {% if insights_filters.get('barangay') %}<input type="hidden" name="insights_barangay" value="{{ insights_filters.barangay }}" />{% endif %}
-        {% if insights_filters.get('animal') %}<input type="hidden" name="insights_animal" value="{{ insights_filters.animal }}" />{% endif %}
-        {% if insights_filters.get('bite_type') %}<input type="hidden" name="insights_bite" value="{{ insights_filters.bite_type }}" />{% endif %}
-        {% if insights_filters.get('gender') %}<input type="hidden" name="insights_gender" value="{{ insights_filters.gender }}" />{% endif %}
-        {% if insights_filters.get('age_group') %}<input type="hidden" name="insights_age" value="{{ insights_filters.age_group }}" />{% endif %}
-      {% endif %}
-      <input type="date" name="date_from" value="{{ date_from }}" class="rounded-xl border border-slate-200 px-2 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
-      <input type="date" name="date_to" value="{{ date_to }}" class="rounded-xl border border-slate-200 px-2 py-2 text-sm outline-none ring-emerald-300 focus:ring" />
-      <button type="submit" class="rounded-xl bg-slate-700 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">Custom Range</button>
-    </form>
-  </div>
-
-  {% if tab == 'overview' %}
-  <section class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-    {{ admin.stat_card('Total Registered Patients', "{:,}".format(total_users), 'fa-solid fa-user-group', 'bg-blue-100 text-blue-600', 'text-blue-900') }}
-    {{ admin.stat_card('Bite Cases', "{:,}".format(bite_cases_period), 'fa-solid fa-notes-medical', 'bg-amber-100 text-amber-600', 'text-indigo-600') }}
-    {{ admin.stat_card('Ongoing Vaccinations', "{:,}".format(ongoing_cases), 'fa-solid fa-hourglass-half', 'bg-amber-100 text-amber-600', 'text-amber-600') }}
-    {{ admin.stat_card('Completed Cases', "{:,}".format(completed_cases_period), 'fa-solid fa-circle-check', 'bg-emerald-100 text-emerald-600', 'text-emerald-600') }}
-  </section>
-  <p class="mt-2 text-xs text-slate-500">Stat cards use the selected date range except <span class="font-medium text-slate-600">Ongoing Vaccinations</span>, which shows all currently pending cases at this clinic. <span class="font-medium text-slate-600">Completed Cases</span> matches the admin Cases “Completed” filter: case status completed, with case date (created or exposure) in the selected range—same basis as Bite Cases.</p>
-
-  <section class="mt-8 grid grid-cols-1 gap-4 xl:grid-cols-2">
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <h2 class="text-lg font-semibold text-blue-900">Monthly Bite Cases ({{ clinic.name if clinic else 'Clinic' }})</h2>
-      <p class="mt-1 text-xs text-slate-500">By calendar month within the selected range</p>
-      <div class="mt-4 h-64">
-        <canvas id="adminChartBiteMonths"></canvas>
-      </div>
-      <button
-        type="button"
-        class="js-toggle-numeric mt-3 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-        data-kind="overview_monthly_bites"
-        data-target="adminChartBiteMonthsNumeric"
-        aria-expanded="false"
-        aria-controls="adminChartBiteMonthsNumeric"
-      >
-        <i class="fa-solid fa-table"></i>
-        <span>View Numerical Data for this Graph/Table</span>
-        <i class="js-chevron fa-solid fa-chevron-down ml-auto text-xs text-slate-400 transition-transform"></i>
-      </button>
-      <div id="adminChartBiteMonthsNumeric" class="mt-3 hidden overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
-        <table class="w-full min-w-[18rem] text-sm">
-          <thead>
-            <tr class="border-b border-slate-200 text-left text-slate-600">
-              <th class="py-1 pr-2">Month</th>
-              <th class="py-1 pr-2">Bite cases</th>
-              <th class="py-1 pr-2">Δ</th>
-              <th class="py-1">Δ%</th>
-            </tr>
-          </thead>
-          <tbody class="js-numeric-body"></tbody>
-        </table>
-        <p class="mt-2 text-xs text-slate-500">
-          <span class="font-semibold text-slate-600">Legend:</span>
-          <span class="font-semibold text-slate-600">Δ</span> = change vs previous month,
-          <span class="font-semibold text-slate-600">Δ%</span> = percent change vs previous month.
-          <span class="font-semibold text-slate-600">—</span> means no prior month in range (or prior month was 0 for Δ%).
+    <div class="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+      <div class="max-w-2xl">
+        <span
+          class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white/90 backdrop-blur-md">
+          <i class="fa-solid fa-chart-line"></i>
+          System Oversight
+        </span>
+        <h1 class="mt-4 text-3xl font-bold sm:text-4xl">Welcome back, Administrator!</h1>
+        <p class="mt-3 text-lg text-white/70 leading-relaxed">
+          Your program is currently protecting <span class="text-[#1A4D2E] font-bold">{{ total_users }}</span> patients
+          across the community.
         </p>
-      </div>
-    </article>
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <div class="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h2 class="text-lg font-semibold text-blue-900">Vaccination Completion ({{ clinic.name if clinic else 'Clinic' }})</h2>
-          <p class="mt-1 text-xs text-slate-500">Completed cases vs all cases in selected range (same dates as Bite Cases)</p>
+        <div class="mt-6 flex flex-wrap gap-4">
+          <div class="flex items-center gap-2 rounded-2xl bg-white/5 px-4 py-2 backdrop-blur-sm border border-white/10">
+            <i class="fa-solid fa-check-circle text-[#1A4D2E]"></i>
+            <span class="text-sm font-semibold">{{ vaccination_completion_pct }}% Completion Rate</span>
+          </div>
+          <div class="flex items-center gap-2 rounded-2xl bg-white/5 px-4 py-2 backdrop-blur-sm border border-white/10">
+            <i class="fa-solid fa-clinic-medical text-sky-400"></i>
+            <span class="text-sm font-semibold">Active Monitoring Enabled</span>
+          </div>
         </div>
-        <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-sm font-bold text-emerald-700">{{ vaccination_completion_pct }}%</span>
       </div>
-      <div class="mx-auto mt-4 flex h-56 max-w-xs items-center justify-center">
-        <canvas id="adminChartRadial"></canvas>
-      </div>
-      <p class="mt-2 text-center text-sm text-slate-600">{{ vaccination_completion_pct }}% Completed</p>
-      <button
-        type="button"
-        class="js-toggle-numeric mt-3 inline-flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-        data-kind="overview_vaccination_completion"
-        data-target="adminChartRadialNumeric"
-        aria-expanded="false"
-        aria-controls="adminChartRadialNumeric"
-      >
-        <i class="fa-solid fa-table"></i>
-        <span>View Numerical Data for this Graph/Table</span>
-        <i class="js-chevron fa-solid fa-chevron-down ml-auto text-xs text-slate-400 transition-transform"></i>
-      </button>
-      <div id="adminChartRadialNumeric" class="mt-3 hidden overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
-        <table class="w-full min-w-[18rem] text-sm">
-          <thead>
-            <tr class="border-b border-slate-200 text-left text-slate-600">
-              <th class="py-1 pr-2">Metric</th>
-              <th class="py-1">Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="border-b border-slate-100">
-              <td class="py-1.5 pr-2 font-medium text-slate-700">Completed cases</td>
-              <td class="py-1.5 text-slate-700">{{ completed_cases_period }}</td>
-            </tr>
-            <tr class="border-b border-slate-100">
-              <td class="py-1.5 pr-2 font-medium text-slate-700">Other cases in range</td>
-              <td class="py-1.5 text-slate-700">{{ (bite_cases_period - completed_cases_period) if bite_cases_period else 0 }}</td>
-            </tr>
-            <tr>
-              <td class="py-1.5 pr-2 font-medium text-slate-700">Completion rate</td>
-              <td class="py-1.5 text-slate-700">{{ vaccination_completion_pct }}%</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </article>
-  </section>
-
-  <section class="mt-8">
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <h2 class="text-lg font-semibold text-blue-900">Bite Case Animal Types ({{ clinic.name if clinic else 'Clinic' }})</h2>
-      <p class="mt-1 text-xs text-slate-500">Share of cases by inferred animal type (cases in selected range)</p>
-      <ul class="mt-4 space-y-3">
-        {% for row in animal_type_rows %}
-        <li>
-          <div class="mb-1 flex items-center justify-between text-sm">
-            <span class="font-medium text-slate-700">{{ row.label }}</span>
-            <span class="text-slate-500">{{ row.percent }}%</span>
-          </div>
-          <div class="h-2.5 w-full rounded-full bg-slate-200">
-            <div class="h-full rounded-full bg-emerald-400" style="width: {{ row.percent }}%"></div>
-          </div>
-        </li>
-        {% else %}
-        <li class="text-sm text-slate-500">No bite case data for this clinic yet.</li>
-        {% endfor %}
-      </ul>
-    </article>
-  </section>
-
-  <script type="application/json" id="admin-dashboard-chart-data">{{ overview_chart_data|tojson }}</script>
-  <script>
-    (function () {
-      var el = document.getElementById('admin-dashboard-chart-data');
-      if (!el) return;
-      var data = JSON.parse(el.textContent || '{}');
-      if (typeof Chart === 'undefined') return;
-
-      var lineCtx = document.getElementById('adminChartBiteMonths');
-      if (lineCtx && data.monthly_labels && data.monthly_counts) {
-        new Chart(lineCtx, {
-          type: 'line',
-          data: {
-            labels: data.monthly_labels,
-            datasets: [{
-              label: 'Bite cases',
-              data: data.monthly_counts,
-              borderColor: 'rgb(16, 185, 129)',
-              backgroundColor: 'rgba(16, 185, 129, 0.15)',
-              fill: true,
-              tension: 0.35,
-            }],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.25)' } },
-              x: { grid: { display: false } },
-            },
-          },
-        });
-      }
-
-      function buildMonthlyBiteTable(targetEl, labels, values) {
-        if (!targetEl) return;
-        var body = targetEl.querySelector('.js-numeric-body');
-        if (!body) return;
-        if (body.childElementCount) return; // already built
-        if (!labels || !values || !labels.length) return;
-        for (var i = 0; i < labels.length; i++) {
-          var prev = i > 0 ? Number(values[i - 1] ?? 0) : null;
-          var cur = Number(values[i] ?? 0);
-          var delta = prev === null ? null : (cur - prev);
-          var deltaPct = null;
-          if (prev !== null) {
-            deltaPct = prev === 0 ? null : ((delta / prev) * 100);
-          }
-
-          var tr = document.createElement('tr');
-          tr.className = 'border-b border-slate-100';
-          var td1 = document.createElement('td');
-          td1.className = 'py-1.5 pr-2 font-medium text-slate-700';
-          td1.textContent = String(labels[i] ?? '');
-          var td2 = document.createElement('td');
-          td2.className = 'py-1.5 pr-2 text-slate-700';
-          td2.textContent = String(values[i] ?? '');
-          var td3 = document.createElement('td');
-          td3.className = 'py-1.5 pr-2 text-slate-700';
-          td3.textContent = delta === null ? '—' : String(delta);
-          var td4 = document.createElement('td');
-          td4.className = 'py-1.5 text-slate-700';
-          td4.textContent = deltaPct === null ? '—' : (deltaPct.toFixed(1) + '%');
-          tr.appendChild(td1);
-          tr.appendChild(td2);
-          tr.appendChild(td3);
-          tr.appendChild(td4);
-          body.appendChild(tr);
-        }
-      }
-
-      document.querySelectorAll('.js-toggle-numeric').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var targetId = btn.getAttribute('data-target');
-          var kind = btn.getAttribute('data-kind');
-          if (!targetId) return;
-          var panel = document.getElementById(targetId);
-          if (!panel) return;
-
-          var isHidden = panel.classList.contains('hidden');
-          if (isHidden) {
-            if (kind === 'overview_monthly_bites') {
-              buildMonthlyBiteTable(panel, data.monthly_labels, data.monthly_counts);
-            }
-            panel.classList.remove('hidden');
-            btn.setAttribute('aria-expanded', 'true');
-            var chevOpen = btn.querySelector('.js-chevron');
-            if (chevOpen) chevOpen.classList.add('rotate-180');
-          } else {
-            panel.classList.add('hidden');
-            btn.setAttribute('aria-expanded', 'false');
-            var chevClose = btn.querySelector('.js-chevron');
-            if (chevClose) chevClose.classList.remove('rotate-180');
-          }
-        });
-      });
-
-      var doughnutCtx = document.getElementById('adminChartRadial');
-      if (doughnutCtx) {
-        var pct = Math.max(0, Math.min(100, parseInt(data.vaccination_completion_pct || 0, 10)));
-        new Chart(doughnutCtx, {
-          type: 'doughnut',
-          data: {
-            labels: ['Completed cases', 'Other cases in range'],
-            datasets: [{
-              data: [pct, 100 - pct],
-              backgroundColor: ['rgb(16, 185, 129)', 'rgb(226, 232, 240)'],
-              borderWidth: 0,
-            }],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '72%',
-            plugins: { legend: { display: false }, tooltip: { enabled: true } },
-          },
-        });
-      }
-    })();
-  </script>
-  {% elif tab == 'clinic' %}
-  <section class="mt-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-    <p class="text-sm text-slate-600">Profile and performance for <span class="font-semibold text-slate-800">{{ clinic.name if clinic else 'Clinic' }}</span>.</p>
-    <div class="flex flex-wrap items-center gap-2">
-      {% if clinic %}
-      <a
-        href="{{ url_for('admin_clinic_export_csv') }}?period={{ period }}&date_from={{ date_from }}&date_to={{ date_to }}{% if yearly_year is not none %}&year={{ yearly_year }}{% endif %}"
-        class="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-base font-semibold text-emerald-800 hover:bg-emerald-100 sm:mr-2"
-      >
-        <i class="fa-solid fa-download mr-2"></i>Export CSV
-      </a>
-      <a
-        href="{{ url_for('admin_clinic_export_pdf') }}?period={{ period }}&date_from={{ date_from }}&date_to={{ date_to }}{% if yearly_year is not none %}&year={{ yearly_year }}{% endif %}"
-        class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-base font-semibold text-slate-700 hover:bg-slate-50"
-      >
-        <i class="fa-solid fa-file-pdf mr-2 text-rose-600"></i>Download PDF
-      </a>
-      {% endif %}
-    </div>
-  </section>
-
-  <section class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <p class="text-sm text-slate-500">Address</p>
-      <p class="mt-2 text-lg font-semibold text-blue-900">{{ clinic.address if clinic and clinic.address else '—' }}</p>
-    </article>
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <p class="text-sm text-slate-500">Total active patients</p>
-      <p class="mt-2 text-3xl font-bold text-blue-900">{{ "{:,}".format(total_patients) }}</p>
-      <p class="mt-1 text-xs text-slate-500">Distinct patients with a case at this clinic</p>
-    </article>
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <p class="text-sm text-slate-500">Staff members</p>
-      <p class="mt-2 text-3xl font-bold text-blue-900">{{ "{:,}".format(staff_count) }}</p>
-      <p class="mt-1 text-xs text-slate-500">Clinic personnel records</p>
-    </article>
-  </section>
-
-  <section class="mt-4">
-    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Year to date ({{ report_year }})</p>
-    <div class="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <article class="rounded-2xl border border-slate-200 bg-white p-5">
-        <p class="text-sm text-slate-500">Cases (YTD)</p>
-        <p class="mt-2 text-3xl font-bold text-indigo-600">{{ "{:,}".format(cases_ytd) }}</p>
-        <p class="mt-1 text-xs text-slate-500">By case date (created or exposure) from Jan 1</p>
-      </article>
-      <article class="rounded-2xl border border-slate-200 bg-white p-5">
-        <p class="text-sm text-slate-500">Appointments (YTD)</p>
-        <p class="mt-2 text-3xl font-bold text-indigo-600">{{ "{:,}".format(appointments_ytd) }}</p>
-        <p class="mt-1 text-xs text-slate-500">By appointment date from Jan 1</p>
-      </article>
-    </div>
-  </section>
-
-  <section class="mt-8">
-    <h2 class="text-lg font-semibold text-blue-900">Clinic performance (selected period)</h2>
-    <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Period totals</p>
-    <div class="mt-2 grid grid-cols-2 gap-3 lg:grid-cols-6">
-      <article class="rounded-xl border border-slate-200 bg-white p-4">
-        <p class="text-xs text-slate-500">Cases</p>
-        <p class="mt-1 text-xl font-bold text-blue-900">{{ "{:,}".format(cases_in_period) }}</p>
-      </article>
-      <article class="rounded-xl border border-slate-200 bg-white p-4">
-        <p class="text-xs text-slate-500">Appointments</p>
-        <p class="mt-1 text-xl font-bold text-blue-900">{{ "{:,}".format(appointments_in_period) }}</p>
-      </article>
-      <article class="rounded-xl border border-slate-200 bg-white p-4">
-        <p class="text-xs text-slate-500">Completed</p>
-        <p class="mt-1 text-xl font-bold text-emerald-600">{{ "{:,}".format(completed_in_period) }}</p>
-      </article>
-      <article class="rounded-xl border border-slate-200 bg-white p-4">
-        <p class="text-xs text-slate-500">Ongoing</p>
-        <p class="mt-1 text-xl font-bold text-amber-600">{{ "{:,}".format(ongoing_in_period) }}</p>
-      </article>
-      <article class="rounded-xl border border-slate-200 bg-white p-4">
-        <p class="text-xs text-slate-500">No show</p>
-        <p class="mt-1 text-xl font-bold text-slate-700">{{ "{:,}".format(no_show_in_period) }}</p>
-      </article>
-      <article class="rounded-xl border border-slate-200 bg-white p-4">
-        <p class="text-xs text-slate-500">Completion</p>
-        <p class="mt-1 text-xl font-bold text-emerald-600">{{ case_completion_pct_period }}%</p>
-      </article>
-    </div>
-
-    <div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
-      <article class="rounded-2xl border border-slate-200 bg-white p-5">
-        <h3 class="text-base font-semibold text-slate-800">Monthly Bite Cases</h3>
-        <p class="text-xs text-slate-500">Cases per calendar month in the selected range (by case date)</p>
-        {% if charts_empty %}
-        <p class="mt-8 text-center text-sm text-slate-500">No cases with a case date in this range.</p>
-        {% else %}
-        <div class="mt-4 h-64">
-          <canvas id="clinicChartVisits"></canvas>
+      <div class="hidden xl:block">
+        <div
+          class="flex h-32 w-32 items-center justify-center rounded-full bg-white/5 backdrop-blur-md border border-white/10">
+          <i class="fa-solid fa-user-shield text-6xl text-white/20"></i>
         </div>
-        {% endif %}
-      </article>
-      <article class="rounded-2xl border border-slate-200 bg-white p-5">
-        <h3 class="text-base font-semibold text-slate-800">Case Completion Rate</h3>
-        <p class="text-xs text-slate-500">{% if period == 'yearly' %}Completed cases ÷ total cases per quarter (case date){% else %}Completed cases ÷ total cases for the selected range{% endif %}</p>
-        <div class="mt-4 h-64">
-          <canvas id="clinicChartCompliance"></canvas>
-        </div>
-      </article>
+      </div>
     </div>
+  </div>
+</section>
 
-    <article class="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
-      <h3 class="text-base font-semibold text-slate-800">Risk level mix (selected period)</h3>
-      <p class="text-xs text-slate-500">Share of cases by recorded risk level or category (case date in range)</p>
-      <ul class="mt-4 space-y-3">
-        {% for row in risk_rows %}
-        <li>
-          <div class="mb-1 flex items-center justify-between text-sm">
-            <span class="font-medium text-slate-700">{{ row.label }}</span>
-            <span class="text-slate-500">{{ row.count }} ({{ row.percent }}%)</span>
-          </div>
-          <div class="h-2.5 w-full rounded-full bg-slate-200">
-            <div class="h-full rounded-full bg-emerald-400" style="width: {{ row.percent }}%"></div>
-          </div>
-        </li>
-        {% else %}
-        <li class="text-sm text-slate-500">No case data for this period.</li>
-        {% endfor %}
-      </ul>
-    </article>
-  </section>
+<nav class="mt-6 flex flex-wrap gap-2 border-b border-slate-200 pb-3">
+  <a href="{{ reporting_url('overview') }}"
+    class="rounded-xl px-4 py-2 text-sm font-semibold {{ 'bg-[#1A4D2E]/10 text-[#1A4D2E]' if tab == 'overview' else 'text-slate-600 hover:bg-slate-100' }}">Overview</a>
+  <a href="{{ reporting_url('clinic') }}"
+    class="rounded-xl px-4 py-2 text-sm font-semibold {{ 'bg-[#1A4D2E]/10 text-[#1A4D2E]' if tab == 'clinic' else 'text-slate-600 hover:bg-slate-100' }}">Clinic</a>
+  <a href="{{ reporting_url('insights') }}"
+    class="rounded-xl px-4 py-2 text-sm font-semibold {{ 'bg-[#1A4D2E]/10 text-[#1A4D2E]' if tab == 'insights' else 'text-slate-600 hover:bg-slate-100' }}">Program
+    insights</a>
+</nav>
 
-  <script type="application/json" id="clinic-chart-data">{{ clinic_chart_data|tojson }}</script>
-  <script>
-    (function () {
-      var el = document.getElementById('clinic-chart-data');
-      if (!el || typeof Chart === 'undefined') return;
-      var d = JSON.parse(el.textContent || '{}');
-      var vctx = document.getElementById('clinicChartVisits');
-      if (vctx && d.visit_labels && d.visit_counts) {
-        new Chart(vctx, {
-          type: 'line',
-          data: {
-            labels: d.visit_labels,
-            datasets: [{
-              label: 'Cases',
-              data: d.visit_counts,
-              borderColor: 'rgb(16, 185, 129)',
-              backgroundColor: 'rgba(16, 185, 129, 0.12)',
-              fill: true,
-              tension: 0.35,
-            }],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: true } },
-            scales: {
-              y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.25)' } },
-              x: { grid: { display: false } },
-            },
-          },
-        });
-      }
-      var cctx = document.getElementById('clinicChartCompliance');
-      if (cctx && d.compliance_labels && d.compliance_pcts) {
-        var cols = ['rgba(16, 185, 129, 0.85)', 'rgba(59, 130, 246, 0.85)'];
-        var bg = d.compliance_pcts.map(function (_, i) { return cols[i % 2]; });
-        new Chart(cctx, {
-          type: 'bar',
-          data: {
-            labels: d.compliance_labels,
-            datasets: [{
-              label: 'Completion %',
-              data: d.compliance_pcts,
-              backgroundColor: bg,
-            }],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              y: { beginAtZero: true, max: 100, grid: { color: 'rgba(148, 163, 184, 0.25)' } },
-              x: { grid: { display: false } },
-            },
-          },
-        });
-      }
-    })();
-  </script>
-  {% else %}
-  <section class="mt-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-    <div>
-      <h2 class="text-xl font-bold text-blue-900">{{ clinic.name if clinic else 'Clinic' }}</h2>
-      <p class="mt-1 text-slate-600">Program insights &amp; oversight</p>
-      <p class="mt-2 max-w-2xl text-sm text-slate-500">Longer-range trends, geography, high-risk cases, and dose volume by staff. Clinic staff use <span class="font-medium text-slate-700">Operations</span> for day-to-day metrics (short date ranges).</p>
-    </div>
-  </section>
+<div id="analytics-config" class="hidden" data-base-url="{{ url_for('admin_analytics') }}" data-tab="{{ tab }}"
+  data-filter="{{ insights_filter_query_js or '' }}"></div>
 
-  {% if clinic %}
-  <form method="get" action="{{ url_for('admin_analytics') }}" class="mt-4 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-    <input type="hidden" name="tab" value="insights" />
-    <input type="hidden" name="period" value="{{ period }}" />
-    <input type="hidden" name="date_from" value="{{ date_from }}" />
-    <input type="hidden" name="date_to" value="{{ date_to }}" />
-    {% if yearly_year is not none %}<input type="hidden" name="year" value="{{ yearly_year }}" />{% endif %}
-    <div class="flex min-w-[10rem] flex-col gap-1">
-      <label class="text-xs font-medium text-slate-600">Barangay</label>
-      <select name="insights_barangay" class="rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm outline-none ring-emerald-300 focus:ring">
-        <option value="">All</option>
-        {% for b in insights_barangay_options %}
-          <option value="{{ b }}" {% if insights_filters.get('barangay') == b %}selected{% endif %}>{{ b }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="flex min-w-[8rem] flex-col gap-1">
-      <label class="text-xs font-medium text-slate-600">Animal type</label>
-      <select name="insights_animal" class="rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm outline-none ring-emerald-300 focus:ring">
-        <option value="">All</option>
-        {% for a in insights_animal_options %}
-          <option value="{{ a }}" {% if insights_filters.get('animal') == a %}selected{% endif %}>{{ a }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="flex min-w-[8rem] flex-col gap-1">
-      <label class="text-xs font-medium text-slate-600">Bite type</label>
-      <select name="insights_bite" class="rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm outline-none ring-emerald-300 focus:ring">
-        <option value="">All</option>
-        {% for bt in insights_bite_options %}
-          <option value="{{ bt }}" {% if insights_filters.get('bite_type') == bt %}selected{% endif %}>{{ bt }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="flex min-w-[8rem] flex-col gap-1">
-      <label class="text-xs font-medium text-slate-600">Gender</label>
-      <select name="insights_gender" class="rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm outline-none ring-emerald-300 focus:ring">
-        <option value="">All</option>
-        {% for g in insights_gender_options %}
-          <option value="{{ g }}" {% if insights_filters.get('gender') == g %}selected{% endif %}>{{ g }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="flex min-w-[8rem] flex-col gap-1">
-      <label class="text-xs font-medium text-slate-600">Age group</label>
-      <select name="insights_age" class="rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm outline-none ring-emerald-300 focus:ring">
-        <option value="">All</option>
-        {% for ag in insights_age_options %}
-          <option value="{{ ag }}" {% if insights_filters.get('age_group') == ag %}selected{% endif %}>{{ ag }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Apply filters</button>
-    <a href="{{ url_for('admin_analytics', tab='insights', period=period, date_from=date_from, date_to=date_to) }}{% if yearly_year is not none %}&year={{ yearly_year }}{% endif %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Clear</a>
+<div class="mt-4 flex flex-wrap items-center gap-2">
+  <a href="{{ url_for('admin_analytics', tab=tab, period='30d') }}{% if tab == 'insights' %}{{ insights_filter_query() }}{% endif %}"
+    class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium {{ 'border-[#1A4D2E] bg-[#1A4D2E]/5 text-[#1A4D2E]' if period == '30d' else 'text-slate-700 hover:bg-slate-50' }}">Last
+    30 Days</a>
+  <label class="flex items-center gap-2 text-sm text-slate-600">
+    <span>Yearly</span>
+    <select
+      class="rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm font-medium outline-none ring-[#1A4D2E]/30 focus:ring {{ 'border-[#1A4D2E] bg-[#1A4D2E]/5 text-[#1A4D2E]' if period == 'yearly' else '' }}"
+      onchange="handleYearlyChange(this.value)">
+      <option value="" {% if period !='yearly' %}selected{% endif %}>—</option>
+      {% for y in admin_year_options %}
+      <option value="{{ y }}" {% if period=='yearly' and yearly_year==y %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <form method="get" action="{{ url_for('admin_analytics') }}" class="flex flex-wrap items-center gap-2">
+    <input type="hidden" name="tab" value="{{ tab }}" />
+    <input type="hidden" name="period" value="custom" />
+    {% if tab == 'insights' and insights_filters is defined %}
+    {% if insights_filters.get('barangay') %}<input type="hidden" name="insights_barangay"
+      value="{{ insights_filters.barangay }}" />{% endif %}
+    {% if insights_filters.get('animal') %}<input type="hidden" name="insights_animal"
+      value="{{ insights_filters.animal }}" />{% endif %}
+    {% if insights_filters.get('bite_type') %}<input type="hidden" name="insights_bite"
+      value="{{ insights_filters.bite_type }}" />{% endif %}
+    {% if insights_filters.get('gender') %}<input type="hidden" name="insights_gender"
+      value="{{ insights_filters.gender }}" />{% endif %}
+    {% if insights_filters.get('age_group') %}<input type="hidden" name="insights_age"
+      value="{{ insights_filters.age_group }}" />{% endif %}
+    {% endif %}
+    <input type="date" name="date_from" value="{{ date_from }}"
+      class="rounded-xl border border-slate-200 px-2 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
+    <input type="date" name="date_to" value="{{ date_to }}"
+      class="rounded-xl border border-slate-200 px-2 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
+    <button type="submit"
+      class="rounded-xl bg-slate-700 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">Custom
+      Range</button>
   </form>
+</div>
 
-  <section class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <p class="text-sm text-slate-500">Total Bite Cases</p>
-      <p class="mt-2 text-3xl font-bold text-blue-900">{{ kpi.bite_cases }}</p>
-    </article>
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <p class="text-sm text-slate-500">Completed Cases</p>
-      <p class="mt-2 text-3xl font-bold text-emerald-600">{{ kpi.completed_cases }}</p>
-      <p class="mt-2 text-xs text-slate-500">Same as admin Cases completed filter; date range uses case created/exposure date.</p>
-    </article>
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <p class="text-sm text-slate-500">Ongoing Cases</p>
-      <p class="mt-2 text-3xl font-bold text-amber-600">{{ kpi.ongoing_cases }}</p>
-    </article>
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <p class="text-sm text-slate-500">Staff Members</p>
-      <p class="mt-2 text-3xl font-bold text-blue-900">{{ kpi.staff_count }}</p>
-    </article>
-  </section>
+{% if tab == 'overview' %}
+<section class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4 page-fade-in" style="animation-delay: 0.1s">
+  <article class="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
+    <div class="flex items-center justify-between">
+      <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Registered Patients</p>
+      <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1A4D2E]/10 text-[#1A4D2E]">
+        <i class="fa-solid fa-user-group"></i>
+      </span>
+    </div>
+    <p class="mt-4 text-3xl font-bold text-[#1A4D2E]">{{ "{:,}".format(total_users) }}</p>
+  </article>
 
-  <section class="mt-8">
+  <article class="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
+    <div class="flex items-center justify-between">
+      <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Bite Cases</p>
+      <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+        <i class="fa-solid fa-notes-medical"></i>
+      </span>
+    </div>
+    <p class="mt-4 text-3xl font-bold text-[#1A4D2E]">{{ "{:,}".format(bite_cases_period) }}</p>
+  </article>
+
+  <article class="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
+    <div class="flex items-center justify-between">
+      <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Ongoing Care</p>
+      <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+        <i class="fa-solid fa-hourglass-half"></i>
+      </span>
+    </div>
+    <p class="mt-4 text-3xl font-bold text-sky-600">{{ "{:,}".format(ongoing_cases) }}</p>
+  </article>
+
+  <article class="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
+    <div class="flex items-center justify-between">
+      <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Completion Rate</p>
+      <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1A4D2E]/10 text-[#1A4D2E]">
+        <i class="fa-solid fa-circle-check"></i>
+      </span>
+    </div>
+    <p class="mt-4 text-3xl font-bold text-[#1A4D2E]">{{ vaccination_completion_pct }}%</p>
+  </article>
+</section>
+<p class="mt-2 text-xs text-slate-500">Stat cards use the selected date range except <span
+    class="font-medium text-slate-600">Ongoing Vaccinations</span>, which shows all currently pending cases at this
+  clinic. <span class="font-medium text-slate-600">Completed Cases</span> matches the admin Cases “Completed” filter:
+  case status completed, with case date (created or exposure) in the selected range—same basis as Bite Cases.</p>
+
+<section class="mt-8 grid grid-cols-1 gap-4 xl:grid-cols-2">
+  <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+    <h2 class="text-lg font-semibold text-[#1A4D2E]">Monthly Bite Cases ({{ clinic.name if clinic else 'Clinic' }})</h2>
+    <p class="mt-1 text-xs text-slate-500">By calendar month within the selected range</p>
+    <div class="mt-4 h-64">
+      <canvas id="adminChartBiteMonths"></canvas>
+    </div>
+    <button type="button"
+      class="js-toggle-numeric mt-3 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+      data-kind="overview_monthly_bites" data-target="adminChartBiteMonthsNumeric" aria-expanded="false"
+      aria-controls="adminChartBiteMonthsNumeric">
+      <i class="fa-solid fa-table"></i>
+      <span>View Numerical Data for this Graph/Table</span>
+      <i class="js-chevron fa-solid fa-chevron-down ml-auto text-xs text-slate-400 transition-transform"></i>
+    </button>
+    <div id="adminChartBiteMonthsNumeric"
+      class="mt-3 hidden overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <table class="w-full min-w-[18rem] text-sm">
+        <thead>
+          <tr class="border-b border-slate-200 text-left text-slate-600">
+            <th class="py-1 pr-2">Month</th>
+            <th class="py-1 pr-2">Bite cases</th>
+            <th class="py-1 pr-2">Δ</th>
+            <th class="py-1">Δ%</th>
+          </tr>
+        </thead>
+        <tbody class="js-numeric-body"></tbody>
+      </table>
+      <p class="mt-2 text-xs text-slate-500">
+        <span class="font-semibold text-slate-600">Legend:</span>
+        <span class="font-semibold text-slate-600">Δ</span> = change vs previous month,
+        <span class="font-semibold text-slate-600">Δ%</span> = percent change vs previous month.
+        <span class="font-semibold text-slate-600">—</span> means no prior month in range (or prior month was 0 for Δ%).
+      </p>
+    </div>
+  </article>
+  <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
     <div class="flex flex-wrap items-start justify-between gap-2">
       <div>
-        <h2 class="text-lg font-semibold text-blue-900">Forensic report / Bite demographics</h2>
-        <p class="mt-1 text-xs text-slate-500">Tables reflect the selected date range and filters (same basis as Total Bite Cases).</p>
+        <h2 class="text-lg font-semibold text-[#1A4D2E]">Vaccination Completion ({{ clinic.name if clinic else 'Clinic'
+          }})</h2>
+        <p class="mt-1 text-xs text-slate-500">Completed cases vs all cases in selected range (same dates as Bite Cases)
+        </p>
       </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <a href="{{ url_for('admin_forensic_report_pdf') }}?period={{ period }}&date_from={{ date_from }}&date_to={{ date_to }}{% if yearly_year is not none %}&year={{ yearly_year }}{% endif %}{{ insights_filter_query() }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-          <i class="fa-solid fa-file-pdf mr-2 text-red-600"></i>Download PDF
-        </a>
-        <a href="{{ url_for('admin_forensic_report_csv') }}?period={{ period }}&date_from={{ date_from }}&date_to={{ date_to }}{% if yearly_year is not none %}&year={{ yearly_year }}{% endif %}{{ insights_filter_query() }}" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100">
-          <i class="fa-solid fa-file-csv mr-2"></i>Download CSV
-        </a>
-      </div>
+      <span class="rounded-full bg-[#1A4D2E]/10 px-2.5 py-1 text-sm font-bold text-[#1A4D2E]">{{
+        vaccination_completion_pct }}%</span>
     </div>
-    <div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
-      <article class="rounded-2xl border border-slate-200 bg-white p-5">
-        <div class="flex flex-wrap items-start justify-between gap-2">
-          <h3 class="text-base font-semibold text-slate-800">Victim age groups</h3>
-          <a href="{{ insights_export_url('victim_age') }}" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100">Export CSV</a>
-        </div>
-        <div class="mt-3 overflow-x-auto">
-          <table class="w-full min-w-[16rem] text-sm">
-            <thead><tr class="border-b border-slate-200 text-left text-slate-600"><th class="py-1 pr-2">Age group</th><th class="py-1 pr-2">Cases</th><th class="py-1">%</th></tr></thead>
-            <tbody>
-              {% for row in age_distribution_rows %}
-              <tr class="border-b border-slate-100"><td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.label }}</td><td class="py-1.5 pr-2">{{ row.count }}</td><td class="py-1.5">{{ row.percent }}%</td></tr>
-              {% else %}
-              <tr><td colspan="3" class="py-2 text-slate-500">No data.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </article>
-      <article class="rounded-2xl border border-slate-200 bg-white p-5">
-        <div class="flex flex-wrap items-start justify-between gap-2">
-          <h3 class="text-base font-semibold text-slate-800">Gender</h3>
-          <a href="{{ insights_export_url('victim_gender') }}" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100">Export CSV</a>
-        </div>
-        <div class="mt-3 overflow-x-auto">
-          <table class="w-full min-w-[16rem] text-sm">
-            <thead><tr class="border-b border-slate-200 text-left text-slate-600"><th class="py-1 pr-2">Gender</th><th class="py-1 pr-2">Cases</th><th class="py-1">%</th></tr></thead>
-            <tbody>
-              {% for row in gender_distribution_rows %}
-              <tr class="border-b border-slate-100"><td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.label }}</td><td class="py-1.5 pr-2">{{ row.count }}</td><td class="py-1.5">{{ row.percent }}%</td></tr>
-              {% else %}
-              <tr><td colspan="3" class="py-2 text-slate-500">No data.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </article>
-      <article class="rounded-2xl border border-slate-200 bg-white p-5">
-        <div class="flex flex-wrap items-start justify-between gap-2">
-          <h3 class="text-base font-semibold text-slate-800">Bite type</h3>
-          <a href="{{ insights_export_url('bite_type') }}" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100">Export CSV</a>
-        </div>
-        <div class="mt-3 overflow-x-auto">
-          <table class="w-full min-w-[16rem] text-sm">
-            <thead><tr class="border-b border-slate-200 text-left text-slate-600"><th class="py-1 pr-2">Type</th><th class="py-1 pr-2">Cases</th><th class="py-1">%</th></tr></thead>
-            <tbody>
-              {% for row in bite_type_rows %}
-              <tr class="border-b border-slate-100"><td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.label }}</td><td class="py-1.5 pr-2">{{ row.count }}</td><td class="py-1.5">{{ row.percent }}%</td></tr>
-              {% else %}
-              <tr><td colspan="3" class="py-2 text-slate-500">No data.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </article>
-      <article class="rounded-2xl border border-slate-200 bg-white p-5">
-        <div class="flex flex-wrap items-start justify-between gap-2">
-          <h3 class="text-base font-semibold text-slate-800">Animal type (inferred)</h3>
-          <a href="{{ insights_export_url('animal_type') }}" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100">Export CSV</a>
-        </div>
-        <div class="mt-3 overflow-x-auto">
-          <table class="w-full min-w-[16rem] text-sm">
-            <thead><tr class="border-b border-slate-200 text-left text-slate-600"><th class="py-1 pr-2">Animal</th><th class="py-1 pr-2">Cases</th><th class="py-1">%</th></tr></thead>
-            <tbody>
-              {% for row in animal_type_rows_insights %}
-              <tr class="border-b border-slate-100"><td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.label }}</td><td class="py-1.5 pr-2">{{ row.count }}</td><td class="py-1.5">{{ row.percent }}%</td></tr>
-              {% else %}
-              <tr><td colspan="3" class="py-2 text-slate-500">No data.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </article>
-      <article class="rounded-2xl border border-slate-200 bg-white p-5">
-        <div class="flex flex-wrap items-start justify-between gap-2">
-          <h3 class="text-base font-semibold text-slate-800">Severity (risk / category)</h3>
-          <a href="{{ insights_export_url('severity') }}" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100">Export CSV</a>
-        </div>
-        <div class="mt-3 overflow-x-auto">
-          <table class="w-full min-w-[16rem] text-sm">
-            <thead><tr class="border-b border-slate-200 text-left text-slate-600"><th class="py-1 pr-2">Label</th><th class="py-1 pr-2">Cases</th><th class="py-1">%</th></tr></thead>
-            <tbody>
-              {% for row in severity_rows %}
-              <tr class="border-b border-slate-100"><td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.label }}</td><td class="py-1.5 pr-2">{{ row.count }}</td><td class="py-1.5">{{ row.percent }}%</td></tr>
-              {% else %}
-              <tr><td colspan="3" class="py-2 text-slate-500">No data.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </article>
-      <article class="rounded-2xl border border-slate-200 bg-white p-5">
-        <div class="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <h3 class="text-base font-semibold text-slate-800">WHO category (AI decision-support)</h3>
-            <p class="mt-1 text-xs text-slate-500">Uses stored final override when present; otherwise stored auto category.</p>
-          </div>
-          <a href="{{ insights_export_url('who_category') }}" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100">Export CSV</a>
-        </div>
-        <div class="mt-3 overflow-x-auto">
-          <table class="w-full min-w-[16rem] text-sm">
-            <thead><tr class="border-b border-slate-200 text-left text-slate-600"><th class="py-1 pr-2">Category</th><th class="py-1 pr-2">Cases</th><th class="py-1">%</th></tr></thead>
-            <tbody>
-              {% for row in who_category_rows %}
-              <tr class="border-b border-slate-100"><td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.label }}</td><td class="py-1.5 pr-2">{{ row.count }}</td><td class="py-1.5">{{ row.percent }}%</td></tr>
-              {% else %}
-              <tr><td colspan="3" class="py-2 text-slate-500">No data.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        <p class="mt-2 text-[11px] text-slate-500">Decision-support only; historical patterns require clinician interpretation.</p>
-      </article>
-      <article class="rounded-2xl border border-slate-200 bg-white p-5">
-        <div class="flex flex-wrap items-start justify-between gap-2">
-          <h3 class="text-base font-semibold text-slate-800">Case status</h3>
-          <a href="{{ insights_export_url('case_status') }}" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100">Export CSV</a>
-        </div>
-        <div class="mt-3 overflow-x-auto">
-          <table class="w-full min-w-[16rem] text-sm">
-            <thead><tr class="border-b border-slate-200 text-left text-slate-600"><th class="py-1 pr-2">Status</th><th class="py-1 pr-2">Cases</th><th class="py-1">%</th></tr></thead>
-            <tbody>
-              {% for row in case_status_rows %}
-              <tr class="border-b border-slate-100"><td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.label }}</td><td class="py-1.5 pr-2">{{ row.count }}</td><td class="py-1.5">{{ row.percent }}%</td></tr>
-              {% else %}
-              <tr><td colspan="3" class="py-2 text-slate-500">No data.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </article>
-      <article class="rounded-2xl border border-slate-200 bg-white p-5 xl:col-span-2">
-        <div class="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <h3 class="text-base font-semibold text-slate-800">Vaccination status (protocol course)</h3>
-            <p class="mt-1 text-xs text-slate-500">Buckets from vaccine-card dose completion; risk category drives expected doses.</p>
-          </div>
-          <a href="{{ insights_export_url('vaccination_status') }}" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100">Export CSV</a>
-        </div>
-        <div class="mt-3 overflow-x-auto">
-          <table class="w-full min-w-[16rem] text-sm">
-            <thead><tr class="border-b border-slate-200 text-left text-slate-600"><th class="py-1 pr-2">Status</th><th class="py-1 pr-2">Cases</th><th class="py-1">%</th></tr></thead>
-            <tbody>
-              {% for row in vaccination_status_rows %}
-              <tr class="border-b border-slate-100"><td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.label }}</td><td class="py-1.5 pr-2">{{ row.count }}</td><td class="py-1.5">{{ row.percent }}%</td></tr>
-              {% else %}
-              <tr><td colspan="3" class="py-2 text-slate-500">No data.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </article>
+    <div class="mx-auto mt-4 flex h-56 max-w-xs items-center justify-center">
+      <canvas id="adminChartRadial"></canvas>
     </div>
-  </section>
+    <p class="mt-2 text-center text-sm text-slate-600">{{ vaccination_completion_pct }}% Completed</p>
+    <button type="button"
+      class="js-toggle-numeric mt-3 inline-flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+      data-kind="overview_vaccination_completion" data-target="adminChartRadialNumeric" aria-expanded="false"
+      aria-controls="adminChartRadialNumeric">
+      <i class="fa-solid fa-table"></i>
+      <span>View Numerical Data for this Graph/Table</span>
+      <i class="js-chevron fa-solid fa-chevron-down ml-auto text-xs text-slate-400 transition-transform"></i>
+    </button>
+    <div id="adminChartRadialNumeric"
+      class="mt-3 hidden overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <table class="w-full min-w-[18rem] text-sm">
+        <thead>
+          <tr class="border-b border-slate-200 text-left text-slate-600">
+            <th class="py-1 pr-2">Metric</th>
+            <th class="py-1">Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b border-slate-100">
+            <td class="py-1.5 pr-2 font-medium text-slate-700">Completed cases</td>
+            <td class="py-1.5 text-slate-700">{{ completed_cases_period }}</td>
+          </tr>
+          <tr class="border-b border-slate-100">
+            <td class="py-1.5 pr-2 font-medium text-slate-700">Other cases in range</td>
+            <td class="py-1.5 text-slate-700">{{ (bite_cases_period - completed_cases_period) if bite_cases_period else
+              0 }}</td>
+          </tr>
+          <tr>
+            <td class="py-1.5 pr-2 font-medium text-slate-700">Completion rate</td>
+            <td class="py-1.5 text-slate-700">{{ vaccination_completion_pct }}%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>
 
-  <section class="mt-8 grid grid-cols-1 gap-4 xl:grid-cols-2">
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <div class="flex flex-wrap items-start justify-between gap-2">
-        <h2 class="text-lg font-semibold text-blue-900">Monthly Bite Cases vs. Vaccinations</h2>
-        <a href="{{ insights_export_url('monthly_trends') }}" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100">Export CSV</a>
+<section class="mt-8">
+  <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+    <h2 class="text-lg font-semibold text-[#1A4D2E]">Bite Case Animal Types ({{ clinic.name if clinic else 'Clinic' }})
+    </h2>
+    <p class="mt-1 text-xs text-slate-500">Share of cases by inferred animal type (cases in selected range)</p>
+    <ul class="mt-4 space-y-3">
+      {% for row in animal_type_rows %}
+      <li>
+        <div class="mb-1 flex items-center justify-between text-sm">
+          <span class="font-medium text-slate-700">{{ row.label }}</span>
+          <span class="text-slate-500">{{ row.percent }}%</span>
+        </div>
+        <div class="h-2.5 w-full rounded-full bg-slate-200">
+          <div class="h-full rounded-full bg-[#1A4D2E]" style="--p: {{ row.percent or 0 }}%; width: var(--p);"></div>
+        </div>
+      </li>
+      {% else %}
+      <li class="text-sm text-slate-500">No bite case data for this clinic yet.</li>
+      {% endfor %}
+    </ul>
+  </article>
+</section>
+
+<script type="application/json" id="admin-dashboard-chart-data">{{ overview_chart_data|tojson }}</script>
+<script>
+  (function () {
+    var el = document.getElementById('admin-dashboard-chart-data');
+    if (!el) return;
+    var data = JSON.parse(el.textContent || '{}');
+    if (typeof Chart === 'undefined') return;
+
+    var lineCtx = document.getElementById('adminChartBiteMonths');
+    if (lineCtx && data.monthly_labels && data.monthly_counts) {
+      new Chart(lineCtx, {
+        type: 'line',
+        data: {
+          labels: data.monthly_labels,
+          datasets: [{
+            label: 'Bite cases',
+            data: data.monthly_counts,
+            borderColor: 'rgb(26, 77, 46)',
+            backgroundColor: 'rgba(26, 77, 46, 0.15)',
+            fill: true,
+            tension: 0.35,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.25)' } },
+            x: { grid: { display: false } },
+          },
+        },
+      });
+    }
+
+    function buildMonthlyBiteTable(targetEl, labels, values) {
+      if (!targetEl) return;
+      var body = targetEl.querySelector('.js-numeric-body');
+      if (!body) return;
+      if (body.childElementCount) return; // already built
+      if (!labels || !values || !labels.length) return;
+      for (var i = 0; i < labels.length; i++) {
+        var prev = i > 0 ? Number(values[i - 1] ?? 0) : null;
+        var cur = Number(values[i] ?? 0);
+        var delta = prev === null ? null : (cur - prev);
+        var deltaPct = null;
+        if (prev !== null) {
+          deltaPct = prev === 0 ? null : ((delta / prev) * 100);
+        }
+
+        var tr = document.createElement('tr');
+        tr.className = 'border-b border-slate-100';
+        var td1 = document.createElement('td');
+        td1.className = 'py-1.5 pr-2 font-medium text-slate-700';
+        td1.textContent = String(labels[i] ?? '');
+        var td2 = document.createElement('td');
+        td2.className = 'py-1.5 pr-2 text-slate-700';
+        td2.textContent = String(values[i] ?? '');
+        var td3 = document.createElement('td');
+        td3.className = 'py-1.5 pr-2 text-slate-700';
+        td3.textContent = delta === null ? '—' : String(delta);
+        var td4 = document.createElement('td');
+        td4.className = 'py-1.5 text-slate-700';
+        td4.textContent = deltaPct === null ? '—' : (deltaPct.toFixed(1) + '%');
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+        tr.appendChild(td3);
+        tr.appendChild(td4);
+        body.appendChild(tr);
+      }
+    }
+
+    document.querySelectorAll('.js-toggle-numeric').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var targetId = btn.getAttribute('data-target');
+        var kind = btn.getAttribute('data-kind');
+        if (!targetId) return;
+        var panel = document.getElementById(targetId);
+        if (!panel) return;
+
+        var isHidden = panel.classList.contains('hidden');
+        if (isHidden) {
+          if (kind === 'overview_monthly_bites') {
+            buildMonthlyBiteTable(panel, data.monthly_labels, data.monthly_counts);
+          }
+          panel.classList.remove('hidden');
+          btn.setAttribute('aria-expanded', 'true');
+          var chevOpen = btn.querySelector('.js-chevron');
+          if (chevOpen) chevOpen.classList.add('rotate-180');
+        } else {
+          panel.classList.add('hidden');
+          btn.setAttribute('aria-expanded', 'false');
+          var chevClose = btn.querySelector('.js-chevron');
+          if (chevClose) chevClose.classList.remove('rotate-180');
+        }
+      });
+    });
+
+    var doughnutCtx = document.getElementById('adminChartRadial');
+    if (doughnutCtx) {
+      var pct = Math.max(0, Math.min(100, parseInt(data.vaccination_completion_pct || 0, 10)));
+      new Chart(doughnutCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Completed cases', 'Other cases in range'],
+          datasets: [{
+            data: [pct, 100 - pct],
+            backgroundColor: ['rgb(26, 77, 46)', 'rgb(226, 232, 240)'],
+            borderWidth: 0,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '72%',
+          plugins: { legend: { display: false }, tooltip: { enabled: true } },
+        },
+      });
+    }
+  })();
+</script>
+{% elif tab == 'clinic' %}
+<section class="mt-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+  <p class="text-sm text-slate-600">Profile and performance for <span class="font-semibold text-slate-800">{{
+      clinic.name if clinic else 'Clinic' }}</span>.</p>
+  <div class="flex flex-wrap items-center gap-2">
+    {% if clinic %}
+    <a href="{{ url_for('admin_clinic_export_csv') }}?period={{ period }}&date_from={{ date_from }}&date_to={{ date_to }}{% if yearly_year is not none %}&year={{ yearly_year }}{% endif %}"
+      class="inline-flex items-center justify-center rounded-xl border border-[#1A4D2E]/20 bg-[#1A4D2E]/5 px-5 py-3 text-base font-semibold text-[#1A4D2E] hover:bg-[#1A4D2E]/10 sm:mr-2">
+      <i class="fa-solid fa-download mr-2"></i>Export CSV
+    </a>
+    <a href="{{ url_for('admin_clinic_export_pdf') }}?period={{ period }}&date_from={{ date_from }}&date_to={{ date_to }}{% if yearly_year is not none %}&year={{ yearly_year }}{% endif %}"
+      class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-base font-semibold text-slate-700 hover:bg-slate-50">
+      <i class="fa-solid fa-file-pdf mr-2 text-rose-600"></i>Download PDF
+    </a>
+    {% endif %}
+  </div>
+</section>
+
+<section class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+    <p class="text-sm text-slate-500">Address</p>
+    <p class="mt-2 text-lg font-semibold text-[#1A4D2E]">{{ clinic.address if clinic and clinic.address else '—' }}</p>
+  </article>
+  <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+    <p class="text-sm text-slate-500">Total active patients</p>
+    <p class="mt-2 text-3xl font-bold text-[#1A4D2E]">{{ "{:,}".format(total_patients) }}</p>
+    <p class="mt-1 text-xs text-slate-500">Distinct patients with a case at this clinic</p>
+  </article>
+  <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+    <p class="text-sm text-slate-500">Staff members</p>
+    <p class="mt-2 text-3xl font-bold text-[#1A4D2E]">{{ "{:,}".format(staff_count) }}</p>
+    <p class="mt-1 text-xs text-slate-500">Clinic personnel records</p>
+  </article>
+</section>
+
+<section class="mt-4">
+  <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Year to date ({{ report_year }})</p>
+  <div class="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+      <p class="text-sm text-slate-500">Cases (YTD)</p>
+      <p class="mt-2 text-3xl font-bold text-[#1A4D2E]">{{ "{:,}".format(cases_ytd) }}</p>
+      <p class="mt-1 text-xs text-slate-500">By case date (created or exposure) from Jan 1</p>
+    </article>
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+      <p class="text-sm text-slate-500">Appointments (YTD)</p>
+      <p class="mt-2 text-3xl font-bold text-[#1A4D2E]">{{ "{:,}".format(appointments_ytd) }}</p>
+      <p class="mt-1 text-xs text-slate-500">By appointment date from Jan 1</p>
+    </article>
+  </div>
+</section>
+
+<section class="mt-8">
+  <h2 class="text-lg font-semibold text-[#1A4D2E]">Clinic performance (selected period)</h2>
+  <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Period totals</p>
+  <div class="mt-2 grid grid-cols-2 gap-3 lg:grid-cols-6">
+    <article class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="text-xs text-slate-500">Cases</p>
+      <p class="mt-1 text-xl font-bold text-[#1A4D2E]">{{ "{:,}".format(cases_in_period) }}</p>
+    </article>
+    <article class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="text-xs text-slate-500">Appointments</p>
+      <p class="mt-1 text-xl font-bold text-[#1A4D2E]">{{ "{:,}".format(appointments_in_period) }}</p>
+    </article>
+    <article class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="text-xs text-slate-500">Completed</p>
+      <p class="mt-1 text-xl font-bold text-[#1A4D2E]">{{ "{:,}".format(completed_in_period) }}</p>
+    </article>
+    <article class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="text-xs text-slate-500">Ongoing</p>
+      <p class="mt-1 text-xl font-bold text-amber-600">{{ "{:,}".format(ongoing_in_period) }}</p>
+    </article>
+    <article class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="text-xs text-slate-500">No show</p>
+      <p class="mt-1 text-xl font-bold text-slate-700">{{ "{:,}".format(no_show_in_period) }}</p>
+    </article>
+    <article class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="text-xs text-slate-500">Completion</p>
+      <p class="mt-1 text-xl font-bold text-[#1A4D2E]">{{ case_completion_pct_period }}%</p>
+    </article>
+  </div>
+
+  <div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+      <h3 class="text-base font-semibold text-slate-800">Monthly Bite Cases</h3>
+      <p class="text-xs text-slate-500">Cases per calendar month in the selected range (by case date)</p>
+      {% if charts_empty %}
+      <p class="mt-8 text-center text-sm text-slate-500">No cases with a case date in this range.</p>
+      {% else %}
+      <div class="mt-4 h-64">
+        <canvas id="clinicChartVisits"></canvas>
       </div>
-      <div class="mt-4 h-72">
-        <canvas id="analyticsChartCompare"></canvas>
-      </div>
-      <div class="mt-4 overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead><tr class="border-b border-slate-200 text-left text-slate-600"><th class="py-1 pr-2">Month</th><th class="py-1 pr-2">Bite cases</th><th class="py-1">Vaccinations</th></tr></thead>
-          <tbody>
-            {% for row in monthly_trends_table %}
-            <tr class="border-b border-slate-100"><td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.month_label }}</td><td class="py-1.5 pr-2">{{ row.bite_cases }}</td><td class="py-1.5">{{ row.vaccinations }}</td></tr>
-            {% else %}
-            <tr><td colspan="3" class="py-2 text-slate-500">No rows in range.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      {% endif %}
+    </article>
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+      <h3 class="text-base font-semibold text-slate-800">Case Completion Rate</h3>
+      <p class="text-xs text-slate-500">{% if period == 'yearly' %}Completed cases ÷ total cases per quarter (case
+        date){% else %}Completed cases ÷ total cases for the selected range{% endif %}</p>
+      <div class="mt-4 h-64">
+        <canvas id="clinicChartCompliance"></canvas>
       </div>
     </article>
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <div class="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h2 class="text-lg font-semibold text-blue-900">Barangay distribution</h2>
-          <p class="text-xs text-slate-500">Top barangays from patient address (first segment before comma)</p>
+  </div>
+
+  <article class="mt-4 rounded-[2rem] border border-slate-200 bg-white p-5">
+    <h3 class="text-base font-semibold text-slate-800">Risk level mix (selected period)</h3>
+    <p class="text-xs text-slate-500">Share of cases by recorded risk level or category (case date in range)</p>
+    <ul class="mt-4 space-y-3">
+      {% for row in risk_rows %}
+      <li>
+        <div class="mb-1 flex items-center justify-between text-sm">
+          <span class="font-medium text-slate-700">{{ row.label }}</span>
+          <span class="text-slate-500">{{ row.count }} ({{ row.percent }}%)</span>
         </div>
-        <a href="{{ insights_export_url('barangay') }}" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100">Export CSV</a>
+        <div class="h-2.5 w-full rounded-full bg-slate-200">
+          <div class="h-full rounded-full bg-[#1A4D2E]" style="--p: {{ row.percent or 0 }}%; width: var(--p);"></div>
+        </div>
+      </li>
+      {% else %}
+      <li class="text-sm text-slate-500">No case data for this period.</li>
+      {% endfor %}
+    </ul>
+  </article>
+</section>
+
+<script type="application/json" id="clinic-chart-data">{{ clinic_chart_data|tojson }}</script>
+<script>
+  (function () {
+    var el = document.getElementById('clinic-chart-data');
+    if (!el || typeof Chart === 'undefined') return;
+    var d = JSON.parse(el.textContent || '{}');
+    var vctx = document.getElementById('clinicChartVisits');
+    if (vctx && d.visit_labels && d.visit_counts) {
+      new Chart(vctx, {
+        type: 'line',
+        data: {
+          labels: d.visit_labels,
+          datasets: [{
+            label: 'Cases',
+            data: d.visit_counts,
+            borderColor: 'rgb(16, 185, 129)',
+            backgroundColor: 'rgba(16, 185, 129, 0.12)',
+            fill: true,
+            tension: 0.35,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: true } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.25)' } },
+            x: { grid: { display: false } },
+          },
+        },
+      });
+    }
+    var cctx = document.getElementById('clinicChartCompliance');
+    if (cctx && d.compliance_labels && d.compliance_pcts) {
+      var cols = ['rgba(16, 185, 129, 0.85)', 'rgba(59, 130, 246, 0.85)'];
+      var bg = d.compliance_pcts.map(function (_, i) { return cols[i % 2]; });
+      new Chart(cctx, {
+        type: 'bar',
+        data: {
+          labels: d.compliance_labels,
+          datasets: [{
+            label: 'Completion %',
+            data: d.compliance_pcts,
+            backgroundColor: bg,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, max: 100, grid: { color: 'rgba(148, 163, 184, 0.25)' } },
+            x: { grid: { display: false } },
+          },
+        },
+      });
+    }
+  })();
+</script>
+{% else %}
+<section class="mt-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+  <div>
+    <h2 class="text-xl font-bold text-[#1A4D2E]">{{ clinic.name if clinic else 'Clinic' }}</h2>
+    <p class="mt-1 text-slate-600">Program insights &amp; oversight</p>
+    <p class="mt-2 max-w-2xl text-sm text-slate-500">Longer-range trends, geography, high-risk cases, and dose volume by
+      staff. Clinic staff use <span class="font-medium text-slate-700">Operations</span> for day-to-day metrics (short
+      date ranges).</p>
+  </div>
+</section>
+
+{% if clinic %}
+<form method="get" action="{{ url_for('admin_analytics') }}"
+  class="mt-4 flex flex-wrap items-end gap-3 rounded-[2rem] border border-slate-200 bg-slate-50/80 p-4">
+  <input type="hidden" name="tab" value="insights" />
+  <input type="hidden" name="period" value="{{ period }}" />
+  <input type="hidden" name="date_from" value="{{ date_from }}" />
+  <input type="hidden" name="date_to" value="{{ date_to }}" />
+  {% if yearly_year is not none %}<input type="hidden" name="year" value="{{ yearly_year }}" />{% endif %}
+  <div class="flex min-w-[10rem] flex-col gap-1">
+    <label class="text-xs font-medium text-slate-600">Barangay</label>
+    <select name="insights_barangay"
+      class="rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring">
+      <option value="">All</option>
+      {% for b in insights_barangay_options %}
+      <option value="{{ b }}" {% if insights_filters.get('barangay')==b %}selected{% endif %}>{{ b }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="flex min-w-[8rem] flex-col gap-1">
+    <label class="text-xs font-medium text-slate-600">Animal type</label>
+    <select name="insights_animal"
+      class="rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring">
+      <option value="">All</option>
+      {% for a in insights_animal_options %}
+      <option value="{{ a }}" {% if insights_filters.get('animal')==a %}selected{% endif %}>{{ a }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="flex min-w-[8rem] flex-col gap-1">
+    <label class="text-xs font-medium text-slate-600">Bite type</label>
+    <select name="insights_bite"
+      class="rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring">
+      <option value="">All</option>
+      {% for bt in insights_bite_options %}
+      <option value="{{ bt }}" {% if insights_filters.get('bite_type')==bt %}selected{% endif %}>{{ bt }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="flex min-w-[8rem] flex-col gap-1">
+    <label class="text-xs font-medium text-slate-600">Gender</label>
+    <select name="insights_gender"
+      class="rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring">
+      <option value="">All</option>
+      {% for g in insights_gender_options %}
+      <option value="{{ g }}" {% if insights_filters.get('gender')==g %}selected{% endif %}>{{ g }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="flex min-w-[8rem] flex-col gap-1">
+    <label class="text-xs font-medium text-slate-600">Age group</label>
+    <select name="insights_age"
+      class="rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring">
+      <option value="">All</option>
+      {% for ag in insights_age_options %}
+      <option value="{{ ag }}" {% if insights_filters.get('age_group')==ag %}selected{% endif %}>{{ ag }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit"
+    class="rounded-xl bg-[#1A4D2E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1A4D2E]">Apply filters</button>
+  <a href="{{ url_for('admin_analytics', tab='insights', period=period, date_from=date_from, date_to=date_to) }}{% if yearly_year is not none %}&year={{ yearly_year }}{% endif %}"
+    class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Clear</a>
+</form>
+
+<section class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+    <p class="text-sm text-slate-500">Total Bite Cases</p>
+    <p class="mt-2 text-3xl font-bold text-[#1A4D2E]">{{ kpi.bite_cases }}</p>
+  </article>
+  <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+    <p class="text-sm text-slate-500">Completed Cases</p>
+    <p class="mt-2 text-3xl font-bold text-[#1A4D2E]">{{ kpi.completed_cases }}</p>
+    <p class="mt-2 text-xs text-slate-500">Same as admin Cases completed filter; date range uses case created/exposure
+      date.</p>
+  </article>
+  <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+    <p class="text-sm text-slate-500">Ongoing Cases</p>
+    <p class="mt-2 text-3xl font-bold text-amber-600">{{ kpi.ongoing_cases }}</p>
+  </article>
+  <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+    <p class="text-sm text-slate-500">Staff Members</p>
+    <p class="mt-2 text-3xl font-bold text-[#1A4D2E]">{{ kpi.staff_count }}</p>
+  </article>
+</section>
+
+<section class="mt-8">
+  <div class="flex flex-wrap items-start justify-between gap-2">
+    <div>
+      <h2 class="text-lg font-semibold text-[#1A4D2E]">Forensic report / Bite demographics</h2>
+      <p class="mt-1 text-xs text-slate-500">Tables reflect the selected date range and filters (same basis as Total
+        Bite Cases).</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <a href="{{ url_for('admin_forensic_report_pdf') }}?period={{ period }}&date_from={{ date_from }}&date_to={{ date_to }}{% if yearly_year is not none %}&year={{ yearly_year }}{% endif %}{{ insights_filter_query() }}"
+        class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+        <i class="fa-solid fa-file-pdf mr-2 text-red-600"></i>Download PDF
+      </a>
+      <a href="{{ url_for('admin_forensic_report_csv') }}?period={{ period }}&date_from={{ date_from }}&date_to={{ date_to }}{% if yearly_year is not none %}&year={{ yearly_year }}{% endif %}{{ insights_filter_query() }}"
+        class="rounded-xl border border-[#1A4D2E]/20 bg-[#1A4D2E]/5 px-3 py-2 text-sm font-semibold text-[#1A4D2E] hover:bg-[#1A4D2E]/10">
+        <i class="fa-solid fa-file-csv mr-2"></i>Download CSV
+      </a>
+    </div>
+  </div>
+  <div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+      <div class="flex flex-wrap items-start justify-between gap-2">
+        <h3 class="text-base font-semibold text-slate-800">Victim age groups</h3>
+        <a href="{{ insights_export_url('victim_age') }}"
+          class="rounded-xl border border-[#1A4D2E]/20 bg-[#1A4D2E]/5 px-3 py-1.5 text-xs font-semibold text-[#1A4D2E] hover:bg-[#1A4D2E]/10">Export
+          CSV</a>
       </div>
       <div class="mt-3 overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead><tr class="border-b border-slate-200 text-left text-slate-600"><th class="py-1 pr-2">Barangay</th><th class="py-1 pr-2">Cases</th><th class="py-1">%</th></tr></thead>
+        <table class="w-full min-w-[16rem] text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 text-left text-slate-600">
+              <th class="py-1 pr-2">Age group</th>
+              <th class="py-1 pr-2">Cases</th>
+              <th class="py-1">%</th>
+            </tr>
+          </thead>
           <tbody>
-            {% for row in barangay_table_rows[:20] %}
-            <tr class="border-b border-slate-100"><td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.barangay }}</td><td class="py-1.5 pr-2">{{ row.count }}</td><td class="py-1.5">{{ row.percent }}%</td></tr>
+            {% for row in age_distribution_rows %}
+            <tr class="border-b border-slate-100">
+              <td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.label }}</td>
+              <td class="py-1.5 pr-2">{{ row.count }}</td>
+              <td class="py-1.5">{{ row.percent }}%</td>
+            </tr>
             {% else %}
-            <tr><td colspan="3" class="py-2 text-slate-500">No address data.</td></tr>
+            <tr>
+              <td colspan="3" class="py-2 text-slate-500">No data.</td>
+            </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
-      <h3 class="mt-6 text-sm font-semibold text-slate-800">Heat map (top 12)</h3>
-      <p class="text-xs text-slate-500">Relative intensity for quick comparison</p>
-      <div class="mt-4 space-y-2">
-        {% if barangay_rows %}
-          {% for name, cnt in barangay_rows %}
-            {% set intensity = (cnt / (barangay_max or 1)) * 100 %}
-            <div>
-              <div class="mb-1 flex justify-between text-xs text-slate-600">
-                <span class="truncate pr-2">{{ name }}</span>
-                <span>{{ cnt }}</span>
-              </div>
-              <div class="h-3 w-full overflow-hidden rounded-full bg-slate-200">
-                <div
-                  class="h-full rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 to-red-500 opacity-90"
-                  style="width: {{ intensity|round(1) }}%"
-                ></div>
-              </div>
-            </div>
-          {% endfor %}
-        {% else %}
-          <p class="text-sm text-slate-500">No address data to map.</p>
-        {% endif %}
+    </article>
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+      <div class="flex flex-wrap items-start justify-between gap-2">
+        <h3 class="text-base font-semibold text-slate-800">Gender</h3>
+        <a href="{{ insights_export_url('victim_gender') }}"
+          class="rounded-xl border border-[#1A4D2E]/20 bg-[#1A4D2E]/5 px-3 py-1.5 text-xs font-semibold text-[#1A4D2E] hover:bg-[#1A4D2E]/10">Export
+          CSV</a>
+      </div>
+      <div class="mt-3 overflow-x-auto">
+        <table class="w-full min-w-[16rem] text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 text-left text-slate-600">
+              <th class="py-1 pr-2">Gender</th>
+              <th class="py-1 pr-2">Cases</th>
+              <th class="py-1">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in gender_distribution_rows %}
+            <tr class="border-b border-slate-100">
+              <td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.label }}</td>
+              <td class="py-1.5 pr-2">{{ row.count }}</td>
+              <td class="py-1.5">{{ row.percent }}%</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="3" class="py-2 text-slate-500">No data.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </article>
-  </section>
-
-  <section class="mt-8 grid grid-cols-1 gap-4 xl:grid-cols-2">
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <h2 class="text-lg font-semibold text-blue-900">High-risk cases (period)</h2>
-      <p class="text-xs text-slate-500">Category III / high risk; case date within selected range</p>
-      <ul class="mt-3 space-y-2 text-sm">
-        {% for row in priority_cases %}
-        <li class="flex flex-wrap justify-between gap-2 border-b border-slate-100 py-2">
-          <span class="font-medium text-slate-800">{{ row.patient_name|namecase }}</span>
-          <span class="text-slate-600">{{ row.status }} · {{ row.reported_at or '—' }}</span>
-        </li>
-        {% else %}
-        <li class="text-slate-500">No matching high-risk cases.</li>
-        {% endfor %}
-      </ul>
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+      <div class="flex flex-wrap items-start justify-between gap-2">
+        <h3 class="text-base font-semibold text-slate-800">Bite type</h3>
+        <a href="{{ insights_export_url('bite_type') }}"
+          class="rounded-xl border border-[#1A4D2E]/20 bg-[#1A4D2E]/5 px-3 py-1.5 text-xs font-semibold text-[#1A4D2E] hover:bg-[#1A4D2E]/10">Export
+          CSV</a>
+      </div>
+      <div class="mt-3 overflow-x-auto">
+        <table class="w-full min-w-[16rem] text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 text-left text-slate-600">
+              <th class="py-1 pr-2">Type</th>
+              <th class="py-1 pr-2">Cases</th>
+              <th class="py-1">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in bite_type_rows %}
+            <tr class="border-b border-slate-100">
+              <td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.label }}</td>
+              <td class="py-1.5 pr-2">{{ row.count }}</td>
+              <td class="py-1.5">{{ row.percent }}%</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="3" class="py-2 text-slate-500">No data.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </article>
-    <article class="rounded-2xl border border-slate-200 bg-white p-5">
-      <h2 class="text-lg font-semibold text-blue-900">Vaccination dose volume by staff</h2>
-      <p class="text-xs text-slate-500">Administration dates in the selected range; respects demographic filters</p>
-      <ul class="mt-3 space-y-2 text-sm">
-        {% for row in staff_performance %}
-        <li class="flex justify-between border-b border-slate-100 py-2">
-          <span class="font-medium text-slate-800">{{ row.name }}</span>
-          <span class="text-slate-600">{{ row.count }} doses</span>
-        </li>
-        {% else %}
-        <li class="text-slate-500">No vaccination records in range.</li>
-        {% endfor %}
-      </ul>
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+      <div class="flex flex-wrap items-start justify-between gap-2">
+        <h3 class="text-base font-semibold text-slate-800">Animal type (inferred)</h3>
+        <a href="{{ insights_export_url('animal_type') }}"
+          class="rounded-xl border border-[#1A4D2E]/20 bg-[#1A4D2E]/5 px-3 py-1.5 text-xs font-semibold text-[#1A4D2E] hover:bg-[#1A4D2E]/10">Export
+          CSV</a>
+      </div>
+      <div class="mt-3 overflow-x-auto">
+        <table class="w-full min-w-[16rem] text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 text-left text-slate-600">
+              <th class="py-1 pr-2">Animal</th>
+              <th class="py-1 pr-2">Cases</th>
+              <th class="py-1">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in animal_type_rows_insights %}
+            <tr class="border-b border-slate-100">
+              <td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.label }}</td>
+              <td class="py-1.5 pr-2">{{ row.count }}</td>
+              <td class="py-1.5">{{ row.percent }}%</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="3" class="py-2 text-slate-500">No data.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </article>
-  </section>
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+      <div class="flex flex-wrap items-start justify-between gap-2">
+        <h3 class="text-base font-semibold text-slate-800">Severity (risk / category)</h3>
+        <a href="{{ insights_export_url('severity') }}"
+          class="rounded-xl border border-[#1A4D2E]/20 bg-[#1A4D2E]/5 px-3 py-1.5 text-xs font-semibold text-[#1A4D2E] hover:bg-[#1A4D2E]/10">Export
+          CSV</a>
+      </div>
+      <div class="mt-3 overflow-x-auto">
+        <table class="w-full min-w-[16rem] text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 text-left text-slate-600">
+              <th class="py-1 pr-2">Label</th>
+              <th class="py-1 pr-2">Cases</th>
+              <th class="py-1">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in severity_rows %}
+            <tr class="border-b border-slate-100">
+              <td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.label }}</td>
+              <td class="py-1.5 pr-2">{{ row.count }}</td>
+              <td class="py-1.5">{{ row.percent }}%</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="3" class="py-2 text-slate-500">No data.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+      <div class="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 class="text-base font-semibold text-slate-800">WHO category (AI decision-support)</h3>
+          <p class="mt-1 text-xs text-slate-500">Uses stored final override when present; otherwise stored auto
+            category.</p>
+        </div>
+        <a href="{{ insights_export_url('who_category') }}"
+          class="rounded-xl border border-[#1A4D2E]/20 bg-[#1A4D2E]/5 px-3 py-1.5 text-xs font-semibold text-[#1A4D2E] hover:bg-[#1A4D2E]/10">Export
+          CSV</a>
+      </div>
+      <div class="mt-3 overflow-x-auto">
+        <table class="w-full min-w-[16rem] text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 text-left text-slate-600">
+              <th class="py-1 pr-2">Category</th>
+              <th class="py-1 pr-2">Cases</th>
+              <th class="py-1">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in who_category_rows %}
+            <tr class="border-b border-slate-100">
+              <td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.label }}</td>
+              <td class="py-1.5 pr-2">{{ row.count }}</td>
+              <td class="py-1.5">{{ row.percent }}%</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="3" class="py-2 text-slate-500">No data.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="mt-2 text-[11px] text-slate-500">Decision-support only; historical patterns require clinician
+        interpretation.</p>
+    </article>
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+      <div class="flex flex-wrap items-start justify-between gap-2">
+        <h3 class="text-base font-semibold text-slate-800">Case status</h3>
+        <a href="{{ insights_export_url('case_status') }}"
+          class="rounded-xl border border-[#1A4D2E]/20 bg-[#1A4D2E]/5 px-3 py-1.5 text-xs font-semibold text-[#1A4D2E] hover:bg-[#1A4D2E]/10">Export
+          CSV</a>
+      </div>
+      <div class="mt-3 overflow-x-auto">
+        <table class="w-full min-w-[16rem] text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 text-left text-slate-600">
+              <th class="py-1 pr-2">Status</th>
+              <th class="py-1 pr-2">Cases</th>
+              <th class="py-1">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in case_status_rows %}
+            <tr class="border-b border-slate-100">
+              <td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.label }}</td>
+              <td class="py-1.5 pr-2">{{ row.count }}</td>
+              <td class="py-1.5">{{ row.percent }}%</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="3" class="py-2 text-slate-500">No data.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-5 xl:col-span-2">
+      <div class="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 class="text-base font-semibold text-slate-800">Vaccination status (protocol course)</h3>
+          <p class="mt-1 text-xs text-slate-500">Buckets from vaccine-card dose completion; risk category drives
+            expected doses.</p>
+        </div>
+        <a href="{{ insights_export_url('vaccination_status') }}"
+          class="rounded-xl border border-[#1A4D2E]/20 bg-[#1A4D2E]/5 px-3 py-1.5 text-xs font-semibold text-[#1A4D2E] hover:bg-[#1A4D2E]/10">Export
+          CSV</a>
+      </div>
+      <div class="mt-3 overflow-x-auto">
+        <table class="w-full min-w-[16rem] text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 text-left text-slate-600">
+              <th class="py-1 pr-2">Status</th>
+              <th class="py-1 pr-2">Cases</th>
+              <th class="py-1">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in vaccination_status_rows %}
+            <tr class="border-b border-slate-100">
+              <td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.label }}</td>
+              <td class="py-1.5 pr-2">{{ row.count }}</td>
+              <td class="py-1.5">{{ row.percent }}%</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="3" class="py-2 text-slate-500">No data.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </div>
+</section>
 
-  <script type="application/json" id="analytics-chart-data">{{ chart_compare|tojson }}</script>
-  <script>
-    (function () {
-      if (typeof Chart === 'undefined') return;
-      var el = document.getElementById('analytics-chart-data');
-      if (el) {
-        var d = JSON.parse(el.textContent || '{}');
-        var ctx = document.getElementById('analyticsChartCompare');
-        if (ctx && d.labels && d.labels.length) {
-          new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: d.labels,
-              datasets: [
-                {
-                  label: 'Bite cases',
-                  data: d.cases,
-                  borderColor: 'rgb(21, 128, 61)',
-                  backgroundColor: 'rgba(21, 128, 61, 0.12)',
-                  fill: true,
-                  tension: 0.35,
-                },
-                {
-                  label: 'Vaccinations',
-                  data: d.vaccinations,
-                  borderColor: 'rgb(16, 185, 129)',
-                  backgroundColor: 'rgba(16, 185, 129, 0.08)',
-                  fill: true,
-                  tension: 0.35,
-                },
-              ],
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: { legend: { position: 'top' } },
-              scales: {
-                y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.25)' } },
-                x: { grid: { display: false } },
+<section class="mt-8 grid grid-cols-1 gap-4 xl:grid-cols-2">
+  <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+    <div class="flex flex-wrap items-start justify-between gap-2">
+      <h2 class="text-lg font-semibold text-[#1A4D2E]">Monthly Bite Cases vs. Vaccinations</h2>
+      <a href="{{ insights_export_url('monthly_trends') }}"
+        class="rounded-xl border border-[#1A4D2E]/20 bg-[#1A4D2E]/5 px-3 py-1.5 text-xs font-semibold text-[#1A4D2E] hover:bg-[#1A4D2E]/10">Export
+        CSV</a>
+    </div>
+    <div class="mt-4 h-72">
+      <canvas id="analyticsChartCompare"></canvas>
+    </div>
+    <div class="mt-4 overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-200 text-left text-slate-600">
+            <th class="py-1 pr-2">Month</th>
+            <th class="py-1 pr-2">Bite cases</th>
+            <th class="py-1">Vaccinations</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in monthly_trends_table %}
+          <tr class="border-b border-slate-100">
+            <td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.month_label }}</td>
+            <td class="py-1.5 pr-2">{{ row.bite_cases }}</td>
+            <td class="py-1.5">{{ row.vaccinations }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" class="py-2 text-slate-500">No rows in range.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+  <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+    <div class="flex flex-wrap items-start justify-between gap-2">
+      <div>
+        <h2 class="text-lg font-semibold text-[#1A4D2E]">Barangay distribution</h2>
+        <p class="text-xs text-slate-500">Top barangays from patient address (first segment before comma)</p>
+      </div>
+      <a href="{{ insights_export_url('barangay') }}"
+        class="rounded-xl border border-[#1A4D2E]/20 bg-[#1A4D2E]/5 px-3 py-1.5 text-xs font-semibold text-[#1A4D2E] hover:bg-[#1A4D2E]/10">Export
+        CSV</a>
+    </div>
+    <div class="mt-3 overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-200 text-left text-slate-600">
+            <th class="py-1 pr-2">Barangay</th>
+            <th class="py-1 pr-2">Cases</th>
+            <th class="py-1">%</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in barangay_table_rows[:20] %}
+          <tr class="border-b border-slate-100">
+            <td class="py-1.5 pr-2 font-medium text-slate-700">{{ row.barangay }}</td>
+            <td class="py-1.5 pr-2">{{ row.count }}</td>
+            <td class="py-1.5">{{ row.percent }}%</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" class="py-2 text-slate-500">No address data.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <h3 class="mt-6 text-sm font-semibold text-slate-800">Heat map (top 12)</h3>
+    <p class="text-xs text-slate-500">Relative intensity for quick comparison</p>
+    <div class="mt-4 space-y-2">
+      {% if barangay_rows %}
+      {% for name, cnt in barangay_rows %}
+      {% set intensity = (cnt / (barangay_max or 1)) * 100 %}
+      <div>
+        <div class="mb-1 flex justify-between text-xs text-slate-600">
+          <span class="truncate pr-2">{{ name }}</span>
+          <span>{{ cnt }}</span>
+        </div>
+        <div class="h-3 w-full overflow-hidden rounded-full bg-slate-200">
+          <div class="h-full rounded-full bg-gradient-to-r from-[#1A4D2E] via-amber-400 to-red-500 opacity-90"
+            style="--p: {{ intensity|round(1) or 0 }}%; width: var(--p);"></div>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <p class="text-sm text-slate-500">No address data to map.</p>
+      {% endif %}
+    </div>
+  </article>
+</section>
+
+<section class="mt-8 grid grid-cols-1 gap-4 xl:grid-cols-2">
+  <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+    <h2 class="text-lg font-semibold text-[#1A4D2E]">High-risk cases (period)</h2>
+    <p class="text-xs text-slate-500">Category III / high risk; case date within selected range</p>
+    <ul class="mt-3 space-y-2 text-sm">
+      {% for row in priority_cases %}
+      <li class="flex flex-wrap justify-between gap-2 border-b border-slate-100 py-2">
+        <span class="font-medium text-slate-800">{{ row.patient_name|namecase }}</span>
+        <span class="text-slate-600">{{ row.status }} · {{ row.reported_at or '—' }}</span>
+      </li>
+      {% else %}
+      <li class="text-slate-500">No matching high-risk cases.</li>
+      {% endfor %}
+    </ul>
+  </article>
+  <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
+    <h2 class="text-lg font-semibold text-[#1A4D2E]">Vaccination dose volume by staff</h2>
+    <p class="text-xs text-slate-500">Administration dates in the selected range; respects demographic filters</p>
+    <ul class="mt-3 space-y-2 text-sm">
+      {% for row in staff_performance %}
+      <li class="flex justify-between border-b border-slate-100 py-2">
+        <span class="font-medium text-slate-800">{{ row.name }}</span>
+        <span class="text-slate-600">{{ row.count }} doses</span>
+      </li>
+      {% else %}
+      <li class="text-slate-500">No vaccination records in range.</li>
+      {% endfor %}
+    </ul>
+  </article>
+</section>
+
+<script type="application/json" id="analytics-chart-data">{{ chart_compare|tojson }}</script>
+<script>
+  (function () {
+    if (typeof Chart === 'undefined') return;
+    var el = document.getElementById('analytics-chart-data');
+    if (el) {
+      var d = JSON.parse(el.textContent || '{}');
+      var ctx = document.getElementById('analyticsChartCompare');
+      if (ctx && d.labels && d.labels.length) {
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: d.labels,
+            datasets: [
+              {
+                label: 'Bite cases',
+                data: d.cases,
+                borderColor: 'rgb(21, 128, 61)',
+                backgroundColor: 'rgba(21, 128, 61, 0.12)',
+                fill: true,
+                tension: 0.35,
               },
+              {
+                label: 'Vaccinations',
+                data: d.vaccinations,
+                borderColor: 'rgb(26, 77, 46)',
+                backgroundColor: 'rgba(26, 77, 46, 0.08)',
+                fill: true,
+                tension: 0.35,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' } },
+            scales: {
+              y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.25)' } },
+              x: { grid: { display: false } },
             },
-          });
-        }
+          },
+        });
       }
-    })();
-  </script>
-  {% else %}
-  <p class="mt-8 text-slate-500">No clinic configured.</p>
-  {% endif %}
-  {% endif %}
+    }
+  })();
+  function handleYearlyChange(val) {
+    if (!val) return;
+    var config = document.getElementById("analytics-config");
+    if (!config) return;
+    var baseUrl = config.getAttribute("data-base-url");
+    var tab = config.getAttribute("data-tab");
+    var filter = config.getAttribute("data-filter");
+    var query = "?tab=" + tab + "&period=yearly&year=" + encodeURIComponent(val);
+    window.location.href = baseUrl + query + filter;
+  }
+</script>
+{% else %}
+<p class="mt-8 text-slate-500">No clinic configured.</p>
+{% endif %}
+{% endif %}
 {% endblock %}
