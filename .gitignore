@@ -25,4 +25,4 @@ instance/*.db
 Thumbs.db
 
 # Local debug logs
-debug-*.log
+*.log
