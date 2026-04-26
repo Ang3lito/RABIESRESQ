@@ -32,14 +32,6 @@
             </a>
           </div>
         </div>
-        <button 
-          type="button"
-          onclick="openPreScreeningModal('case')"
-          class="inline-flex items-center gap-2 rounded-xl bg-[#1A4D2E] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#1A4D2E]/20 hover:opacity-90 transition-all"
-        >
-          <i class="fa-solid fa-plus"></i>
-          Manual Intake
-        </button>
       </div>
     </div>
 
@@ -86,135 +78,149 @@
     </div>
   </section>
 
-  <section class="mt-6 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-      <h2 class="text-sm font-semibold text-slate-800">Search &amp; filters</h2>
+  <section class="mt-8 rounded-[2rem] border border-[#1A4D2E]/10 bg-gradient-to-b from-white to-slate-50/50 p-6 shadow-sm">
+    <div class="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1A4D2E]/5 text-[#1A4D2E]">
+          <i class="fa-solid fa-filter"></i>
+        </div>
+        <h2 class="text-base font-bold text-slate-800">Search &amp; Filters</h2>
+      </div>
       <a
         href="{{ url_for('admin_patients') }}"
-        class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-slate-800"
+        class="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-500 transition-all hover:bg-slate-200 hover:text-slate-800"
       >
-        <i class="fa-solid fa-arrow-rotate-left text-xs" aria-hidden="true"></i>
-        Clear all
+        <i class="fa-solid fa-arrow-rotate-left text-xs"></i>
+        Reset
       </a>
     </div>
 
-    <form action="{{ url_for('admin_patients') }}" method="get" class="mb-5">
+    <form action="{{ url_for('admin_patients') }}" method="get" class="flex flex-col gap-6 lg:flex-row lg:items-end">
       <input type="hidden" name="page" value="1" />
-      <input type="hidden" name="category" value="{{ selected_category }}" />
-      <input type="hidden" name="status" value="{{ selected_status }}" />
-      <label class="sr-only" for="admin-case-search">Search by case ID</label>
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-        <div class="relative min-w-0 flex-1">
-          <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-          <input
-            id="admin-case-search"
-            type="text"
-            name="search"
-            value="{{ search }}"
-            placeholder="Search by case ID…"
-            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm text-[#1A4D2E] outline-none ring-[#1A4D2E]/30 transition placeholder:text-slate-400 focus:border-[#1A4D2E] focus:bg-white focus:ring"
-          />
+      
+      <div class="flex-1 min-w-0 space-y-4 lg:space-y-0 lg:flex lg:gap-4">
+        <!-- Search -->
+        <div class="flex-1 min-w-0">
+          <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500" for="admin-case-search">Case ID</label>
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input
+              id="admin-case-search"
+              type="text"
+              name="search"
+              value="{{ search }}"
+              placeholder="Search by case ID…"
+              class="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-800 outline-none ring-[#1A4D2E]/20 transition-all placeholder:text-slate-400 focus:border-[#1A4D2E] focus:ring-4"
+            />
+          </div>
         </div>
-        <button type="submit" class="shrink-0 rounded-xl bg-slate-800 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-900 sm:min-w-[6.5rem]">Search</button>
-      </div>
-    </form>
 
-    <form action="{{ url_for('admin_patients') }}" method="get" class="space-y-3">
-      <input type="hidden" name="page" value="1" />
-      <input type="hidden" name="search" value="{{ search }}" />
-      <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Refine list</p>
-      <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-        <div class="min-w-0 flex-1 sm:min-w-[11rem] sm:max-w-xs">
-          <label class="mb-1 block text-xs font-medium text-slate-600" for="admin-case-category">Category</label>
+        <!-- Category -->
+        <div class="w-full lg:w-48 xl:w-56">
+          <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500" for="admin-case-category">Risk Category</label>
           <select
             id="admin-case-category"
             name="category"
-            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring"
+            class="w-full appearance-none rounded-2xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-medium text-slate-800 outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4"
+            style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394A3B8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 1rem top 50%; background-size: 0.65rem auto;"
           >
-            <option value="all" {{ "selected" if selected_category == "all" else "" }}>All categories</option>
+            <option value="all" {{ "selected" if selected_category == "all" else "" }}>All Categories</option>
             <option value="category i" {{ "selected" if selected_category == "category i" else "" }}>Category I</option>
             <option value="category ii" {{ "selected" if selected_category == "category ii" else "" }}>Category II</option>
             <option value="category iii" {{ "selected" if selected_category == "category iii" else "" }}>Category III</option>
           </select>
         </div>
-        <div class="min-w-0 flex-1 sm:min-w-[11rem] sm:max-w-xs">
-          <label class="mb-1 block text-xs font-medium text-slate-600" for="admin-case-status">Status</label>
+
+        <!-- Status -->
+        <div class="w-full lg:w-48 xl:w-56">
+          <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500" for="admin-case-status">Case Status</label>
           <select
             id="admin-case-status"
             name="status"
-            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring"
+            class="w-full appearance-none rounded-2xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-medium text-slate-800 outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4"
+            style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394A3B8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 1rem top 50%; background-size: 0.65rem auto;"
           >
-            <option value="all" {{ "selected" if selected_status == "all" else "" }}>All statuses</option>
+            <option value="all" {{ "selected" if selected_status == "all" else "" }}>All Statuses</option>
             <option value="pending" {{ "selected" if selected_status == "pending" else "" }}>Pending</option>
             <option value="completed" {{ "selected" if selected_status == "completed" else "" }}>Completed</option>
-            <option value="no show" {{ "selected" if selected_status == "no show" else "" }}>No show</option>
+            <option value="no show" {{ "selected" if selected_status == "no show" else "" }}>No Show</option>
           </select>
         </div>
-        <div class="flex w-full sm:w-auto sm:shrink-0 sm:pb-0.5">
-          <button type="submit" class="w-full rounded-xl bg-[#1A4D2E] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#1A4D2E] sm:w-auto">Apply filters</button>
-        </div>
       </div>
+
+      <button type="submit" class="w-full shrink-0 rounded-2xl bg-[#1A4D2E] px-8 py-3 text-sm font-bold text-white shadow-lg shadow-[#1A4D2E]/20 transition-all hover:scale-[1.02] hover:bg-opacity-90 lg:w-auto">
+        Apply Filters
+      </button>
     </form>
   </section>
 
-  <section class="mt-6 overflow-x-auto rounded-[2rem] border border-slate-200">
-    <table class="min-w-full divide-y divide-slate-200 text-sm">
-      <thead class="bg-slate-50 text-center uppercase tracking-wide text-slate-500">
-        <tr>
-          <th class="px-4 py-3">Case ID</th>
-          <th class="px-4 py-3">Date of Exposure</th>
-          <th class="px-4 py-3">Category</th>
-          <th class="px-4 py-3">Status</th>
-          <th class="px-4 py-3">Action</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100 bg-white">
-        {% if cases.items %}
-          {% for case in cases.items %}
-            <tr class="hover:bg-slate-50">
-              <td class="px-4 py-3 text-center font-medium text-slate-700">{{ case.case_code }}</td>
-              <td class="px-4 py-3 text-center text-slate-700">{{ case.exposure_date }}</td>
-              <td class="px-4 py-3 text-center">
-                {% set category_lower = (case.category or '')|lower %}
-                {% if category_lower == 'category i' %}
-                  <span class="rounded-full bg-[#1A4D2E]/10 px-2.5 py-1 text-xs font-semibold text-[#1A4D2E]">{{ case.category }}</span>
-                {% elif category_lower == 'category ii' %}
-                  <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">{{ case.category }}</span>
-                {% elif category_lower == 'category iii' %}
-                  <span class="rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">{{ case.category }}</span>
-                {% else %}
-                  <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{{ case.category }}</span>
-                {% endif %}
-              </td>
-              <td class="px-4 py-3 text-center">
-                {% set status_lower = (case.case_status or '')|lower %}
-                {% if status_lower == 'pending' %}
-                  <span class="rounded-full bg-[#1A4D2E]/10 px-2.5 py-1 text-xs font-semibold text-[#1A4D2E]">Pending</span>
-                {% elif status_lower == 'completed' %}
-                  <span class="rounded-full bg-[#1A4D2E]/10 px-2.5 py-1 text-xs font-semibold text-[#1A4D2E]">Completed</span>
-                {% elif status_lower == 'no show' %}
-                  <span class="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">No Show</span>
-                {% else %}
-                  <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{{ case.case_status or 'N/A' }}</span>
-                {% endif %}
-              </td>
-              <td class="px-4 py-3 text-center">
-                <div class="flex flex-wrap justify-center gap-3">
+  <section class="mt-8 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/40">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-left text-sm whitespace-nowrap">
+        <thead class="bg-slate-50 text-xs font-bold uppercase tracking-widest text-slate-500">
+          <tr class="border-b border-slate-200">
+            <th class="px-6 py-4">Case ID</th>
+            <th class="px-6 py-4">Date of Exposure</th>
+            <th class="px-6 py-4">Category</th>
+            <th class="px-6 py-4">Status</th>
+            <th class="px-6 py-4 text-center">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 bg-white">
+          {% if cases.items %}
+            {% for case in cases.items %}
+              <tr class="transition-colors hover:bg-slate-50/80 even:bg-slate-50/30">
+                <td class="px-6 py-4 font-bold text-slate-800">{{ case.case_code }}</td>
+                <td class="px-6 py-4 font-medium text-slate-600">{{ case.exposure_date }}</td>
+                <td class="px-6 py-4">
+                  {% set category_lower = (case.category or '')|lower %}
+                  {% if category_lower == 'category i' %}
+                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20"><span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-emerald-600"></span>{{ case.category }}</span>
+                  {% elif category_lower == 'category ii' %}
+                    <span class="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20"><span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-amber-600"></span>{{ case.category }}</span>
+                  {% elif category_lower == 'category iii' %}
+                    <span class="inline-flex items-center rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20"><span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-rose-600"></span>{{ case.category }}</span>
+                  {% else %}
+                    <span class="inline-flex items-center rounded-full bg-slate-50 px-3 py-1 text-xs font-bold text-slate-700 ring-1 ring-inset ring-slate-600/20">{{ case.category }}</span>
+                  {% endif %}
+                </td>
+                <td class="px-6 py-4">
+                  {% set status_lower = (case.case_status or '')|lower %}
+                  {% if status_lower == 'pending' %}
+                    <span class="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20">Pending</span>
+                  {% elif status_lower == 'completed' %}
+                    <span class="inline-flex items-center rounded-full bg-[#1A4D2E]/10 px-3 py-1 text-xs font-bold text-[#1A4D2E] ring-1 ring-inset ring-[#1A4D2E]/20">Completed</span>
+                  {% elif status_lower == 'no show' %}
+                    <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 ring-1 ring-inset ring-slate-500/20">No Show</span>
+                  {% else %}
+                    <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700 ring-1 ring-inset ring-slate-500/20">{{ case.case_status or 'N/A' }}</span>
+                  {% endif %}
+                </td>
+                <td class="px-6 py-4 text-center">
                   <a
                     href="{{ url_for('admin_case_details', case_id=case.id) }}"
-                    class="text-sm font-semibold text-[#1A4D2E] hover:text-[#1A4D2E]"
-                  >View Details</a>
+                    class="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 transition-all hover:bg-[#1A4D2E] hover:text-white"
+                  >
+                    View Details
+                    <i class="fa-solid fa-arrow-right"></i>
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="5" class="px-6 py-12 text-center">
+                <div class="inline-flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-400 mb-4">
+                  <i class="fa-solid fa-folder-open text-2xl"></i>
                 </div>
+                <p class="text-base font-bold text-slate-700">No cases found</p>
+                <p class="text-sm text-slate-500 mt-1">Try adjusting your filters or search query.</p>
               </td>
             </tr>
-          {% endfor %}
-        {% else %}
-          <tr>
-            <td colspan="5" class="px-4 py-8 text-center text-slate-500">No case records found for the current filters.</td>
-          </tr>
-        {% endif %}
-      </tbody>
-    </table>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
   </section>
 
   {% if cases.total %}

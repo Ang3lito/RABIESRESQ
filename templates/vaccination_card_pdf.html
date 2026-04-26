@@ -1,282 +1,287 @@
-﻿<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Vaccination Card - {{ victim_full_name }}</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}?v=4" />
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}?v=4" />
-    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}?v=4" />
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}?v=4" />
-    <style>
-      @page {
-        size: 215.9mm 330.2mm;
-        margin: 10mm;
-      }
-      body {
-        font-family: Arial, sans-serif;
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    @page {
+        size: letter;
+        margin: 1.5cm;
+    }
+    body {
+        font-family: Helvetica, sans-serif;
         font-size: 10pt;
-        color: #0f172a;
-      }
-      .card {
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 12px 16px;
-        background-color: #ffffff;
-      }
-      .header {
-        border-bottom: 2px solid #059669;
-        padding-bottom: 8px;
-        margin-bottom: 12px;
-      }
-      .header-table {
-        width: 100%;
-      }
-      .header-table td {
-        vertical-align: top;
-      }
-      .header-right {
-        text-align: left;
-      }
-      .header-subtitle {
-        font-size: 9pt;
-        font-weight: bold;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #047857;
-      }
-      .header-title {
-        font-size: 14pt;
-        font-weight: bold;
-        color: #0f172a;
-        margin-top: 4px;
-      }
-      .header-patient {
-        font-size: 10pt;
-        color: #334155;
-        margin-top: 4px;
-      }
-      .header-meta-label {
-        font-size: 9pt;
-        color: #64748b;
-      }
-      .header-meta-value {
-        font-size: 9pt;
-        font-weight: bold;
-        color: #0f172a;
-      }
-      .section-title {
-        font-size: 9pt;
-        font-weight: bold;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #64748b;
-        margin-bottom: 6px;
-      }
-      .two-col-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 16px;
-      }
-      .two-col-table td {
-        vertical-align: top;
-        width: 50%;
-        padding: 0 8px 0 0;
-      }
-      .two-col-table td:last-child {
-        padding: 0 0 0 8px;
-      }
-      .field-row {
-        margin-bottom: 4px;
-      }
-      .field-label {
-        font-size: 9pt;
-        color: #64748b;
-      }
-      .field-value {
-        font-size: 9pt;
-        font-weight: bold;
-        color: #0f172a;
-      }
-      .wound-box {
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        background-color: #f8fafc;
-        padding: 8px;
-        margin-top: 4px;
-        font-size: 9pt;
-        color: #334155;
-      }
-      .remarks-box {
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        background-color: #f8fafc;
-        padding: 10px;
-        margin-top: 6px;
-        font-size: 9pt;
-        color: #334155;
-      }
-      .dose-header-row {
-        margin-bottom: 8px;
-      }
-      .dose-completed {
-        font-size: 9pt;
-        color: #64748b;
-      }
-      .dose-completed strong {
-        color: #0f172a;
-      }
-      .dose-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 8px;
-        font-size: 9pt;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-      }
-      .dose-table th,
-      .dose-table td {
-        border: 1px solid #e2e8f0;
-        padding: 6px 8px;
-        text-align: left;
-      }
-      .dose-table th {
-        background-color: #f8fafc;
-        font-weight: bold;
-        text-transform: uppercase;
+        color: #1e293b;
+    }
+    .header-bg {
+        background-color: #1A4D2E;
+        color: #ffffff;
+    }
+    .header-sup {
         font-size: 8pt;
-        letter-spacing: 0.05em;
-        color: #64748b;
-      }
-      .dose-table td {
-        background-color: #ffffff;
-      }
-      .dose-table .day-cell {
+        color: #a7f3d0;
         font-weight: bold;
-        color: #0f172a;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="card">
-      <div class="header">
-        <table class="header-table" cellpadding="0" cellspacing="0">
-          <tr>
-            <td>
-              <div class="header-subtitle">Animal Bite Center</div>
-              <div class="header-title">Rabies Vaccination Card</div>
-              <div class="header-patient">{{ victim_label }}</div>
-            </td>
-            <td class="header-right">
-              <table cellpadding="0" cellspacing="0" style="width: 100%;">
-                <tr>
-                  <td style="padding: 0 8px 4px 0; vertical-align: top;">
-                    <div class="header-meta-label">Name</div>
-                    <div class="header-meta-value">{{ victim_full_name }}</div>
-                  </td>
-                  <td style="padding: 0 0 4px 0; vertical-align: top;">
-                    <div class="header-meta-label">Gender</div>
-                    <div class="header-meta-value">{{ victim_gender }}</div>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 0 8px 4px 0; vertical-align: top;">
-                    <div class="header-meta-label">Birthday</div>
-                    <div class="header-meta-value">{{ victim_birthday }}</div>
-                  </td>
-                  <td style="padding: 0 0 4px 0; vertical-align: top;">
-                    <div class="header-meta-label">Contact No.</div>
-                    <div class="header-meta-value">{{ victim_contact_number }}</div>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 0 8px 4px 0; vertical-align: top;">
-                    <div class="header-meta-label">Age</div>
-                    <div class="header-meta-value">{{ victim_age or 'â€”' }}</div>
-                  </td>
-                  <td style="padding: 0 0 4px 0; vertical-align: top;">
-                    <div class="header-meta-label">Address</div>
-                    <div class="header-meta-value">{{ victim_address }}</div>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
+        letter-spacing: 1px;
+    }
+    .header-title {
+        font-size: 20pt;
+        font-weight: bold;
+        color: #ffffff;
+    }
+    .badge {
+        background-color: #3f6e50; 
+        color: #ffffff;
+        font-size: 9pt;
+        font-weight: bold;
+        padding: 4px 10px;
+    }
+    .label {
+        font-size: 7pt;
+        color: #94a3b8;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    .val {
+        font-size: 10pt;
+        color: #1e293b;
+        font-weight: bold;
+    }
+    .section-title {
+        font-size: 10pt;
+        color: #1e293b;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    .bar {
+        background-color: #1A4D2E;
+        width: 4px;
+    }
+    .tbl {
+        width: 100%;
+    }
+    .dose-th {
+        background-color: #f8fafc;
+        color: #94a3b8;
+        font-size: 8pt;
+        font-weight: bold;
+        padding: 8px;
+        text-align: left;
+    }
+    .dose-td {
+        padding: 8px;
+        font-size: 9pt;
+        border-bottom: 1px solid #f1f5f9;
+    }
+</style>
+</head>
+<body>
+
+<table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e2e8f0;">
+<tr><td>
+
+<!-- HEADER -->
+<table class="header-bg" width="100%" cellpadding="0" cellspacing="0">
+<tr>
+    <td style="padding: 30px;">
+        <div class="header-sup">OFFICIAL MEDICAL RECORD</div>
+        <div class="header-title">Rabies Vaccination Card</div>
+        <br>
+        <table cellpadding="0" cellspacing="0">
+            <tr>
+                <td class="badge">{{ victim_label }}</td>
+                <td width="10"></td>
+                <td style="color: #a7f3d0; font-size: 9pt; font-weight: bold;">ID: #{{ appointment_id }}</td>
+            </tr>
         </table>
-      </div>
+    </td>
+</tr>
+</table>
 
-      <table class="two-col-table">
-        <tr>
-          <td>
-            <div class="section-title">Appointment Details</div>
-            <table cellpadding="0" cellspacing="0" style="width: 100%;">
-              <tr><td class="field-label" style="padding: 2px 0;">Date &amp; Time</td><td class="field-value" style="text-align: right; padding: 2px 0;">{{ appt_datetime_display or 'N/A' }}</td></tr>
-              <tr><td class="field-label" style="padding: 2px 0;">Risk Category</td><td class="field-value" style="text-align: right; padding: 2px 0;">{{ category_value or 'N/A' }}</td></tr>
-              <tr><td class="field-label" style="padding: 2px 0;">Type of Exposure</td><td class="field-value" style="text-align: right; padding: 2px 0;">{{ type_of_exposure or 'N/A' }}</td></tr>
-              <tr><td class="field-label" style="padding: 2px 0;">Affected Area</td><td class="field-value" style="text-align: right; padding: 2px 0;">{{ affected_area or 'N/A' }}</td></tr>
-              <tr><td class="field-label" style="padding: 2px 0;">Bleeding Type</td><td class="field-value" style="text-align: right; padding: 2px 0;">{{ bleeding_type or 'N/A' }}</td></tr>
+<!-- PADDING WRAPPER FOR BODY -->
+<table width="100%" cellpadding="30" cellspacing="0"><tr><td>
+
+<!-- PATIENT INFO -->
+<table class="tbl" cellpadding="5" cellspacing="0">
+    <tr>
+        <td width="40%">
+            <div class="label">Patient Full Name</div>
+            <div class="val">{{ victim_full_name }}</div>
+        </td>
+        <td width="30%">
+            <div class="label">Gender / Age</div>
+            <div class="val">{{ victim_gender }} / {{ victim_age or '-' }}</div>
+        </td>
+        <td width="30%">
+            <div class="label">Contact</div>
+            <div class="val">{{ victim_contact_number or '-' }}</div>
+        </td>
+    </tr>
+    <tr>
+        <td width="40%" style="padding-top: 15px;">
+            <div class="label">Permanent Address</div>
+            <div class="val" style="font-weight: normal; font-size: 9pt;">{{ victim_address }}</div>
+        </td>
+        <td width="30%" style="padding-top: 15px;">
+            <div class="label">Birthday</div>
+            <div class="val">{{ victim_birthday }}</div>
+        </td>
+        <td width="30%"></td>
+    </tr>
+</table>
+
+<hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+
+<!-- EXPOSURE & VACCINE -->
+<table class="tbl" cellpadding="0" cellspacing="0">
+<tr>
+    <td width="48%" valign="top">
+        <!-- EXPOSURE -->
+        <table cellpadding="0" cellspacing="0" style="margin-bottom: 15px;">
+            <tr>
+                <td class="bar"></td>
+                <td width="8"></td>
+                <td class="section-title">Exposure Details</td>
+            </tr>
+        </table>
+
+        <table width="100%" cellpadding="5" cellspacing="0">
+            <tr>
+                <td width="50%" class="label" style="color: #64748b; font-weight: normal; text-transform: none;">Risk Category</td>
+                <td width="50%" class="val" align="right" style="color: #1A4D2E;">{{ category_value or 'N/A' }}</td>
+            </tr>
+            <tr>
+                <td class="label" style="color: #64748b; font-weight: normal; text-transform: none;">Exposure Type</td>
+                <td class="val" align="right">{{ type_of_exposure or 'N/A' }}</td>
+            </tr>
+            <tr>
+                <td class="label" style="color: #64748b; font-weight: normal; text-transform: none;">Affected Area</td>
+                <td class="val" align="right">{{ affected_area or 'N/A' }}</td>
+            </tr>
+            <tr>
+                <td class="label" style="color: #64748b; font-weight: normal; text-transform: none;">Bleeding</td>
+                <td class="val" align="right">{{ bleeding_type or 'N/A' }}</td>
+            </tr>
+        </table>
+
+        <br>
+        <table width="100%" cellpadding="15" cellspacing="0" style="border: 1px solid #e2e8f0; background-color: #f8fafc;">
+            <tr>
+                <td>
+                    <div class="label">Local Treatment / Wound Description</div>
+                    <div style="font-size: 9pt; color: #475569; font-style: italic; margin-top: 5px;">"{{ wound_description or 'No specific wound treatment recorded.' }}"</div>
+                </td>
+            </tr>
+        </table>
+
+    </td>
+    <td width="4%"></td> <!-- Gutter -->
+    <td width="48%" valign="top">
+        <!-- VACCINE -->
+        <table cellpadding="0" cellspacing="0" style="margin-bottom: 15px;">
+            <tr>
+                <td class="bar"></td>
+                <td width="8"></td>
+                <td class="section-title">Vaccine Information</td>
+            </tr>
+        </table>
+
+        <table width="100%" cellpadding="20" cellspacing="0" style="border: 1px solid #e2e8f0;">
+            <tr>
+                <td>
+                    <div class="label">Primary Vaccine</div>
+                    <div class="val" style="color: #1A4D2E; margin-bottom: 15px;">{{ vaccination_card.anti_rabies or '-' }}</div>
+                    
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td width="50%">
+                                <div class="label">Batch Number</div>
+                                <div class="val">{{ vaccination_card.pcec_batch or '-' }}</div>
+                            </td>
+                            <td width="50%">
+                                <div class="label">Expiry Date</div>
+                                <div class="val">{{ vaccination_card.pcec_expiry or '-' }}</div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
+
+                    <div class="label">Tetanus Prophylaxis</div>
+                    <div class="val">{{ vaccination_card.tetanus_prophylaxis or '-' }}</div>
+                    <div style="font-size: 8pt; color: #64748b; margin-top: 5px;">{{ vaccination_card.tetanus_toxoid or vaccination_card.ats or vaccination_card.htig or 'No tetanus vaccine details' }}</div>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+</table>
+
+<br><br>
+
+<!-- DOSE RECORDS -->
+{% for sec in dose_course_sections %}
+<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 10px;">
+    <tr>
+        <td width="50%" valign="bottom">
+            <table cellpadding="0" cellspacing="0">
+                <tr>
+                    <td class="bar"></td>
+                    <td width="8"></td>
+                    <td class="section-title">Dose Record: {{ sec.course_label }}</td>
+                </tr>
             </table>
-            <div style="margin-top: 6px;">
-              <div class="field-label">Wound / Local Treatment</div>
-              <div class="wound-box">{{ wound_description or vaccination_card.wound_description or 'No wound description recorded.' }}</div>
-            </div>
-          </td>
-          <td>
-            <div class="section-title">Vaccine &amp; Prophylaxis</div>
-            <table cellpadding="0" cellspacing="0" style="width: 100%;">
-              <tr><td class="field-label" style="padding: 2px 0;">Anti-Rabies</td><td class="field-value" style="text-align: right; padding: 2px 0;">{{ vaccination_card.anti_rabies or 'â€”' }}</td></tr>
-              <tr><td class="field-label" style="padding: 2px 0;">Vaccine</td><td class="field-value" style="text-align: right; padding: 2px 0;">{{ vaccination_card.get('form_vc_anti_rabies_vaccine') or 'â€”' }}</td></tr>
-              <tr><td class="field-label" style="padding: 2px 0;">Batch No.</td><td class="field-value" style="text-align: right; padding: 2px 0;">{{ vaccination_card.pcec_batch or 'â€”' }}</td></tr>
-              <tr><td class="field-label" style="padding: 2px 0;">Mfg / Expiry</td><td class="field-value" style="text-align: right; padding: 2px 0;">{{ vaccination_card.pcec_mfg_date or 'â€”' }} / {{ vaccination_card.pcec_expiry or 'â€”' }}</td></tr>
-              <tr><td class="field-label" style="padding: 2px 0;">Tetanus Prophylaxis</td><td class="field-value" style="text-align: right; padding: 2px 0;">{{ vaccination_card.tetanus_prophylaxis or 'â€”' }}</td></tr>
-              <tr><td class="field-label" style="padding: 2px 0;">Tetanus Toxoid / ATS / HTIG</td><td class="field-value" style="text-align: right; padding: 2px 0;">{{ vaccination_card.tetanus_toxoid or vaccination_card.ats or vaccination_card.htig or 'â€”' }}</td></tr>
-              <tr><td class="field-label" style="padding: 2px 0;">Tetanus Batch</td><td class="field-value" style="text-align: right; padding: 2px 0;">{{ vaccination_card.tetanus_batch or 'â€”' }}</td></tr>
-              <tr><td class="field-label" style="padding: 2px 0;">Tetanus Mfg / Expiry</td><td class="field-value" style="text-align: right; padding: 2px 0;">{{ vaccination_card.tetanus_mfg_date or 'â€”' }} / {{ vaccination_card.tetanus_expiry or 'â€”' }}</td></tr>
+        </td>
+        <td width="50%" align="right" valign="bottom">
+            <table cellpadding="0" cellspacing="0" align="right">
+                <tr>
+                    <td style="background-color: #ecfdf5; color: #065f46; font-size: 8pt; font-weight: bold; padding: 4px 10px;">
+                        {{ sec.doses_completed }} of {{ sec.expected_doses }} Doses Completed
+                    </td>
+                </tr>
             </table>
-          </td>
-        </tr>
-      </table>
+        </td>
+    </tr>
+</table>
 
-      {% if pre_screening_vaccination_note %}
-      <div style="margin-top: 8px; padding: 6px 8px; border: 1px solid #a7f3d0; border-radius: 6px; background: #ecfdf5; font-size: 10px;">
-        <strong>Pre-screening (history):</strong> {{ pre_screening_vaccination_note }}
-      </div>
-      {% endif %}
+<table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e2e8f0;">
+    <tr>
+        <td class="dose-th" width="15%">Day</td>
+        <td class="dose-th" width="20%">Date</td>
+        <td class="dose-th" width="25%">Vaccine Type</td>
+        <td class="dose-th" width="20%">Dose / Site</td>
+        <td class="dose-th" width="20%">Given By</td>
+    </tr>
+    {% for row in sec.course_rows %}
+    <tr>
+        <td class="dose-td" style="color: #1A4D2E; font-weight: bold;">DAY {{ row.day_number }}</td>
+        <td class="dose-td">{{ row.dose_date or '-' }}</td>
+        <td class="dose-td">{{ row.type_of_vaccine or '-' }}</td>
+        <td class="dose-td">
+            <strong>{{ row.dose or '-' }}</strong> 
+            <span style="color: #94a3b8; font-size: 8pt; font-style: italic;">({{ row.route_site or '-' }})</span>
+        </td>
+        <td class="dose-td">{{ row.given_by or '-' }}</td>
+    </tr>
+    {% endfor %}
+</table>
+<br>
+{% endfor %}
 
-      {% for sec in dose_course_sections %}
-      <div class="section-title" {% if not loop.first %}style="margin-top: 12px;"{% endif %}>Dose Record ({{ sec.course_label }})</div>
-      <div class="dose-header-row">
-        <span class="dose-completed">Completed doses: <strong>{{ sec.doses_completed }}</strong> of <strong>{{ sec.expected_doses }}</strong></span>
-      </div>
-      <table class="dose-table">
-        <thead>
-          <tr>
-            <th>Day</th>
-            <th>Date</th>
-            <th>Type of Vaccine</th>
-            <th>Dose</th>
-            <th>Route &amp; Site</th>
-            <th>Given By</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in sec.course_rows %}
-          <tr>
-            <td class="day-cell">DAY {{ row.day_number }}</td>
-            <td>{{ row.dose_date or 'â€”' }}</td>
-            <td>{{ row.type_of_vaccine or 'â€”' }}</td>
-            <td>{{ row.dose or 'â€”' }}</td>
-            <td>{{ row.route_site or 'â€”' }}</td>
-            <td>{{ row.given_by or 'â€”' }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% endfor %}
+<br>
+<!-- REMARKS -->
+<table width="100%" cellpadding="15" cellspacing="0" style="background-color: #f8fafc;">
+    <tr>
+        <td align="center">
+            <div class="label" style="margin-bottom: 5px;">Remarks & Notes</div>
+            <div style="font-size: 9pt; color: #475569; font-style: italic;">{{ vaccination_card.remarks or pre_screening_vaccination_note or 'No additional remarks recorded for this vaccination card.' }}</div>
+        </td>
+    </tr>
+</table>
 
-      <div class="section-title" style="margin-top: 12px;">Remarks</div>
-      <div class="remarks-box">
-        {{ vaccination_card.remarks or pre_screening_vaccination_note or 'â€”' }}
-      </div>
-    </div>
-  </body>
+</td></tr></table>
+<!-- END PADDING WRAPPER -->
+
+</td></tr>
+</table>
+
+</body>
 </html>

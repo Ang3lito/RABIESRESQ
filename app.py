@@ -3917,7 +3917,7 @@ def create_app():
                     vax_url = url_for("staff_vaccinations")
                 
                 # Priority messaging logic
-                if high_risk_count > 0:
+                if high_risk_count > 0 and role != "system_admin":
                     status = 'high_risk'
                     button_text = 'Review Now'
                     view_url = high_risk_url

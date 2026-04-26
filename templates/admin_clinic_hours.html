@@ -26,63 +26,193 @@
   </section>
 
   {% set oh = operating_hours|default({}) %}
-  <section class="mt-6 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-    <form
-      method="post"
-      action="{{ url_for('admin_clinic_hours') }}"
-      class="space-y-4"
-      data-confirm="Save clinic hours and refresh generated slots? Patients with upcoming visits will be notified."
-      data-confirm-variant="primary"
-    >
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Mon–Sat open</label>
-          <input type="time" name="mon_sat_open" value="{{ oh.get('mon_sat_open', '08:00') }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E]" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Mon–Sat close</label>
-          <input type="time" name="mon_sat_close" value="{{ oh.get('mon_sat_close', '22:00') }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E]" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Sunday open</label>
-          <input type="time" name="sunday_open" value="{{ oh.get('sunday_open', '08:00') }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E]" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Sunday close</label>
-          <input type="time" name="sunday_close" value="{{ oh.get('sunday_close', '18:00') }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E]" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Lunch start</label>
-          <input type="time" name="lunch_start" value="{{ oh.get('lunch_start', '12:00') }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E]" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Lunch end</label>
-          <input type="time" name="lunch_end" value="{{ oh.get('lunch_end', '13:00') }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E]" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Dinner start</label>
-          <input type="time" name="dinner_start" value="{{ oh.get('dinner_start', '18:30') }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E]" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Dinner end</label>
-          <input type="time" name="dinner_end" value="{{ oh.get('dinner_end', '19:30') }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E]" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Slot interval (minutes)</label>
-          <input type="number" name="slot_interval_minutes" min="5" max="120" value="{{ oh.get('slot_interval_minutes', 45) }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E]" />
-        </div>
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Days ahead to generate</label>
-          <input type="number" name="horizon_days" min="1" max="365" value="{{ oh.get('horizon_days', 60) }}" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E]" />
-        </div>
-      </div>
+  <div class="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-12">
+    <!-- Configuration Form -->
+    <div class="lg:col-span-8">
+      <form
+        id="hours-form"
+        method="post"
+        action="{{ url_for('admin_clinic_hours') }}"
+        class="space-y-8"
+        data-confirm="Save clinic hours and refresh generated slots? Patients with upcoming visits will be notified."
+        data-confirm-variant="primary"
+      >
+        <!-- Standard Operating Hours -->
+        <section class="rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <div class="mb-6 flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1A4D2E]/5 text-[#1A4D2E]">
+              <i class="fa-solid fa-clock"></i>
+            </div>
+            <h2 class="text-xl font-bold text-slate-800">Operating Hours</h2>
+          </div>
+          
+          <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div class="space-y-4 rounded-2xl bg-slate-50 p-4">
+              <h3 class="text-xs font-bold uppercase tracking-widest text-slate-500">Monday – Saturday</h3>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="mb-1.5 block text-xs font-bold text-slate-600" for="mon_sat_open">Opening</label>
+                  <input type="time" id="mon_sat_open" name="mon_sat_open" value="{{ oh.get('mon_sat_open', '08:00') }}" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-[#1A4D2E] outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4" />
+                </div>
+                <div>
+                  <label class="mb-1.5 block text-xs font-bold text-slate-600" for="mon_sat_close">Closing</label>
+                  <input type="time" id="mon_sat_close" name="mon_sat_close" value="{{ oh.get('mon_sat_close', '22:00') }}" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-[#1A4D2E] outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4" />
+                </div>
+              </div>
+            </div>
 
-      <div class="flex justify-end border-t border-slate-200 pt-4">
-        <button type="submit" class="rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A4D2E]">
-          Save clinic hours
-        </button>
+            <div class="space-y-4 rounded-2xl bg-slate-50 p-4">
+              <h3 class="text-xs font-bold uppercase tracking-widest text-slate-500">Sunday</h3>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="mb-1.5 block text-xs font-bold text-slate-600" for="sunday_open">Opening</label>
+                  <input type="time" id="sunday_open" name="sunday_open" value="{{ oh.get('sunday_open', '08:00') }}" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-[#1A4D2E] outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4" />
+                </div>
+                <div>
+                  <label class="mb-1.5 block text-xs font-bold text-slate-600" for="sunday_close">Closing</label>
+                  <input type="time" id="sunday_close" name="sunday_close" value="{{ oh.get('sunday_close', '18:00') }}" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-[#1A4D2E] outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Breaks & Intervals -->
+        <section class="rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <div class="mb-6 flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+              <i class="fa-solid fa-mug-hot"></i>
+            </div>
+            <h2 class="text-xl font-bold text-slate-800">Recess & Breaks</h2>
+          </div>
+
+          <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div class="space-y-4 rounded-2xl border border-dashed border-slate-200 p-4">
+              <h3 class="text-xs font-bold uppercase tracking-widest text-slate-500">Lunch Break</h3>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="mb-1.5 block text-xs font-bold text-slate-600">Start</label>
+                  <input type="time" name="lunch_start" value="{{ oh.get('lunch_start', '12:00') }}" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 outline-none ring-amber-500/20 transition-all focus:border-amber-500 focus:ring-4" />
+                </div>
+                <div>
+                  <label class="mb-1.5 block text-xs font-bold text-slate-600">End</label>
+                  <input type="time" name="lunch_end" value="{{ oh.get('lunch_end', '13:00') }}" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 outline-none ring-amber-500/20 transition-all focus:border-amber-500 focus:ring-4" />
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-4 rounded-2xl border border-dashed border-slate-200 p-4">
+              <h3 class="text-xs font-bold uppercase tracking-widest text-slate-500">Dinner Break</h3>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="mb-1.5 block text-xs font-bold text-slate-600">Start</label>
+                  <input type="time" name="dinner_start" value="{{ oh.get('dinner_start', '18:30') }}" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 outline-none ring-amber-500/20 transition-all focus:border-amber-500 focus:ring-4" />
+                </div>
+                <div>
+                  <label class="mb-1.5 block text-xs font-bold text-slate-600">End</label>
+                  <input type="time" name="dinner_end" value="{{ oh.get('dinner_end', '19:30') }}" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 outline-none ring-amber-500/20 transition-all focus:border-amber-500 focus:ring-4" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Generation Settings -->
+        <section class="rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <div class="mb-6 flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <i class="fa-solid fa-gear"></i>
+            </div>
+            <h2 class="text-xl font-bold text-slate-800">Advanced Settings</h2>
+          </div>
+
+          <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div>
+              <label class="mb-2 block text-sm font-bold text-slate-700">Slot Duration (Minutes)</label>
+              <div class="relative">
+                <input type="number" name="slot_interval_minutes" min="5" max="120" value="{{ oh.get('slot_interval_minutes', 45) }}" class="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-4 pr-12 text-sm font-bold text-[#1A4D2E] outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4" />
+                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 uppercase">min</span>
+              </div>
+              <p class="mt-2 text-xs text-slate-500">Determines the gap between generated appointments.</p>
+            </div>
+            <div>
+              <label class="mb-2 block text-sm font-bold text-slate-700">Generation Horizon</label>
+              <div class="relative">
+                <input type="number" name="horizon_days" min="1" max="365" value="{{ oh.get('horizon_days', 60) }}" class="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-4 pr-12 text-sm font-bold text-[#1A4D2E] outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4" />
+                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 uppercase">days</span>
+              </div>
+              <p class="mt-2 text-xs text-slate-500">How many days into the future slots are auto-created.</p>
+            </div>
+          </div>
+        </section>
+
+      </form>
+    </div>
+
+    <!-- Preview Sidebar -->
+    <div class="lg:col-span-4">
+      <div class="sticky top-6 space-y-6">
+        <div class="rounded-[2.5rem] border border-[#1A4D2E]/10 bg-[#1A4D2E]/5 p-6 shadow-sm">
+          <h3 class="flex items-center gap-2 text-base font-bold text-[#1A4D2E]">
+            <i class="fa-solid fa-circle-info"></i>
+            Schedule Summary
+          </h3>
+          <div class="mt-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-[#1A4D2E]/10 pb-3">
+              <span class="text-sm font-medium text-slate-600">Daily Slots</span>
+              <span class="text-sm font-bold text-[#1A4D2E]">~12 per day</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-[#1A4D2E]/10 pb-3">
+              <span class="text-sm font-medium text-slate-600">Weekly Coverage</span>
+              <span class="text-sm font-bold text-[#1A4D2E]">7 Days</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-[#1A4D2E]/10 pb-3">
+              <span class="text-sm font-medium text-slate-600">Break Duration</span>
+              <span class="text-sm font-bold text-[#1A4D2E]">2.0 Hours Total</span>
+            </div>
+          </div>
+          
+          <div class="mt-8 rounded-2xl bg-[#1A4D2E] p-4 text-white">
+            <p class="text-xs font-bold uppercase tracking-wider opacity-60">Status</p>
+            <p class="mt-1 text-sm font-bold">Configuration Active</p>
+            <div class="mt-3 flex h-1.5 w-full overflow-hidden rounded-full bg-white/20">
+              <div class="h-full w-full bg-emerald-400"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <h3 class="text-base font-bold text-slate-800">Quick Tips</h3>
+          <ul class="mt-4 space-y-3 text-sm text-slate-600">
+            <li class="flex gap-3">
+              <i class="fa-solid fa-check text-emerald-500 mt-1"></i>
+              <span>Intervals under 30m may cause overlaps.</span>
+            </li>
+            <li class="flex gap-3">
+              <i class="fa-solid fa-check text-emerald-500 mt-1"></i>
+              <span>Lunch/Dinner breaks automatically block slots.</span>
+            </li>
+          </ul>
+        </div>
       </div>
-    </form>
-  </section>
+  </div>
+
+  <!-- Bottom Save Panel -->
+  <div class="mt-12 rounded-[2.5rem] bg-[#1A4D2E] p-8 text-white shadow-xl">
+    <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+      <div class="space-y-1">
+        <h3 class="text-xl font-bold">Save Configuration</h3>
+        <p class="text-sm text-emerald-100/70">Updating these settings will immediately refresh the appointment calendar for the next 60 days.</p>
+      </div>
+      <button
+        type="submit"
+        form="hours-form"
+        class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-10 py-4 text-sm font-bold text-[#1A4D2E] shadow-lg transition-all hover:scale-[1.02] hover:bg-slate-50"
+      >
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+        Save clinic hours
+      </button>
+    </div>
+  </div>
 {% endblock %}
 

@@ -19,5 +19,6 @@
   if (base.slice(-1) !== "/") base += "/";
   var file = { patient: "patient.wav", clinic: "clinic.wav", admin: "admin.wav" }[role];
   if (!file) return;
-  play(base + file);
+  // Automatic play on page load is disabled per user request to avoid repetitive ping sounds.
+  // play(base + file);
 })();

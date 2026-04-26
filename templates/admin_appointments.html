@@ -6,114 +6,129 @@
 {% block main_content %}
   {% set range_active = (date_from or date_to) %}
 
-  <section class="mt-2 flex flex-col gap-4 sm:mt-0 sm:flex-row sm:items-start sm:justify-between">
+  <section class="mt-6 mb-8 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
     <div>
       <h1 class="text-2xl font-bold text-[#1A4D2E] sm:text-4xl">Clinic Appointments</h1>
-      <p class="mt-1 text-sm text-slate-500">{{ clinic.name if clinic else '—' }}</p>
+      <p class="mt-2 text-slate-500 font-medium">{{ clinic.name if clinic else 'All Clinics' }}</p>
     </div>
-  </section>
-
-  <section class="mt-6 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-      <h2 class="text-sm font-semibold text-slate-800">Date filters</h2>
-      <a
-        href="{{ url_for('admin_appointments') }}"
-        class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-slate-800"
-      >
-        <i class="fa-solid fa-arrow-rotate-left text-xs" aria-hidden="true"></i>
-        Reset to defaults
+    
+    <!-- Segmented Control / Tabs -->
+    <div class="inline-flex p-1 bg-slate-100 rounded-2xl">
+      <a href="{{ url_for('admin_appointments', date_filter='today', page=1) }}" 
+         class="px-6 py-2 text-sm font-bold rounded-xl transition-all {{ 'bg-white text-[#1A4D2E] shadow-sm' if date_filter == 'today' and not range_active else 'text-slate-500 hover:text-slate-700' }}">
+        Today
+      </a>
+      <a href="{{ url_for('admin_appointments', date_filter='week', page=1) }}" 
+         class="px-6 py-2 text-sm font-bold rounded-xl transition-all {{ 'bg-white text-[#1A4D2E] shadow-sm' if date_filter == 'week' and not range_active else 'text-slate-500 hover:text-slate-700' }}">
+        This Week
+      </a>
+      <a href="{{ url_for('admin_appointments', date_filter='all', page=1) }}" 
+         class="px-6 py-2 text-sm font-bold rounded-xl transition-all {{ 'bg-white text-[#1A4D2E] shadow-sm' if date_filter == 'all' and not range_active else 'text-slate-500 hover:text-slate-700' }}">
+        All Time
       </a>
     </div>
-
-    <div class="space-y-3">
-      <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Quick period</p>
-      <div class="flex flex-wrap gap-2">
-        <a
-          href="{{ url_for('admin_appointments', date_filter='today', page=1) }}"
-          class="inline-flex items-center rounded-xl border px-4 py-2 text-sm font-medium transition {{ 'border-[#1A4D2E] bg-[#1A4D2E] text-white shadow-sm' if date_filter == 'today' and not range_active else 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50' }}"
-        >Today</a>
-        <a
-          href="{{ url_for('admin_appointments', date_filter='week', page=1) }}"
-          class="inline-flex items-center rounded-xl border px-4 py-2 text-sm font-medium transition {{ 'border-[#1A4D2E] bg-[#1A4D2E] text-white shadow-sm' if date_filter == 'week' and not range_active else 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50' }}"
-        >This week</a>
-        <a
-          href="{{ url_for('admin_appointments', date_filter='all', page=1) }}"
-          class="inline-flex items-center rounded-xl border px-4 py-2 text-sm font-medium transition {{ 'border-[#1A4D2E] bg-[#1A4D2E] text-white shadow-sm' if date_filter == 'all' and not range_active else 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50' }}"
-        >All dates</a>
-      </div>
-    </div>
-
-    <div class="mt-6 border-t border-slate-100 pt-6">
-      <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Custom date range</p>
-      <form method="get" action="{{ url_for('admin_appointments') }}" class="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-        <div class="min-w-0 flex-1 sm:min-w-[10rem] sm:max-w-xs">
-          <label for="date_from" class="mb-1 block text-xs font-medium text-slate-600">From</label>
-          <input
-            type="date"
-            id="date_from"
-            name="date_from"
-            value="{{ date_from }}"
-            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-[#1A4D2E] outline-none ring-[#1A4D2E]/30 focus:ring"
-          />
-        </div>
-        <div class="min-w-0 flex-1 sm:min-w-[10rem] sm:max-w-xs">
-          <label for="date_to" class="mb-1 block text-xs font-medium text-slate-600">To</label>
-          <input
-            type="date"
-            id="date_to"
-            name="date_to"
-            value="{{ date_to }}"
-            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-[#1A4D2E] outline-none ring-[#1A4D2E]/30 focus:ring"
-          />
-        </div>
-        <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <input type="hidden" name="page" value="1" />
-          <button type="submit" class="w-full rounded-xl bg-[#1A4D2E] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#1A4D2E] sm:w-auto">Apply range</button>
-          {% if range_active %}
-          <a
-            href="{{ url_for('admin_appointments', date_filter='all', page=1) }}"
-            class="w-full text-center text-sm font-medium text-slate-600 hover:text-[#1A4D2E] sm:w-auto sm:px-2"
-          >Clear range</a>
-          {% endif %}
-        </div>
-      </form>
-    </div>
   </section>
 
-  <section class="mt-6 overflow-x-auto rounded-[2rem] border border-slate-200">
-    <table class="min-w-full divide-y divide-slate-200 text-sm">
-      <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
-        <tr>
-          <th class="px-4 py-3">Appointment</th>
-          <th class="px-4 py-3">Case</th>
-          <th class="px-4 py-3">Exposure date</th>
-          <th class="px-4 py-3">Date &amp; time</th>
-          <th class="px-4 py-3">Status</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100 bg-white">
-        {% if appointments.items %}
-          {% for row in appointments.items %}
-            <tr class="hover:bg-slate-50/80">
-              <td class="px-4 py-3 font-medium text-[#1A4D2E]">{{ row.display_id }}</td>
-              <td class="px-4 py-3">
-                <a href="{{ url_for('admin_case_reporting_summary', case_id=row.case_id) }}" class="font-medium text-[#1A4D2E] hover:text-[#1A4D2E]">{{ row.case_code }}</a>
-              </td>
-              <td class="px-4 py-3 text-slate-700">{{ row.exposure_date_display }}</td>
-              <td class="px-4 py-3 text-slate-700">{{ row.datetime_display }}</td>
-              <td class="px-4 py-3">{{ admin.status_badge(row.badge) }}</td>
-            </tr>
-          {% endfor %}
-        {% else %}
-          <tr>
-            <td colspan="5" class="px-4 py-8 text-center text-slate-500">No appointments found.</td>
+  <!-- Custom Date Filter Section -->
+  <section class="mb-10 rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400">Custom Date Range</h2>
+      {% if range_active %}
+        <a href="{{ url_for('admin_appointments', date_filter='all', page=1) }}" class="text-xs font-bold text-rose-500 hover:text-rose-600 transition-colors">
+          <i class="fa-solid fa-xmark mr-1"></i> Clear Range
+        </a>
+      {% endif %}
+    </div>
+
+    <form method="get" action="{{ url_for('admin_appointments') }}" class="flex flex-wrap items-end gap-4">
+      <div class="flex-1 min-w-[200px]">
+        <label for="date_from" class="block text-[11px] font-bold text-slate-500 uppercase mb-2 ml-1">From Date</label>
+        <div class="relative group">
+          <i class="fa-regular fa-calendar absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-[#1A4D2E]"></i>
+          <input type="date" id="date_from" name="date_from" value="{{ date_from }}"
+                 class="w-full rounded-2xl border border-slate-200 bg-slate-50/50 py-3 pl-11 pr-4 text-sm font-semibold text-slate-700 outline-none transition-all focus:border-[#1A4D2E] focus:bg-white focus:ring-4 focus:ring-[#1A4D2E]/5" />
+        </div>
+      </div>
+
+      <div class="flex-1 min-w-[200px]">
+        <label for="date_to" class="block text-[11px] font-bold text-slate-500 uppercase mb-2 ml-1">To Date</label>
+        <div class="relative group">
+          <i class="fa-regular fa-calendar absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-[#1A4D2E]"></i>
+          <input type="date" id="date_to" name="date_to" value="{{ date_to }}"
+                 class="w-full rounded-2xl border border-slate-200 bg-slate-50/50 py-3 pl-11 pr-4 text-sm font-semibold text-slate-700 outline-none transition-all focus:border-[#1A4D2E] focus:bg-white focus:ring-4 focus:ring-[#1A4D2E]/5" />
+        </div>
+      </div>
+
+      <input type="hidden" name="page" value="1" />
+      <button type="submit" class="h-[46px] px-8 rounded-2xl bg-[#1A4D2E] text-sm font-bold text-white shadow-lg shadow-[#1A4D2E]/20 hover:scale-[1.02] transition-all active:scale-[0.98]">
+        Filter Results
+      </button>
+    </form>
+  </section>
+
+  <!-- Appointments Table -->
+  <section class="overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/40">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-left text-sm whitespace-nowrap">
+        <thead class="bg-slate-50 text-xs font-bold uppercase tracking-widest text-slate-500">
+          <tr class="border-b border-slate-200">
+            <th class="px-8 py-5">Patient & Appointment</th>
+            <th class="px-8 py-5">Case Code</th>
+            <th class="px-8 py-5">Exposure Date</th>
+            <th class="px-8 py-5">Scheduled For</th>
+            <th class="px-8 py-5">Status</th>
           </tr>
-        {% endif %}
-      </tbody>
-    </table>
+        </thead>
+        <tbody class="divide-y divide-slate-100 bg-white">
+          {% if appointments.items %}
+            {% for row in appointments.items %}
+              <tr class="transition-colors hover:bg-slate-50/80 even:bg-slate-50/30 group">
+                <td class="px-8 py-5">
+                  <div class="flex flex-col">
+                    <span class="font-bold text-slate-800">{{ row.patient_display_name }}</span>
+                    <span class="text-[11px] font-bold text-slate-400 mt-0.5">{{ row.display_id }}</span>
+                  </div>
+                </td>
+                <td class="px-8 py-5">
+                  <a href="{{ url_for('admin_case_reporting_summary', case_id=row.case_id) }}" 
+                     class="inline-flex items-center gap-2 font-bold text-[#1A4D2E] hover:underline decoration-2 underline-offset-4">
+                    <i class="fa-solid fa-folder-open opacity-50"></i>
+                    {{ row.case_code }}
+                  </a>
+                </td>
+                <td class="px-8 py-5 text-slate-600 font-medium">
+                  {{ row.exposure_date_display }}
+                </td>
+                <td class="px-8 py-5">
+                  <div class="flex flex-col">
+                    <span class="font-bold text-slate-700">{{ row.datetime_display.split(',')[0] }}</span>
+                    <span class="text-xs font-medium text-slate-400 mt-0.5">{{ row.datetime_display.split(',')[1] if ',' in row.datetime_display else '' }}</span>
+                  </div>
+                </td>
+                <td class="px-8 py-5">
+                  {{ admin.status_badge(row.badge) }}
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="5" class="px-8 py-20 text-center">
+                <div class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-slate-50 text-slate-400 mb-6">
+                  <i class="fa-regular fa-calendar-xmark text-3xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800">No appointments found</h3>
+                <p class="text-slate-500 mt-2">Try adjusting your filters or date range.</p>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
   </section>
 
   {% if appointments.total %}
-    {{ admin.pagination_appointments(appointments, date_filter, date_from, date_to) }}
+    <div class="mt-8">
+      {{ admin.pagination_appointments(appointments, date_filter, date_from, date_to) }}
+    </div>
   {% endif %}
 {% endblock %}

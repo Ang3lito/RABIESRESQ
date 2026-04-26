@@ -18,41 +18,67 @@
 {% endblock %}
 
 {% block main_content %}
-  <div class="mb-6 border-b border-slate-200 pb-4">
-    <h1 class="text-2xl font-bold text-[#1A4D2E]">Audit log / Session Logs</h1>
-    <p class="mt-1 text-sm text-slate-500">
-      Login and logout activity for monitoring purposes only{% if clinic %} ({{ clinic.name }}){% endif %}.
+  <section class="mt-6 mb-8">
+    <h1 class="text-2xl font-bold text-[#1A4D2E] sm:text-4xl">Session Logs</h1>
+    <p class="mt-2 text-slate-500 font-medium">
+      Audit trail of login and logout activity{% if clinic %} for {{ clinic.name }}{% endif %}.
     </p>
-  </div>
+  </section>
 
-  <div class="w-full overflow-x-auto rounded-xl border border-slate-200">
-    <table class="min-w-[640px] w-full divide-y divide-slate-200 text-left text-sm">
-      <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-600">
-        <tr>
-          <th class="px-4 py-3">User</th>
-          <th class="px-4 py-3">Role</th>
-          <th class="px-4 py-3 whitespace-nowrap">Logged in</th>
-          <th class="px-4 py-3 whitespace-nowrap">Logged out</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100 bg-white text-slate-800">
-        {% if logs.items %}
-          {% for row in logs.items %}
-            <tr class="hover:bg-slate-50">
-              <td class="px-4 py-3 font-medium">{{ row.username }}</td>
-              <td class="px-4 py-3">{{ row.role_label }}</td>
-              <td class="px-4 py-3 font-mono text-xs">{{ row.logged_in_at }}</td>
-              <td class="px-4 py-3 font-mono text-xs">{{ row.logged_out_display }}</td>
-            </tr>
-          {% endfor %}
-        {% else %}
-          <tr>
-            <td colspan="4" class="px-4 py-8 text-center text-slate-500">No session records yet.</td>
+  <section class="mt-8 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/40">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-left text-sm whitespace-nowrap">
+        <thead class="bg-slate-50 text-xs font-bold uppercase tracking-widest text-slate-500">
+          <tr class="border-b border-slate-200">
+            <th class="px-6 py-4">User</th>
+            <th class="px-6 py-4">Role at Login</th>
+            <th class="px-6 py-4">Logged In At</th>
+            <th class="px-6 py-4">Logged Out At</th>
           </tr>
-        {% endif %}
-      </tbody>
-    </table>
-  </div>
+        </thead>
+        <tbody class="divide-y divide-slate-100 bg-white">
+          {% if logs.items %}
+            {% for row in logs.items %}
+              <tr class="transition-colors hover:bg-slate-50/80 even:bg-slate-50/30">
+                <td class="px-6 py-4 font-bold text-slate-800">
+                  {{ row.username }}
+                </td>
+                <td class="px-6 py-4">
+                  {% if row.role_at_login == 'system_admin' %}
+                    <span class="inline-flex items-center rounded-lg bg-purple-50 px-2 py-1 text-[11px] font-bold text-purple-700 ring-1 ring-inset ring-purple-600/20"><i class="fa-solid fa-crown mr-1.5 opacity-70"></i>Admin</span>
+                  {% elif row.role_at_login == 'clinic_personnel' %}
+                    <span class="inline-flex items-center rounded-lg bg-blue-50 px-2 py-1 text-[11px] font-bold text-blue-700 ring-1 ring-inset ring-blue-600/20"><i class="fa-solid fa-user-nurse mr-1.5 opacity-70"></i>Staff</span>
+                  {% else %}
+                    <span class="inline-flex items-center rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-700 ring-1 ring-inset ring-slate-500/20"><i class="fa-solid fa-user mr-1.5 opacity-70"></i>Patient</span>
+                  {% endif %}
+                </td>
+                <td class="px-6 py-4 font-medium text-slate-600">
+                  <i class="fa-regular fa-clock mr-2 text-emerald-500"></i>{{ row.logged_in_at }}
+                </td>
+                <td class="px-6 py-4 font-medium text-slate-600">
+                  {% if row.logged_out_display != '—' %}
+                    <i class="fa-regular fa-clock mr-2 text-rose-500"></i>{{ row.logged_out_display }}
+                  {% else %}
+                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">Session Active</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="4" class="px-6 py-12 text-center">
+                <div class="inline-flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-400 mb-4">
+                  <i class="fa-solid fa-history text-2xl"></i>
+                </div>
+                <p class="text-base font-bold text-slate-700">No session records found</p>
+                <p class="text-sm text-slate-500 mt-1">Audit logs will appear here as users log in and out.</p>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </section>
 
   {% import "_admin_macros.html" as macros %}
   {{ macros.pagination_logs(logs) }}
