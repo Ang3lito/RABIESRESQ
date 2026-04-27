@@ -6,37 +6,39 @@
 
 {% block main_content %}
 <section class="mt-6 page-fade-in">
-  <div class="relative overflow-hidden rounded-[2.5rem] bg-[#1A4D2E] p-8 sm:p-10 text-white shadow-xl">
+  <div class="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#2563eb] via-[#0891b2] to-[#0d9488] p-8 sm:p-10 text-white shadow-xl">
     <!-- Abstract background deco -->
-    <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>
-    <div class="absolute -left-10 -bottom-10 h-40 w-40 rounded-full bg-white/5 blur-2xl"></div>
+    <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/20 blur-3xl mix-blend-overlay"></div>
+    <div class="absolute -left-10 -bottom-10 h-40 w-40 rounded-full bg-white/10 blur-2xl mix-blend-overlay"></div>
 
     <div class="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
       <div class="max-w-2xl">
         <span
-          class="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white/90 backdrop-blur-md">
+          class="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white/90 backdrop-blur-md shadow-sm">
           <i class="fa-solid fa-sparkles"></i>
           Daily Mission
         </span>
-        <h1 class="mt-4 text-3xl font-bold sm:text-4xl">Hello, {{ welcome_name }}!</h1>
-        <p class="mt-3 text-lg text-white/80 leading-relaxed">
+        <h1 class="mt-5 flex items-center gap-4 text-3xl font-extrabold tracking-tight sm:text-5xl drop-shadow-md">
+          Hello, {{ welcome_name }}!
+        </h1>
+        <p class="mt-4 text-lg font-light text-white/90 leading-relaxed">
           Every vaccination today is a step towards a safer community. You're doing amazing work!
         </p>
-        <div class="mt-6 flex flex-wrap gap-4">
-          <div class="flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-2 backdrop-blur-sm">
-            <i class="fa-solid fa-heart text-rose-300"></i>
-            <span class="text-sm font-semibold">{{ vaccinations_today }} Lives Protected Today</span>
+        <div class="mt-8 flex flex-wrap gap-4">
+          <div class="flex items-center gap-2 rounded-2xl bg-white/10 px-5 py-2.5 backdrop-blur-md border border-white/10 shadow-sm">
+            <i class="fa-solid fa-heart-pulse text-rose-300 text-lg"></i>
+            <span class="text-sm font-semibold tracking-wide">{{ vaccinations_today }} Lives Protected Today</span>
           </div>
-          <div class="flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-2 backdrop-blur-sm">
-            <i class="fa-solid fa-calendar-check text-white/70"></i>
-            <span class="text-sm font-semibold">{{ todays_appointments|length }} Appointments Pending</span>
+          <div class="flex items-center gap-2 rounded-2xl bg-white/10 px-5 py-2.5 backdrop-blur-md border border-white/10 shadow-sm">
+            <i class="fa-regular fa-calendar-check text-blue-200 text-lg"></i>
+            <span class="text-sm font-semibold tracking-wide">{{ todays_appointments|length }} Appointments Pending</span>
           </div>
         </div>
       </div>
-      <div class="hidden xl:block">
-        <!-- Placeholder for illustration space -->
-        <div class="flex h-32 w-32 items-center justify-center rounded-full bg-white/10 backdrop-blur-md">
-          <i class="fa-solid fa-user-nurse text-6xl text-white/40"></i>
+      <div class="hidden xl:flex items-center justify-center">
+        <div class="relative flex h-40 w-40 items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl">
+          <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-white/0 to-white/20"></div>
+          <i class="fa-solid fa-shield-heart text-7xl text-white/90 drop-shadow-lg"></i>
         </div>
       </div>
     </div>

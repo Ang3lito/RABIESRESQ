@@ -18,6 +18,49 @@
   <div class="grid grid-cols-1 gap-10 lg:grid-cols-12">
     <!-- Left Column: Main Instructions -->
     <div class="lg:col-span-8 space-y-10">
+      <!-- Awareness Panel -->
+      <section class="rounded-[2.5rem] bg-slate-50 border border-slate-100 p-6 sm:p-8 transition-all overflow-hidden group">
+        <details class="group">
+          <summary class="flex items-center justify-between cursor-pointer list-none">
+            <div class="flex items-center gap-4">
+              <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1A4D2E]/10 text-xl text-[#1A4D2E]">
+                <i class="fa-solid fa-circle-info"></i>
+              </div>
+              <div>
+                <h2 class="text-xl font-bold text-slate-800">What is Rabies?</h2>
+                <p class="text-sm text-slate-500">Essential facts and prevention context.</p>
+              </div>
+            </div>
+            <div class="text-slate-400 group-open:rotate-180 transition-transform duration-300">
+              <i class="fa-solid fa-chevron-down"></i>
+            </div>
+          </summary>
+          <div class="mt-8 grid grid-cols-1 gap-8 sm:grid-cols-3 border-t border-slate-200 pt-8">
+            <div class="space-y-3">
+              <div class="flex items-center gap-2 text-[#1A4D2E]">
+                <i class="fa-solid fa-virus-slash text-sm"></i>
+                <h3 class="font-bold text-xs uppercase tracking-widest">The Disease</h3>
+              </div>
+              <p class="text-sm text-slate-600 leading-relaxed">Rabies is a viral disease that causes inflammation of the brain. It is almost always fatal once symptoms appear, making immediate action crucial.</p>
+            </div>
+            <div class="space-y-3">
+              <div class="flex items-center gap-2 text-[#1A4D2E]">
+                <i class="fa-solid fa-paw text-sm"></i>
+                <h3 class="font-bold text-xs uppercase tracking-widest">How it Spreads</h3>
+              </div>
+              <p class="text-sm text-slate-600 leading-relaxed">The virus spreads through the saliva of infected animals (like dogs or cats), typically via bites, scratches, or licks on broken skin or mucous membranes.</p>
+            </div>
+            <div class="space-y-3">
+              <div class="flex items-center gap-2 text-[#1A4D2E]">
+                <i class="fa-solid fa-shield-heart text-sm"></i>
+                <h3 class="font-bold text-xs uppercase tracking-widest">Prevention</h3>
+              </div>
+              <p class="text-sm text-slate-600 leading-relaxed">Rabies is 100% preventable. If exposed, wash the wound with soap and water immediately and seek professional medical treatment (PEP) without delay.</p>
+            </div>
+          </div>
+        </details>
+      </section>
+
       <!-- Risk Categories -->
       <section class="space-y-6">
         <div class="flex items-center gap-3 px-2">
