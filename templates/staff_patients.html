@@ -308,7 +308,7 @@
         {% if cases.items %}
         {% for case in cases.items %}
         <tr class="group cursor-pointer transition-colors hover:bg-slate-50/50 even:bg-slate-50/20"
-          onclick="window.location.href='{{ url_for(\"view_patient_case\", case_id=case.id) }}'">
+          onclick="window.location.href='{{ url_for('view_patient_case', case_id=case.id) }}';">
           <td class="px-6 py-4">
             <span class="font-mono text-xs font-bold text-slate-700">{{ case.case_code }}</span>
           </td>
