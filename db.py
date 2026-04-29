@@ -11,9 +11,10 @@ def get_db():
             os.makedirs(current_app.instance_path, exist_ok=True)
             db_path = os.path.join(current_app.instance_path, "rabiesresq.sqlite")
 
-        conn = sqlite3.connect(db_path)
+        conn = sqlite3.connect(db_path, timeout=30.0)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON;")
+        conn.execute("PRAGMA journal_mode = WAL;")
         g.db = conn
     return g.db
 
@@ -31,7 +32,7 @@ def init_app(app):
     if not db_path:
         os.makedirs(app.instance_path, exist_ok=True)
         db_path = os.path.join(app.instance_path, "rabiesresq.sqlite")
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path, timeout=30.0)
     try:
         conn.execute("SELECT 1 FROM password_reset_codes LIMIT 1")
     except sqlite3.OperationalError:
@@ -113,6 +114,7 @@ def init_app(app):
 
         _ensure_clinics_operating_hours_column(conn)
         _ensure_user_session_logs_table(conn)
+        _ensure_default_clinic(conn)
     finally:
         conn.close()
 
@@ -162,4 +164,18 @@ def _ensure_user_session_logs_table(conn: sqlite3.Connection) -> None:
             "CREATE INDEX IF NOT EXISTS idx_user_session_logs_logged_in ON user_session_logs(logged_in_at DESC)"
         )
         conn.commit()
+
+
+def _ensure_default_clinic(conn: sqlite3.Connection) -> None:
+    try:
+        row = conn.execute("SELECT 1 FROM clinics LIMIT 1").fetchone()
+        if not row:
+            conn.execute(
+                "INSERT INTO clinics (name, address) VALUES (?, ?)",
+                ("RabiesResQ Clinic", "Cebu City, Philippines")
+            )
+            conn.commit()
+    except sqlite3.OperationalError:
+        # Table might not exist yet; schema.sql will handle it
+        pass
 

@@ -115,14 +115,88 @@
               class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
             />
           </div>
+
+          <div class="md:col-span-2">
+            <div class="flex items-center justify-between">
+              <label class="mb-1 block text-sm font-medium text-slate-700">Password</label>
+              <button type="button" onclick="togglePasswordFields()" class="text-sm font-semibold text-[#1A4D2E] hover:underline">
+                Change password
+              </button>
+            </div>
+            <input
+              type="password"
+              value="********"
+              disabled
+              class="w-full cursor-not-allowed rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-slate-500"
+            />
+          </div>
+
+          <div id="password-change-fields" class="hidden md:col-span-2">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div class="relative">
+                <label class="mb-1 block text-sm font-medium text-slate-700">New Password</label>
+                <div class="relative">
+                  <input
+                    type="password"
+                    name="new_password"
+                    id="new_password"
+                    placeholder="Leave empty to keep current password"
+                    class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 pr-10 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
+                  />
+                  <button type="button" onclick="togglePasswordVisibility('new_password')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-eye-slash" id="eye-new_password"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="relative">
+                <label class="mb-1 block text-sm font-medium text-slate-700">Confirm Password</label>
+                <div class="relative">
+                  <input
+                    type="password"
+                    name="confirm_password"
+                    id="confirm_password"
+                    placeholder="Confirm new password"
+                    class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 pr-10 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
+                  />
+                  <button type="button" onclick="togglePasswordVisibility('confirm_password')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-eye-slash" id="eye-confirm_password"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="admin-section-save {% if highlight_section|default('') != 'account' %}hidden{% endif %} mt-6 flex justify-end border-t border-slate-200 pt-4">
+        <div class="admin-section-save {% if highlight_section|default('') != 'account' %}hidden{% endif %} mt-6 flex justify-end gap-2 border-t border-slate-200 pt-4">
+          <button type="button" onclick="window.location.reload()" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            Cancel
+          </button>
           <button type="submit" class="rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A4D2E]">
-            Save changes
+            Save Changes
           </button>
         </div>
       </form>
     </section>
+
+  <script>
+    function togglePasswordFields() {
+      const fields = document.getElementById('password-change-fields');
+      fields.classList.toggle('hidden');
+    }
+
+    function togglePasswordVisibility(id) {
+      const input = document.getElementById(id);
+      const eye = document.getElementById('eye-' + id);
+      if (input.type === 'password') {
+        input.type = 'text';
+        eye.classList.remove('fa-eye-slash');
+        eye.classList.add('fa-eye');
+      } else {
+        input.type = 'password';
+        eye.classList.remove('fa-eye');
+        eye.classList.add('fa-eye-slash');
+      }
+    }
+  </script>
   </div>
 
   <script>

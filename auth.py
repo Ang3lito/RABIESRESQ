@@ -247,7 +247,7 @@ def login_post():
     session.permanent = True
     session[_SESSION_LAST_ACTIVITY_KEY] = int(datetime.now(timezone.utc).timestamp())
 
-    logged_at = datetime.now().isoformat(timespec="seconds")
+    logged_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     try:
         cur = db.execute(
             """
@@ -406,7 +406,7 @@ def register_post():
     session["username"] = username
     session["email"] = email
 
-    logged_at = datetime.now().isoformat(timespec="seconds")
+    logged_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     try:
         cur = db.execute(
             """
@@ -678,7 +678,7 @@ def logout():
                 SET logged_out_at = ?
                 WHERE id = ?
                 """,
-                (datetime.now().isoformat(timespec="seconds"), log_id),
+                (datetime.now(timezone.utc).isoformat(timespec="seconds"), log_id),
             )
             db.commit()
         except Exception:

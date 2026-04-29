@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 
 <head>
@@ -102,91 +102,97 @@
 </head>
 
 <body>
-  <p class="title">Clinic Performance Report</p>
-  <p class="subtitle">
-    {{ clinic.name if clinic else 'Clinic' }} - Period: {{ date_from }} to {{ date_to }} ({{ period }})
-    {% if yearly_year is not none %} - Year: {{ yearly_year }}{% endif %}
-  </p>
-  <p class="muted">
-    Administrative reporting only. This PDF excludes patient identifiers.
-  </p>
+  <div style="border-bottom: 2px solid #1A4D2E; padding-bottom: 10px; margin-bottom: 20px;">
+    <p class="title" style="color: #1A4D2E;">Clinic Performance Report</p>
+    <p class="subtitle">
+      {{ clinic.name if clinic else 'Clinic' }} - Period: {{ date_from }} to {{ date_to }} ({{ period }})
+      {% if yearly_year is not none %} - Year: {{ yearly_year }}{% endif %}
+    </p>
+  </div>
 
-  <div class="box">
-    <p class="section-title">Clinic profile</p>
+  <div class="section">
+    <p class="section-title" style="color: #1A4D2E;">Clinic profile</p>
     <table class="kpi">
       <tr>
-        <td class="label">Clinic</td>
-        <td class="value">{{ clinic.name if clinic and clinic.name else '-' }}</td>
         <td class="label">Address</td>
-        <td class="value">{{ clinic.address if clinic and clinic.address else '-' }}</td>
+        <td class="value" colspan="3">{{ clinic.address if clinic and clinic.address else '—' }}</td>
       </tr>
       <tr>
-        <td class="label">Primary contact</td>
-        <td class="value">{{ contact_name }}</td>
+        <td class="label">Total active patients</td>
+        <td class="value">{{ "{:,}".format(total_patients) }}</td>
         <td class="label">Staff members</td>
-        <td class="value">{{ staff_count }}</td>
+        <td class="value">{{ "{:,}".format(staff_count) }}</td>
       </tr>
     </table>
   </div>
 
   <div class="section">
-    <p class="section-title">Key indicators</p>
-    <div class="box">
-      <table class="kpi">
-        <tr>
-          <td class="label">Total active patients</td>
-          <td class="value">{{ total_patients }}</td>
-          <td class="label">Cases (YTD {{ report_year }})</td>
-          <td class="value">{{ cases_ytd }}</td>
-        </tr>
-        <tr>
-          <td class="label">Appointments (YTD {{ report_year }})</td>
-          <td class="value">{{ appointments_ytd }}</td>
-          <td class="label">Cases (selected period)</td>
-          <td class="value">{{ cases_in_period }}</td>
-        </tr>
-        <tr>
-          <td class="label">Appointments (selected period)</td>
-          <td class="value">{{ appointments_in_period }}</td>
-          <td class="label">Case completion % (period)</td>
-          <td class="value">{{ case_completion_pct_period }}%</td>
-        </tr>
-        <tr>
-          <td class="label">Completed cases (period)</td>
-          <td class="value">{{ completed_in_period }}</td>
-          <td class="label">Ongoing / No show (period)</td>
-          <td class="value">{{ ongoing_in_period }} / {{ no_show_in_period }}</td>
-        </tr>
-      </table>
-    </div>
+    <p class="section-title" style="color: #1A4D2E;">Year to date ({{ report_year }})</p>
+    <table class="kpi">
+      <tr>
+        <td class="label">Cases (YTD)</td>
+        <td class="value">{{ "{:,}".format(cases_ytd) }}</td>
+        <td class="label">Appointments (YTD)</td>
+        <td class="value">{{ "{:,}".format(appointments_ytd) }}</td>
+      </tr>
+    </table>
   </div>
 
   <div class="section">
-    <p class="section-title">Risk level distribution (case date in period)</p>
-    <div class="box">
-      <table class="data">
-        <thead>
-          <tr>
-            <th>Risk level</th>
-            <th>Cases</th>
-            <th>%</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in risk_rows %}
-          <tr>
-            <td>{{ row.label }}</td>
-            <td>{{ row.count }}</td>
-            <td>{{ row.percent }}%</td>
-          </tr>
-          {% else %}
-          <tr>
-            <td colspan="3" class="muted">No data.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <p class="section-title" style="color: #1A4D2E;">Clinic performance (selected period)</p>
+    <table class="kpi">
+      <tr>
+        <td class="label">Cases</td>
+        <td class="value">{{ "{:,}".format(cases_in_period) }}</td>
+        <td class="label">Appointments</td>
+        <td class="value">{{ "{:,}".format(appointments_in_period) }}</td>
+      </tr>
+      <tr>
+        <td class="label">Completed</td>
+        <td class="value">{{ "{:,}".format(completed_in_period) }}</td>
+        <td class="label">Ongoing</td>
+        <td class="value" style="color: #d97706;">{{ "{:,}".format(ongoing_in_period) }}</td>
+      </tr>
+      <tr>
+        <td class="label">No show</td>
+        <td class="value">{{ "{:,}".format(no_show_in_period) }}</td>
+        <td class="label">Completion</td>
+        <td class="value">{{ case_completion_pct_period }}%</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <p class="section-title" style="color: #1A4D2E;">Risk level mix (selected period)</p>
+    <table class="data">
+      <thead>
+        <tr>
+          <th style="width: 60%;">Risk level</th>
+          <th style="width: 20%; text-align: center;">Cases</th>
+          <th style="width: 20%; text-align: center;">%</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in risk_rows %}
+        <tr>
+          <td>{{ row.label }}</td>
+          <td style="text-align: center;">{{ row.count }}</td>
+          <td style="text-align: center;">{{ row.percent }}%</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="3" class="muted" style="text-align: center;">No case data for this period.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+    <p class="muted">
+      This report was generated by the RabiesResQ Administrative Reporting System. 
+      Confidential administrative data only.
+    </p>
   </div>
 </body>
 

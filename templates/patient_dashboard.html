@@ -58,7 +58,7 @@
             {% set visible_appointments = appointments if show_all_appointments else appointments[:3] %}
             {% for appointment in visible_appointments %}
               <a href="{{ url_for('patient_appointment_view', appointment_id=appointment.id) }}" 
-                 class="group block rounded-[2rem] border bg-white p-6 shadow-sm transition-all hover:border-[#1A4D2E]/30 hover:shadow-md {% if appointment.notification_highlight %}border-amber-300 ring-2 ring-amber-200/80{% else %}border-slate-100{% endif %}">
+                 class="group block rounded-[2rem] border bg-white p-6 shadow-sm transition-all hover:border-[#1A4D2E]/30 hover:shadow-md {% if appointment.notification_highlight %}border-amber-300 ring-2 ring-amber-200/80 notification-pulse{% else %}border-slate-100{% endif %}">
                 <div class="flex items-center gap-5">
                   <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#1A4D2E]/10 text-2xl text-[#1A4D2E] group-hover:scale-110 transition-transform">
                     <i class="fa-regular fa-calendar-check"></i>
@@ -68,12 +68,20 @@
                       <h3 class="font-bold text-slate-900 truncate">
                         {{ appointment.display_type or appointment.type or 'Treatment Session' }}
                       </h3>
-                      {% set display_status = appointment.status or 'Scheduled' %}
-                      <span class="rounded-full bg-[#1A4D2E]/10 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#1A4D2E]">
-                        {{ display_status }}
+                      {% set st_lower = (appointment.status or 'Scheduled')|lower %}
+                      {% if st_lower in ['removed', 'cancelled', 'no show'] %}
+                        <span class="rounded-full bg-red-100 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-700">
+                      {% elif st_lower == 'expired' %}
+                        <span class="rounded-full bg-slate-100 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                      {% else %}
+                        <span class="rounded-full bg-[#1A4D2E]/10 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#1A4D2E]">
+                      {% endif %}
+                        {{ appointment.status or 'Scheduled' }}
                       </span>
                       {% if appointment.notification_highlight %}
-                        <span class="rounded-full bg-amber-100 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+                        <span class="relative flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-orange-700">
+                          <span class="flex h-1.5 w-1.5 rounded-full bg-orange-500 animate-ping absolute -top-0.5 -right-0.5"></span>
+                          <span class="h-1.5 w-1.5 rounded-full bg-orange-600"></span>
                           New update
                         </span>
                       {% endif %}

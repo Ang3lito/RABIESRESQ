@@ -195,10 +195,11 @@
           </ul>
         </div>
       </div>
-  </div>
+    </div>{# end lg:col-span-4 #}
+  </div>{# end grid #}
 
   <!-- Bottom Save Panel -->
-  <div class="mt-12 rounded-[2.5rem] bg-[#1A4D2E] p-8 text-white shadow-xl">
+  <div class="mt-8 rounded-[2rem] bg-[#1A4D2E] p-6 text-white shadow-xl sm:p-8">
     <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
       <div class="space-y-1">
         <h3 class="text-xl font-bold">Save Configuration</h3>
@@ -207,7 +208,7 @@
       <button
         type="submit"
         form="hours-form"
-        class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-10 py-4 text-sm font-bold text-[#1A4D2E] shadow-lg transition-all hover:scale-[1.02] hover:bg-slate-50"
+        class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-10 py-4 text-sm font-bold text-[#1A4D2E] shadow-lg transition-all hover:scale-[1.02] hover:bg-slate-50"
       >
         <i class="fa-solid fa-cloud-arrow-up"></i>
         Save clinic hours
@@ -215,4 +216,3 @@
     </div>
   </div>
 {% endblock %}
-

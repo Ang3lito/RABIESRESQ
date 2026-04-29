@@ -26,3 +26,6 @@ Thumbs.db
 
 # Local debug logs
 *.log
+
+# Utility scripts
+scratch/

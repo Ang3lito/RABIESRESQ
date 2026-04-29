@@ -948,10 +948,12 @@ def _staff_nav_badge_counts(db, staff_user_id: int, clinic_id: int | None) -> di
     counts["cases"] = int(
         (
             db.execute(
-                """
+                f"""
                 SELECT COUNT(*) AS n
                 FROM cases c
                 WHERE c.clinic_id = ?
+                  AND {_SQL_STAFF_CASE_NOT_REMOVED}
+                  AND LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('archived', 'queued', 'scheduled')
                   AND datetime(COALESCE(NULLIF(c.created_at, ''), '1970-01-01 00:00:00'))
                       > datetime(?)
                 """,
@@ -967,17 +969,16 @@ def _staff_nav_badge_counts(db, staff_user_id: int, clinic_id: int | None) -> di
 def _admin_mark_page_seen(db, admin_user_id: int, page_key: str) -> None:
     if page_key not in _ADMIN_PAGE_BADGE_KEYS:
         return
-    # Match auth.user_session_logs.logged_in_at format (naive local ISO) so SQLite compares fairly
-    # against CURRENT_TIMESTAMP (UTC), which made session_logs badges never clear.
-    seen_at = datetime.now().isoformat(timespec="seconds")
+    # Use CURRENT_TIMESTAMP (UTC, no timezone suffix) — same as _staff_mark_page_seen —
+    # so SQLite datetime() comparisons work correctly against cases.created_at.
     db.execute(
         """
         INSERT INTO admin_page_last_seen (admin_user_id, page_key, last_seen_at)
-        VALUES (?, ?, ?)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(admin_user_id, page_key)
         DO UPDATE SET last_seen_at = excluded.last_seen_at
         """,
-        (admin_user_id, page_key, seen_at),
+        (admin_user_id, page_key),
     )
     db.commit()
 
@@ -1001,6 +1002,7 @@ def _admin_nav_badge_counts(db, admin_user_id: int, clinic_id: int | None) -> di
     }
     epoch = "1970-01-01 00:00:00"
 
+    ls_patients = (last_seen_by_page.get("patients") or epoch).strip()
     counts["patients"] = int(
         (
             db.execute(
@@ -1008,15 +1010,23 @@ def _admin_nav_badge_counts(db, admin_user_id: int, clinic_id: int | None) -> di
                 SELECT COUNT(*) AS n
                 FROM cases c
                 WHERE c.clinic_id = ?
-                  AND datetime(COALESCE(NULLIF(c.created_at, ''), '1970-01-01 00:00:00'))
-                      > datetime(?)
+                  AND LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('queued')
+                  AND datetime(
+                        REPLACE(
+                            TRIM(COALESCE(NULLIF(c.created_at, ''), '1970-01-01 00:00:00')),
+                            'T',
+                            ' '
+                        )
+                      )
+                      > datetime(REPLACE(TRIM(?), 'T', ' '))
                 """,
-                (clinic_id, last_seen_by_page.get("patients") or epoch),
+                (clinic_id, ls_patients),
             ).fetchone()["n"]
         )
         or 0
     )
 
+    ls_appointments = (last_seen_by_page.get("appointments") or epoch).strip()
     counts["appointments"] = int(
         (
             db.execute(
@@ -1024,15 +1034,23 @@ def _admin_nav_badge_counts(db, admin_user_id: int, clinic_id: int | None) -> di
                 SELECT COUNT(*) AS n
                 FROM appointments a
                 WHERE a.clinic_id = ?
-                  AND datetime(COALESCE(NULLIF(a.created_at, ''), '1970-01-01 00:00:00'))
-                      > datetime(?)
+                  AND LOWER(COALESCE(a.type, '')) = 'pre-screening'
+                  AND datetime(
+                        REPLACE(
+                            TRIM(COALESCE(NULLIF(a.created_at, ''), '1970-01-01 00:00:00')),
+                            'T',
+                            ' '
+                        )
+                      )
+                      > datetime(REPLACE(TRIM(?), 'T', ' '))
                 """,
-                (clinic_id, last_seen_by_page.get("appointments") or epoch),
+                (clinic_id, ls_appointments),
             ).fetchone()["n"]
         )
         or 0
     )
 
+    ls_reporting = (last_seen_by_page.get("reporting") or epoch).strip()
     counts["reporting"] = int(
         (
             db.execute(
@@ -1041,18 +1059,20 @@ def _admin_nav_badge_counts(db, admin_user_id: int, clinic_id: int | None) -> di
                 FROM reports r
                 WHERE r.clinic_id = ?
                   AND datetime(
-                        COALESCE(
-                          NULLIF(r.generation_date, ''),
-                          '1970-01-01 00:00:00'
+                        REPLACE(
+                            TRIM(COALESCE(NULLIF(r.generation_date, ''), '1970-01-01 00:00:00')),
+                            'T',
+                            ' '
                         )
-                      ) > datetime(?)
+                      ) > datetime(REPLACE(TRIM(?), 'T', ' '))
                 """,
-                (clinic_id, last_seen_by_page.get("reporting") or epoch),
+                (clinic_id, ls_reporting),
             ).fetchone()["n"]
         )
         or 0
     )
 
+    ls_users = (last_seen_by_page.get("users") or epoch).strip()
     counts["users"] = int(
         (
             db.execute(
@@ -1075,14 +1095,20 @@ def _admin_nav_badge_counts(db, admin_user_id: int, clinic_id: int | None) -> di
                     )
                 )
                 AND datetime(
-                      COALESCE(
-                        NULLIF(u.updated_at, ''),
-                        NULLIF(u.created_at, ''),
-                        '1970-01-01 00:00:00'
+                      REPLACE(
+                        TRIM(
+                          COALESCE(
+                            NULLIF(u.updated_at, ''),
+                            NULLIF(u.created_at, ''),
+                            '1970-01-01 00:00:00'
+                          )
+                        ),
+                        'T',
+                        ' '
                       )
-                    ) > datetime(?)
+                    ) > datetime(REPLACE(TRIM(?), 'T', ' '))
                 """,
-                (clinic_id, clinic_id, last_seen_by_page.get("users") or epoch),
+                (clinic_id, clinic_id, ls_users),
             ).fetchone()["n"]
         )
         or 0
@@ -1206,39 +1232,6 @@ def _get_admin_dashboard_notifications(db, clinic_id: int) -> list[dict[str, obj
                 "count": int(today_appts),
                 "message": "appointment(s) scheduled for today.",
                 "link_href": url_for("admin_appointments", date_filter="today", page=1),
-                "recipient_label": None,
-            }
-        )
-    inactive = (
-        db.execute(
-            """
-            SELECT COUNT(DISTINCT u.id) AS n
-            FROM users u
-            WHERE COALESCE(u.is_active, 1) = 0
-              AND (
-                EXISTS (
-                  SELECT 1 FROM clinic_personnel cp
-                  WHERE cp.user_id = u.id AND cp.clinic_id = ?
-                )
-                OR EXISTS (
-                  SELECT 1 FROM patients p
-                  INNER JOIN cases c ON c.patient_id = p.id
-                  WHERE p.user_id = u.id AND c.clinic_id = ?
-                )
-              )
-            """,
-            (clinic_id, clinic_id),
-        ).fetchone()["n"]
-        or 0
-    )
-    if inactive:
-        out.append(
-            {
-                "type": "alert",
-                "page_key": "users",
-                "count": int(inactive),
-                "message": "user account(s) linked to this clinic are deactivated.",
-                "link_href": url_for("admin_users"),
                 "recipient_label": None,
             }
         )
@@ -1414,6 +1407,7 @@ def _count_completed_cases_in_period(
         FROM cases c
         WHERE c.clinic_id = ?
           AND LOWER(COALESCE(c.case_status, '')) = 'completed'
+          AND COALESCE(c.staff_removed, 0) = 0
           AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
           AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
         """,
@@ -1429,6 +1423,7 @@ def _count_total_cases_in_period(db, clinic_id: int, date_from: str, date_to: st
         SELECT COUNT(*) AS n
         FROM cases c
         WHERE c.clinic_id = ?
+          AND COALESCE(c.staff_removed, 0) = 0
           AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
           AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
         """,
@@ -1452,6 +1447,7 @@ def _count_ongoing_cases_in_period(db, clinic_id: int, date_from: str, date_to: 
         SELECT COUNT(*) AS n FROM cases c
         WHERE c.clinic_id = ?
           AND LOWER(COALESCE(c.case_status, 'pending')) = 'pending'
+          AND COALESCE(c.staff_removed, 0) = 0
           AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
           AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
         """,
@@ -1466,6 +1462,7 @@ def _count_no_show_cases_in_period(db, clinic_id: int, date_from: str, date_to: 
         SELECT COUNT(*) AS n FROM cases c
         WHERE c.clinic_id = ?
           AND LOWER(TRIM(COALESCE(c.case_status, ''))) = 'no show'
+          AND COALESCE(c.staff_removed, 0) = 0
           AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
           AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
         """,
@@ -1514,14 +1511,19 @@ def _admin_reporting_overview_dict(db, clinic_id: int | None, date_from: str, da
     vaccination_completion_pct = 0
     animal_type_rows: list[dict] = []
     monthly_labels: list[str] = []
+    staff_visible_case_filter_sql = f"""
+          AND {_SQL_STAFF_CASE_NOT_REMOVED}
+          AND LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('archived', 'queued', 'scheduled')
+    """
     monthly_counts: list[int] = []
 
     if clinic_id is not None:
         total_users = (
             db.execute(
-                """
+                f"""
                 SELECT COUNT(DISTINCT c.patient_id) AS n FROM cases c
                 WHERE c.clinic_id = ?
+                {staff_visible_case_filter_sql}
                   AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
                   AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
                 """,
@@ -1532,9 +1534,10 @@ def _admin_reporting_overview_dict(db, clinic_id: int | None, date_from: str, da
 
         bite_cases_period = (
             db.execute(
-                """
+                f"""
                 SELECT COUNT(*) AS n FROM cases c
                 WHERE c.clinic_id = ?
+                {staff_visible_case_filter_sql}
                   AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
                   AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
                 """,
@@ -1543,17 +1546,7 @@ def _admin_reporting_overview_dict(db, clinic_id: int | None, date_from: str, da
             or 0
         )
 
-        ongoing_cases = (
-            db.execute(
-                """
-                SELECT COUNT(*) AS n FROM cases c
-                WHERE c.clinic_id = ?
-                  AND LOWER(COALESCE(c.case_status, 'pending')) = 'pending'
-                """,
-                (clinic_id,),
-            ).fetchone()["n"]
-            or 0
-        )
+        ongoing_cases = _count_ongoing_cases_in_period(db, clinic_id, date_from, date_to)
 
         completed_cases_period = _count_completed_cases_in_period(db, clinic_id, date_from, date_to)
 
@@ -1562,29 +1555,31 @@ def _admin_reporting_overview_dict(db, clinic_id: int | None, date_from: str, da
         )
 
         bite_type_rows = db.execute(
-            """
+            f"""
             SELECT
               CASE
                 WHEN LOWER(COALESCE(c.animal_detail, '')) LIKE 'dog%' THEN 'Dogs'
                 WHEN LOWER(COALESCE(c.animal_detail, '')) LIKE 'cat%' THEN 'Cats'
                 WHEN LOWER(COALESCE(c.animal_detail, '')) LIKE 'bat%' THEN 'Bats'
-                ELSE 'Other'
+                ELSE COALESCE(NULLIF(TRIM(c.animal_detail), ''), 'Other')
               END AS bite_type,
               COUNT(*) AS total
             FROM cases c
             WHERE c.clinic_id = ?
-              AND DATE(COALESCE(NULLIF(c.exposure_date, ''), c.created_at)) >= DATE(?)
-              AND DATE(COALESCE(NULLIF(c.exposure_date, ''), c.created_at)) <= DATE(?)
+              {staff_visible_case_filter_sql}
+              AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
+              AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
             GROUP BY bite_type
+            ORDER BY total DESC
             """,
             (clinic_id, date_from, date_to),
         ).fetchall()
         total_bite_cases = sum(int(row["total"] or 0) for row in bite_type_rows)
-        bite_map = {"Dogs": 0, "Cats": 0, "Bats": 0, "Other": 0}
         for row in bite_type_rows:
-            bite_map[row["bite_type"]] = int(row["total"] or 0)
-        for label in ["Dogs", "Cats", "Bats", "Other"]:
-            count = bite_map[label]
+            label = (row["bite_type"] or "Other").strip()
+            if label.lower() not in ["dogs", "cats", "bats"]:
+                label = label.title()
+            count = int(row["total"] or 0)
             pct = round((count / total_bite_cases) * 100) if total_bite_cases else 0
             animal_type_rows.append({"label": label, "percent": pct})
 
@@ -1594,9 +1589,12 @@ def _admin_reporting_overview_dict(db, clinic_id: int | None, date_from: str, da
                 """
                 SELECT COUNT(*) AS n FROM cases c
                 WHERE c.clinic_id = ?
+                  AND COALESCE(c.staff_removed, 0) = 0
+                  AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
+                  AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
                   AND strftime('%Y-%m', COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) = ?
                 """,
-                (clinic_id, ym),
+                (clinic_id, date_from, date_to, ym),
             ).fetchone()
             monthly_labels.append(label)
             monthly_counts.append(int(cnt_row["n"] or 0))
@@ -1624,7 +1622,6 @@ def _admin_reporting_clinic_dict(
     """Clinic profile + performance for the Reporting → Clinic tab."""
     if clinic is None or clinic_id is None:
         return {
-            "contact_name": "—",
             "total_patients": 0,
             "appointments_ytd": 0,
             "staff_count": 0,
@@ -1648,7 +1645,7 @@ def _admin_reporting_clinic_dict(
 
     total_patients = (
         db.execute(
-            "SELECT COUNT(DISTINCT c.patient_id) AS n FROM cases c WHERE c.clinic_id = ?",
+            "SELECT COUNT(DISTINCT c.patient_id) AS n FROM cases c WHERE c.clinic_id = ? AND COALESCE(c.staff_removed, 0) = 0",
             (clinic_id,),
         ).fetchone()["n"]
         or 0
@@ -1669,6 +1666,7 @@ def _admin_reporting_clinic_dict(
             """
             SELECT COUNT(*) AS n FROM cases c
             WHERE c.clinic_id = ?
+              AND COALESCE(c.staff_removed, 0) = 0
               AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
             """,
             (clinic_id, ytd_start),
@@ -1697,6 +1695,7 @@ def _admin_reporting_clinic_dict(
           COUNT(*) AS total
         FROM cases c
         WHERE c.clinic_id = ?
+          AND COALESCE(c.staff_removed, 0) = 0
           AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
           AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
         GROUP BY risk_label
@@ -1718,18 +1717,6 @@ def _admin_reporting_clinic_dict(
             }
         )
 
-    contact = db.execute(
-        """
-        SELECT TRIM(COALESCE(cp.title, '') || ' ' || COALESCE(cp.first_name, '') || ' ' || COALESCE(cp.last_name, '')) AS full_name
-        FROM clinic_personnel cp
-        WHERE cp.clinic_id = ?
-        ORDER BY CASE cp.title WHEN 'Doctor' THEN 0 ELSE 1 END, cp.id ASC
-        LIMIT 1
-        """,
-        (clinic_id,),
-    ).fetchone()
-    contact_name = (contact["full_name"] or "").strip() or "—"
-
     visit_labels: list[str] = []
     visit_counts: list[int] = []
     for yy, mm, label in _admin_month_keys_in_range(date_from, date_to):
@@ -1738,9 +1725,12 @@ def _admin_reporting_clinic_dict(
             """
             SELECT COUNT(*) AS n FROM cases c
             WHERE c.clinic_id = ?
+              AND COALESCE(c.staff_removed, 0) = 0
+              AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
+              AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
               AND strftime('%Y-%m', COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) = ?
             """,
-            (clinic_id, ym),
+            (clinic_id, date_from, date_to, ym),
         ).fetchone()
         visit_labels.append(label)
         visit_counts.append(int(cnt_row["n"] or 0))
@@ -1769,7 +1759,6 @@ def _admin_reporting_clinic_dict(
     charts_empty = sum(visit_counts) == 0
 
     return {
-        "contact_name": contact_name,
         "total_patients": total_patients,
         "staff_count": staff_count,
         "cases_ytd": cases_ytd,
@@ -1874,7 +1863,7 @@ def _insights_sql_animal_bucket() -> str:
           WHEN LOWER(COALESCE(c.animal_detail, '')) LIKE 'dog%' THEN 'Dogs'
           WHEN LOWER(COALESCE(c.animal_detail, '')) LIKE 'cat%' THEN 'Cats'
           WHEN LOWER(COALESCE(c.animal_detail, '')) LIKE 'bat%' THEN 'Bats'
-          ELSE 'Other'
+          ELSE COALESCE(NULLIF(TRIM(c.animal_detail), ''), 'Other')
         END
     """
 
@@ -1936,6 +1925,7 @@ def _insights_base_from_where() -> str:
         FROM cases c
         INNER JOIN patients p ON p.id = c.patient_id
         WHERE c.clinic_id = ?
+          AND COALESCE(c.staff_removed, 0) = 0
           AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
           AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
     """
@@ -2062,12 +2052,13 @@ def _admin_reporting_insights_dict(
 
     ongoing_cases = (
         db.execute(
-            """
-            SELECT COUNT(*) AS n FROM cases c
-            WHERE c.clinic_id = ?
+            f"""
+            SELECT COUNT(*) AS n
+            {_insights_base_from_where()}
               AND LOWER(COALESCE(c.case_status, 'pending')) = 'pending'
+            {fc}
             """,
-            (clinic_id,),
+            (clinic_id, date_from, date_to, *fparams),
         ).fetchone()["n"]
         or 0
     )
@@ -2114,6 +2105,7 @@ def _admin_reporting_insights_dict(
                 JOIN cases c ON c.id = vcd.case_id
                 INNER JOIN patients p ON p.id = c.patient_id
                 WHERE c.clinic_id = ?
+                  AND COALESCE(c.staff_removed, 0) = 0
                   AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
                   AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
                   AND NULLIF(TRIM(vcd.dose_date), '') IS NOT NULL
@@ -2251,9 +2243,12 @@ def _admin_reporting_insights_dict(
     animal_type_rows: list[dict[str, object]] = []
     for r in animal_raw:
         cnt = int(r["n"] or 0)
+        label = (r["animal"] or "Other").strip()
+        if label.lower() not in ["dogs", "cats", "bats"]:
+            label = label.title()
         animal_type_rows.append(
             {
-                "label": r["animal"] or "Other",
+                "label": label,
                 "count": cnt,
                 "percent": round((cnt / total_cases_demo) * 100) if bite_cases else 0,
             }
@@ -2375,12 +2370,10 @@ def _admin_reporting_insights_dict(
     prio_rows = db.execute(
         f"""
         SELECT
-          COALESCE(NULLIF(TRIM(p.first_name || ' ' || p.last_name), ''), u.username) AS patient_name,
+          c.id AS case_id,
           COALESCE(c.case_status, '') AS case_status,
           COALESCE(NULLIF(c.created_at, ''), c.exposure_date) AS reported_at
         FROM cases c
-        JOIN patients p ON p.id = c.patient_id
-        JOIN users u ON u.id = p.user_id
         WHERE c.clinic_id = ?
           AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
           AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
@@ -2407,7 +2400,7 @@ def _admin_reporting_insights_dict(
         else:
             st = "Urgent"
         priority_cases.append(
-            {"patient_name": pr["patient_name"], "status": st, "reported_at": rep}
+            {"case_id": pr["case_id"], "status": st, "reported_at": rep}
         )
 
     vrec_rows = db.execute(
@@ -3593,6 +3586,26 @@ def create_app():
         )
         db.commit()
 
+    def _purge_stale_admin_last_seen_timestamps():
+        """Delete admin_page_last_seen rows whose last_seen_at was stored in local-time
+        format (contains 'T' or '+'), which breaks UTC datetime() comparisons in SQLite.
+        Rows are removed so the epoch fallback is used, making all existing items appear
+        as unseen until the admin visits each page (same UX as first login).
+        This migration is idempotent and safe to run on every startup.
+        """
+        db = get_db()
+        try:
+            db.execute(
+                """
+                DELETE FROM admin_page_last_seen
+                WHERE last_seen_at LIKE '%T%'
+                   OR last_seen_at LIKE '%+%'
+                """
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
+
     with app.app_context():
         _ensure_patient_onboarding_column()
         _ensure_clinic_personnel_profile_columns()
@@ -3606,6 +3619,7 @@ def create_app():
         _ensure_pending_emails_table()
         _ensure_admin_page_last_seen_table()
         _migrate_admin_page_last_seen_session_logs()
+        _purge_stale_admin_last_seen_timestamps()
         _ensure_staff_page_last_seen_table()
         _ensure_cases_staff_completed_at_column()
         _ensure_patients_barangay_column()
@@ -3924,7 +3938,7 @@ def create_app():
 
     def _get_unread_patient_notifications_for_user(
         patient_user_id: int, limit: int = 50
-    ) -> tuple[list[dict], set[int], set[int]]:
+    ) -> tuple[list[dict], set[int], set[int], bool]:
         """
         Return unread notifications for all patients under this user, plus sets of
         appointment ids and case ids to highlight on the dashboard.
@@ -3955,6 +3969,7 @@ def create_app():
 
         highlight_appointment_ids: set[int] = set()
         highlight_case_ids: set[int] = set()
+        has_unread_schedule = False
         out: list[dict] = []
         for row in rows:
             r = dict(row)
@@ -3964,6 +3979,8 @@ def create_app():
                 highlight_appointment_ids.add(int(sid))
             elif ntype == "vaccination" and sid is not None:
                 highlight_case_ids.add(int(sid))
+            elif ntype == "schedule":
+                has_unread_schedule = True
 
             recipient_label = _notification_recipient_label(
                 r.get("relationship_to_user"),
@@ -4007,7 +4024,7 @@ def create_app():
                 }
             )
 
-        return out, highlight_appointment_ids, highlight_case_ids
+        return out, highlight_appointment_ids, highlight_case_ids, has_unread_schedule
 
     def _mark_appointment_notifications_read_for_appointment(
         patient_user_id: int, appointment_id: int
@@ -4509,9 +4526,12 @@ def create_app():
                 desired_status = "Cancelled"
             elif no_show_eligible:
                 desired_status = "No Show"
+            elif current_status in ("queued", "scheduled", "archived"):
+                desired_status = case_row["case_status"] or "Pending"
             else:
                 # If progress exists but next schedule is missing, keep Pending so staff can schedule.
                 desired_status = "Pending"
+
             if current_status != desired_status.lower():
                 db.execute(
                     """
@@ -4687,6 +4707,7 @@ def create_app():
             dashboard_notifications,
             highlight_appointment_ids,
             highlight_case_ids,
+            has_unread_schedule,
         ) = _get_unread_patient_notifications_for_user(session["user_id"])
         patient = _get_primary_patient(session["user_id"])
 
@@ -4720,13 +4741,23 @@ def create_app():
                 c.category AS case_category,
                 p.first_name AS victim_first_name,
                 p.last_name AS victim_last_name,
-                p.relationship_to_user AS victim_relationship
+                p.relationship_to_user AS victim_relationship,
+                COALESCE(
+                  (
+                    SELECT MAX(created_at)
+                    FROM patient_notifications pn
+                    WHERE (pn.type = 'appointment' AND pn.source_id = a.id)
+                       OR (pn.type = 'vaccination' AND pn.source_id = c.id)
+                  ),
+                  a.created_at,
+                  c.created_at
+                ) AS last_change_at
             FROM appointments a
             JOIN cases c ON c.id = a.case_id
             JOIN patients p ON p.id = a.patient_id
             WHERE p.user_id = ?
               AND COALESCE(a.patient_hidden, 0) = 0
-            ORDER BY a.id
+            ORDER BY last_change_at DESC
             """,
             (session["user_id"],),
         ).fetchall()
@@ -4886,8 +4917,11 @@ def create_app():
             seq += 1
             appointment_number_map[row["id"]] = seq
 
-        filtered_rows = _sort_patient_dashboard_appointments_by_display_date(
-            filtered_rows, _compute_vaccination_summary
+        # Sort by last_change_at DESC as requested by user ("sorted depending on how recent each case is changed")
+        filtered_rows = sorted(
+            filtered_rows,
+            key=lambda r: (r["last_change_at"] or ""),
+            reverse=True
         )
 
         def _ordinal(n: int) -> str:
@@ -4952,9 +4986,12 @@ def create_app():
             appt["display_dosage_label"] = display_dosage_label
 
             cid = appt.get("case_id")
+            appt_status = (appt.get("status") or "").strip().lower()
+            is_upcoming = appt_status not in ("cancelled", "canceled", "removed", "expired", "completed")
             appt["notification_highlight"] = (
                 appt["id"] in highlight_appointment_ids
                 or (cid is not None and cid in highlight_case_ids)
+                or (has_unread_schedule and is_upcoming)
             )
 
             if next_due_date and cid is not None:
@@ -4978,6 +5015,7 @@ def create_app():
                 dashboard_notifications,
                 highlight_appointment_ids,
                 highlight_case_ids,
+                has_unread_schedule,
             ) = _get_unread_patient_notifications_for_user(session["user_id"])
 
         clinics = db.execute("SELECT id, name FROM clinics ORDER BY name").fetchall()
@@ -5041,7 +5079,7 @@ def create_app():
             return redirect(url_for("patient_onboarding"))
 
         db = get_db()
-        _, _, vaccination_highlight_case_ids = _get_unread_patient_notifications_for_user(
+        _, _, vaccination_highlight_case_ids, _ = _get_unread_patient_notifications_for_user(
             session["user_id"]
         )
         unread_counts = _get_patient_unread_counts(session["user_id"])
@@ -6493,11 +6531,11 @@ def create_app():
         """
 
         total_patients = db.execute(
-            """
+            f"""
             SELECT COUNT(DISTINCT c.patient_id) AS total
             FROM cases c
             WHERE c.clinic_id = ?
-              AND COALESCE(c.staff_removed, 0) = 0
+            {staff_visible_case_filter_sql}
             """,
             (clinic_id,),
         ).fetchone()["total"]
@@ -6525,11 +6563,11 @@ def create_app():
         ).fetchone()["total"]
 
         high_risk_cases = db.execute(
-            """
+            f"""
             SELECT COUNT(*) AS total
             FROM cases c
             WHERE c.clinic_id = ?
-              AND COALESCE(c.staff_removed, 0) = 0
+            {staff_visible_case_filter_sql}
               AND LOWER(c.risk_level) IN ('category iii', 'high', 'high-risk', 'high risk')
             """,
             (clinic_id,),
@@ -6570,28 +6608,30 @@ def create_app():
         rescheduled_count = appointment_status["rescheduled"] or 0
 
         bite_type_rows = db.execute(
-            """
+            f"""
             SELECT
               CASE
-                WHEN LOWER(COALESCE(c.animal_detail, '')) LIKE 'dog%' THEN 'Dog'
-                WHEN LOWER(COALESCE(c.animal_detail, '')) LIKE 'cat%' THEN 'Cat'
-                WHEN LOWER(COALESCE(c.animal_detail, '')) LIKE 'bat%' THEN 'Bat'
-                ELSE 'Other'
+                WHEN LOWER(COALESCE(c.animal_detail, '')) LIKE 'dog%' THEN 'Dogs'
+                WHEN LOWER(COALESCE(c.animal_detail, '')) LIKE 'cat%' THEN 'Cats'
+                WHEN LOWER(COALESCE(c.animal_detail, '')) LIKE 'bat%' THEN 'Bats'
+                ELSE COALESCE(NULLIF(TRIM(c.animal_detail), ''), 'Other')
               END AS bite_type,
               COUNT(*) AS total
             FROM cases c
             WHERE c.clinic_id = ?
+            {staff_visible_case_filter_sql}
             GROUP BY bite_type
+            ORDER BY total DESC
             """,
             (clinic_id,),
         ).fetchall()
         total_bite_cases = sum(row["total"] for row in bite_type_rows)
-        bite_map = {"Dog": 0, "Cat": 0, "Bat": 0, "Other": 0}
-        for row in bite_type_rows:
-            bite_map[row["bite_type"]] = row["total"]
         common_bite_types = []
-        for label in ["Dog", "Cat", "Bat", "Other"]:
-            count = bite_map[label]
+        for row in bite_type_rows:
+            label = (row["bite_type"] or "Other").strip()
+            if label.lower() not in ["dogs", "cats", "bats"]:
+                label = label.title()
+            count = row["total"]
             pct = round((count / total_bite_cases) * 100) if total_bite_cases else 0
             common_bite_types.append({"label": label, "percent": pct})
 
@@ -6609,6 +6649,7 @@ def create_app():
             JOIN users u ON u.id = p.user_id
             WHERE a.clinic_id = ?
               AND DATE(a.appointment_datetime) = DATE('now', 'localtime')
+              AND LOWER(COALESCE(a.status, '')) NOT IN ('removed', 'cancelled', 'canceled', 'pending', 'queued')
             ORDER BY a.appointment_datetime ASC
             LIMIT 12
             """,
@@ -7015,32 +7056,8 @@ def create_app():
                         ),
                     )
 
-                    walk_in_at = _now_philippines_local_iso()
-                    walk_in_status = _walk_in_appointment_status_for_case(db, case_id)
-                    cur_appt = db.execute(
-                        """
-                        INSERT INTO appointments (
-                            patient_id, clinic_personnel_id, clinic_id, appointment_datetime,
-                            status, type, case_id
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                        """,
-                        (
-                            patient_id,
-                            staff_id,
-                            clinic_id,
-                            walk_in_at,
-                            walk_in_status,
-                            "Walk-in",
-                            case_id,
-                        ),
-                    )
-                    appointment_id = cur_appt.lastrowid
-                    _insert_patient_notification(
-                        patient_id=patient_id,
-                        notif_type="appointment",
-                        source_id=appointment_id,
-                        message="Your walk-in visit was recorded at the clinic.",
-                    )
+                    # Staff-created cases go directly to Cases (no appointment record needed).
+                    # Only patient-submitted pre-screenings create appointment records.
                     _insert_medical_audit_log(
                         db,
                         case_id=case_id,
@@ -7699,10 +7716,10 @@ def create_app():
             params.append(animal_vacc.lower())
 
         if date_from:
-            where_clauses.append("DATE(COALESCE(NULLIF(c.exposure_date,''), c.created_at)) >= DATE(?)")
+            where_clauses.append("DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)")
             params.append(date_from)
         if date_to:
-            where_clauses.append("DATE(COALESCE(NULLIF(c.exposure_date,''), c.created_at)) <= DATE(?)")
+            where_clauses.append("DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)")
             params.append(date_to)
 
         if batch:
@@ -7788,11 +7805,19 @@ def create_app():
                         FROM appointments a
                         WHERE a.case_id = c.id
                           AND LOWER(COALESCE(a.status, '')) NOT IN ('removed', 'cancelled', 'canceled')
+                          AND datetime(a.appointment_datetime) >= datetime('now', 'localtime')
                         ORDER BY datetime(a.appointment_datetime) ASC, a.id ASC
                         LIMIT 1
                     ),
                     'N/A'
-                ) AS initial_schedule
+                ) AS initial_schedule,
+                (
+                    SELECT MIN(vcd.dose_date)
+                    FROM vaccination_card_doses vcd
+                    WHERE vcd.case_id = c.id
+                      AND NULLIF(TRIM(vcd.dose_date), '') IS NOT NULL
+                      AND DATE(vcd.dose_date) >= DATE('now', 'localtime')
+                ) AS next_dose_date
             FROM cases c
             JOIN patients p ON p.id = c.patient_id
             LEFT JOIN users u ON u.id = p.user_id
@@ -7802,7 +7827,7 @@ def create_app():
             """
             + where_sql
             + """
-            ORDER BY datetime(c.created_at) DESC, c.id DESC
+            ORDER BY c.id DESC
             LIMIT ? OFFSET ?
             """
         )
@@ -8205,10 +8230,10 @@ def create_app():
             where_clauses.append("LOWER(COALESCE(c.animal_vaccination, '')) = ?")
             params.append(animal_vacc.lower())
         if date_from:
-            where_clauses.append("DATE(COALESCE(NULLIF(c.exposure_date,''), c.created_at)) >= DATE(?)")
+            where_clauses.append("DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)")
             params.append(date_from)
         if date_to:
-            where_clauses.append("DATE(COALESCE(NULLIF(c.exposure_date,''), c.created_at)) <= DATE(?)")
+            where_clauses.append("DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)")
             params.append(date_to)
         if batch:
             where_clauses.append(
@@ -8585,10 +8610,10 @@ def create_app():
             where_clauses.append("LOWER(COALESCE(c.animal_vaccination, '')) = ?")
             params.append(animal_vacc.lower())
         if date_from:
-            where_clauses.append("DATE(COALESCE(NULLIF(c.exposure_date,''), c.created_at)) >= DATE(?)")
+            where_clauses.append("DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)")
             params.append(date_from)
         if date_to:
-            where_clauses.append("DATE(COALESCE(NULLIF(c.exposure_date,''), c.created_at)) <= DATE(?)")
+            where_clauses.append("DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)")
             params.append(date_to)
         if batch:
             where_clauses.append(
@@ -8729,7 +8754,7 @@ def create_app():
         filters_summary = "Exported with current filters."
         html = render_template(
             "staff_cases_export_pdf.html",
-            clinic_name=staff["clinic_name"],
+            clinic_name=clinic_name,
             generated_at=datetime.now().strftime("%b %d, %Y %I:%M %p"),
             filters_summary=filters_summary,
             rows=rows,
@@ -8864,13 +8889,13 @@ def create_app():
         date_filters_records = ""
         date_filters_card = ""
         if date_from:
-            date_filters_records += " AND DATE(vr.date_administered) >= DATE(?)"
-            date_filters_card += " AND DATE(vcd.dose_date) >= DATE(?)"
+            date_filters_records += " AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)"
+            date_filters_card += " AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)"
             base_records_params.append(date_from)
             base_card_params.append(date_from)
         if date_to:
-            date_filters_records += " AND DATE(vr.date_administered) <= DATE(?)"
-            date_filters_card += " AND DATE(vcd.dose_date) <= DATE(?)"
+            date_filters_records += " AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)"
+            date_filters_card += " AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)"
             base_records_params.append(date_to)
             base_card_params.append(date_to)
 
@@ -8900,6 +8925,7 @@ def create_app():
             LEFT JOIN clinic_personnel cp ON cp.id = vr.administered_by_personnel_id
             LEFT JOIN users au ON au.id = cp.user_id
             WHERE c.clinic_id = ?
+              AND COALESCE(c.staff_removed, 0) = 0
             """
             + date_filters_records,
             base_records_params,
@@ -8925,6 +8951,7 @@ def create_app():
             JOIN patients p ON p.id = c.patient_id
             LEFT JOIN users pu ON pu.id = p.user_id
             WHERE c.clinic_id = ?
+              AND COALESCE(c.staff_removed, 0) = 0
               AND TRIM(COALESCE(vcd.dose_date, '')) <> ''
               AND TRIM(COALESCE(vcd.type_of_vaccine, '')) <> ''
               AND TRIM(COALESCE(vcd.given_by, '')) <> ''
@@ -11885,6 +11912,8 @@ def create_app():
                 search="",
                 selected_category="all",
                 selected_status="all",
+                pending_count=0,
+                high_risk_count=0,
                 active_page="patients",
                 include_notification_strip=True,
                 dashboard_notifications=[],
@@ -11898,6 +11927,16 @@ def create_app():
         case_status = (request.args.get("status") or "all").strip().lower()
         if case_status not in {"all", "pending", "completed", "no show"}:
             case_status = "all"
+
+        # Dynamic Stats
+        pending_count = db.execute(
+            "SELECT COUNT(*) AS n FROM cases WHERE clinic_id = ? AND LOWER(COALESCE(case_status, 'pending')) = 'pending'",
+            (clinic_id,)
+        ).fetchone()["n"]
+        high_risk_count = db.execute(
+            "SELECT COUNT(*) AS n FROM cases WHERE clinic_id = ? AND LOWER(COALESCE(risk_level, category, '')) = 'category iii'",
+            (clinic_id,)
+        ).fetchone()["n"]
 
         try:
             page = int(request.args.get("page", "1"))
@@ -12007,6 +12046,8 @@ def create_app():
             search=search,
             selected_category=category,
             selected_status=case_status,
+            pending_count=pending_count,
+            high_risk_count=high_risk_count,
             active_page="patients",
             include_notification_strip=True,
             dashboard_notifications=_admin_notifications_for_page(db, clinic_id, "patients"),
@@ -12262,7 +12303,7 @@ def create_app():
                 date_from="",
                 date_to="",
                 active_page="appointments",
-                include_notification_strip=True,
+                include_notification_strip=False,
                 dashboard_notifications=[],
             )
 
@@ -12392,7 +12433,7 @@ def create_app():
             date_from=date_from,
             date_to=date_to,
             active_page="appointments",
-            include_notification_strip=True,
+            include_notification_strip=False,
             dashboard_notifications=_admin_notifications_for_page(db, clinic_id, "appointments"),
         )
 
@@ -12697,7 +12738,7 @@ def create_app():
             )
             staff_rows = db.execute(
                 """
-                SELECT u.id, u.username, u.email, u.created_at, u.must_change_password, u.is_active,
+                SELECT u.id, u.username, u.email, u.role, u.created_at, u.must_change_password, u.is_active,
                   TRIM(COALESCE(cp.title, '') || ' ' || COALESCE(cp.first_name, '') || ' ' || COALESCE(cp.last_name, '')) AS display_name
                 FROM users u
                 JOIN clinic_personnel cp ON cp.user_id = u.id
@@ -12708,10 +12749,10 @@ def create_app():
             for sr in staff_rows:
                 merged.append(
                     {
-                        "id": sr["id"],
+                        "user_id": sr["id"],
                         "name": (sr["display_name"] or "").strip() or sr["username"],
                         "email": sr["email"] or "",
-                        "role_label": "Staff",
+                        "role": sr["role"],
                         "created_at": sr["created_at"] or "",
                         "must_change_password": sr["must_change_password"] or 0,
                         "is_active": int(sr["is_active"]) if sr["is_active"] is not None else 1,
@@ -12720,7 +12761,7 @@ def create_app():
 
             patient_rows = db.execute(
                 """
-                SELECT DISTINCT u.id, u.username, u.email, u.created_at, u.must_change_password, u.is_active
+                SELECT DISTINCT u.id, u.username, u.email, u.role, u.created_at, u.must_change_password, u.is_active
                 FROM users u
                 WHERE u.role = 'patient'
                   AND EXISTS (
@@ -12746,10 +12787,10 @@ def create_app():
                 display_name = (nm_row["display_name"] if nm_row else None) or pr["username"]
                 merged.append(
                     {
-                        "id": pr["id"],
+                        "user_id": pr["id"],
                         "name": display_name,
                         "email": pr["email"] or "",
-                        "role_label": "Patient",
+                        "role": pr["role"],
                         "created_at": pr["created_at"] or "",
                         "must_change_password": pr["must_change_password"] or 0,
                         "is_active": int(pr["is_active"]) if pr["is_active"] is not None else 1,
@@ -12757,9 +12798,9 @@ def create_app():
                 )
 
         def _matches(u: dict) -> bool:
-            if role_filter == "staff" and u["role_label"] != "Staff":
+            if role_filter == "staff" and u["role"] != "clinic_personnel":
                 return False
-            if role_filter == "patients" and u["role_label"] != "Patient":
+            if role_filter == "patients" and u["role"] != "patient":
                 return False
             if search:
                 blob = f"{u['name']} {u['email']}".lower()
@@ -12772,7 +12813,7 @@ def create_app():
             v = u.get("is_active")
             return 1 if v is None else int(v)
 
-        staff_total = sum(1 for u in merged if u["role_label"] == "Staff")
+        staff_total = sum(1 for u in merged if u["role"] == "clinic_personnel")
         # Keep this account-level value for list filtering behavior only.
         # The dashboard card already uses patient-record-level counting above.
         active_users_total = sum(1 for u in merged if _merged_user_is_active(u) == 1)
@@ -12800,10 +12841,10 @@ def create_app():
                 status_lbl = "Active"
             user_rows.append(
                 {
-                    "user_id": ui["id"],
+                    "user_id": ui["user_id"],
                     "name": ui["name"],
                     "email": ui["email"],
-                    "role_label": ui["role_label"],
+                    "role": ui["role"],
                     "status": status_lbl,
                     "date_joined": joined,
                     "is_active": ia,
@@ -12881,11 +12922,21 @@ def create_app():
             elif section == "account":
                 username = (request.form.get("username") or "").strip()
                 email = (request.form.get("email") or "").strip().lower()
+                new_password = request.form.get("new_password")
+                confirm_password = request.form.get("confirm_password")
+
                 errors = []
                 if not username:
                     errors.append("Username is required.")
                 if not email or "@" not in email or "." not in email.split("@")[-1]:
                     errors.append("A valid email is required.")
+                
+                if new_password:
+                    if len(new_password) < 8:
+                        errors.append("Password must be at least 8 characters.")
+                    if new_password != confirm_password:
+                        errors.append("Passwords do not match.")
+
                 if not errors:
                     dup = db.execute(
                         """
@@ -12898,19 +12949,31 @@ def create_app():
                     ).fetchone()
                     if dup:
                         errors.append("Username or email is already in use.")
+                
                 if errors:
                     for msg in errors:
                         flash(msg, "error")
                 else:
                     try:
-                        db.execute(
-                            """
-                            UPDATE users
-                            SET username = ?, email = ?
-                            WHERE id = ?
-                            """,
-                            (username, email, session["user_id"]),
-                        )
+                        if new_password:
+                            hashed = generate_password_hash(new_password)
+                            db.execute(
+                                """
+                                UPDATE users
+                                SET username = ?, email = ?, password_hash = ?
+                                WHERE id = ?
+                                """,
+                                (username, email, hashed, session["user_id"]),
+                            )
+                        else:
+                            db.execute(
+                                """
+                                UPDATE users
+                                SET username = ?, email = ?
+                                WHERE id = ?
+                                """,
+                                (username, email, session["user_id"]),
+                            )
                         db.commit()
                     except Exception:
                         db.rollback()
@@ -13041,7 +13104,6 @@ def create_app():
             flash("Account profile missing, contact admin.", "error")
             return redirect(url_for("auth.login"))
 
-        strip_notifications = _admin_session_logs_notifications(db, session["user_id"])
         _admin_mark_page_seen(db, session["user_id"], "session_logs")
 
         page = request.args.get("page", 1, type=int) or 1
@@ -13070,6 +13132,7 @@ def create_app():
             log_items.append(
                 {
                     "username": row["username"] or "—",
+                    "role_at_login": row["role_at_login"],
                     "role_label": _session_log_role_label(
                         row["role_at_login"] if row else None
                     ),
@@ -13098,8 +13161,8 @@ def create_app():
             breadcrumbs=breadcrumbs,
             logs=pagination,
             active_page="session_logs",
-            include_notification_strip=True,
-            dashboard_notifications=strip_notifications,
+            include_notification_strip=False,
+            dashboard_notifications=[],
         )
 
     # =========================

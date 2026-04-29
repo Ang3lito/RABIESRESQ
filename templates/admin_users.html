@@ -196,6 +196,7 @@
         </div>
 
         <form
+          id="admin-new-staff-form"
           method="post"
           action="{{ url_for('admin_new_staff') }}"
           class="flex min-h-0 flex-1 flex-col"
@@ -207,56 +208,50 @@
               <div class="sm:col-span-2">
                 <label class="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700" for="ns-username">
                   <i class="fa-solid fa-at text-slate-400" aria-hidden="true"></i>
-                  Username <span class="text-red-500">*</span>
+                  Username
                 </label>
                 <input
                   id="ns-username"
                   type="text"
                   name="username"
                   value="{{ sf.username|default('', true) }}"
-                  required
-                  autocomplete="username"
                   class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
                 />
               </div>
               <div class="sm:col-span-2">
                 <label class="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700" for="ns-email">
                   <i class="fa-solid fa-envelope text-slate-400" aria-hidden="true"></i>
-                  Email <span class="text-red-500">*</span>
+                  Email
                 </label>
                 <input
                   id="ns-email"
                   type="email"
                   name="email"
                   value="{{ sf.email|default('', true) }}"
-                  required
-                  autocomplete="email"
                   class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
                 />
               </div>
               <div>
                 <label class="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700" for="ns-employee-id">
                   <i class="fa-solid fa-id-card text-slate-400" aria-hidden="true"></i>
-                  Employee ID <span class="text-red-500">*</span>
+                  Employee ID
                 </label>
                 <input
                   id="ns-employee-id"
                   type="text"
                   name="employee_id"
                   value="{{ sf.employee_id|default('', true) }}"
-                  required
                   class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
                 />
               </div>
               <div>
                 <label class="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700" for="ns-title">
                   <i class="fa-solid fa-stethoscope text-slate-400" aria-hidden="true"></i>
-                  Title <span class="text-red-500">*</span>
+                  Title
                 </label>
                 <select
                   id="ns-title"
                   name="title"
-                  required
                   class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
                 >
                   <option value="">— Select —</option>
@@ -274,8 +269,6 @@
                   type="text"
                   name="first_name"
                   value="{{ sf.first_name|default('', true) }}"
-                  pattern="^[A-Za-z .'-]+$"
-                  title="Use letters, spaces, apostrophes, hyphens, and periods only."
                   class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
                 />
               </div>
@@ -289,8 +282,6 @@
                   type="text"
                   name="last_name"
                   value="{{ sf.last_name|default('', true) }}"
-                  pattern="^[A-Za-z .'-]+$"
-                  title="Use letters, spaces, apostrophes, hyphens, and periods only."
                   class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
                 />
               </div>
@@ -366,11 +357,42 @@
 
 {% block scripts %}
   {{ super() }}
+  <style>
+    .field-error {
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 0 1px #ef4444 !important;
+    }
+  </style>
+
+  <div id="error-modal" class="fixed inset-0 z-[110] hidden" aria-hidden="true">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeErrorModal()"></div>
+    <div class="relative flex min-h-full items-center justify-center p-4">
+      <div class="w-full max-w-lg overflow-hidden rounded-[1.5rem] bg-white shadow-2xl">
+        <div class="p-8">
+          <div class="flex items-start gap-5">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+              <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-2xl font-bold text-[#1A4D2E] leading-tight">Please complete the form</h3>
+              <p id="error-modal-message" class="mt-2 text-lg text-slate-500">Please fill in all required fields.</p>
+            </div>
+          </div>
+        </div>
+        <div class="px-8 pb-8 flex justify-end">
+          <button type="button" onclick="closeErrorModal()" class="rounded-xl bg-[#1A4D2E] px-8 py-3 text-lg font-bold text-white transition hover:bg-[#143d24]">
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     (function () {
-      function modalEl() {
-        return document.getElementById("admin-new-staff-modal");
-      }
+      function modalEl() { return document.getElementById("admin-new-staff-modal"); }
+      const errorModal = document.getElementById("error-modal");
+
       window.openAdminNewStaffModal = function () {
         var m = modalEl();
         if (!m) return;
@@ -379,12 +401,65 @@
         var u = document.getElementById("ns-username");
         if (u) setTimeout(function () { u.focus(); }, 50);
       };
+
       window.closeAdminNewStaffModal = function () {
         var m = modalEl();
         if (!m) return;
         m.classList.add("hidden");
         document.body.classList.remove("overflow-hidden");
+        // Clear errors on close
+        const fields = m.querySelectorAll('input, select');
+        fields.forEach(f => f.classList.remove('field-error'));
       };
+
+      window.closeErrorModal = function() {
+        errorModal.classList.add("hidden");
+      };
+
+      const form = document.getElementById("admin-new-staff-form");
+      if (form) {
+        // We catch the submit event BEFORE the confirm_modal.js listener (which uses bubbling)
+      // Use window capture phase to ensure we run BEFORE confirm_modal.js (which is on document capture)
+      window.addEventListener('submit', function(e) {
+        const targetForm = e.target;
+        if (!targetForm || targetForm.id !== "admin-new-staff-form") return;
+
+        // Manually check the 8 mandatory fields as requested
+        const fieldsToValidate = [
+          'username', 'email', 'employee_id', 'title', 
+          'first_name', 'last_name', 'date_of_birth', 'gender'
+        ];
+        
+        let hasMissing = false;
+
+        fieldsToValidate.forEach(name => {
+          const el = targetForm.querySelector(`[name="${name}"]`);
+          if (el) {
+            if (!el.value || el.value.trim() === "") {
+              el.classList.add('field-error');
+              hasMissing = true;
+            } else {
+              el.classList.remove('field-error');
+            }
+          }
+        });
+
+        if (hasMissing) {
+          e.preventDefault();
+          e.stopImmediatePropagation(); // Block confirm_modal.js on document from seeing this
+          errorModal.classList.remove("hidden");
+          return false;
+        }
+      }, true); 
+
+      // Remove error highlight as user interacts
+      const formFields = form.querySelectorAll('input, select');
+      formFields.forEach(f => {
+        f.addEventListener('input', () => f.classList.remove('field-error'));
+        f.addEventListener('change', () => f.classList.remove('field-error'));
+      });
+      }
+
       var trigger = document.getElementById("staff-modal-trigger");
       if (trigger && trigger.getAttribute("data-should-open") === "true") {
         document.addEventListener("DOMContentLoaded", function () {
@@ -395,6 +470,10 @@
         "keydown",
         function (e) {
           if (e.key !== "Escape") return;
+          if (!errorModal.classList.contains("hidden")) {
+            closeErrorModal();
+            return;
+          }
           var m = modalEl();
           if (!m || m.classList.contains("hidden")) return;
           e.preventDefault();
