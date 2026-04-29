@@ -87,6 +87,8 @@ RabiesResQ is built with a focus on **Visual Excellence** and **Uplifting User E
 - Role-based Access Control (RBAC) for Admin, Staff, and Patients.
 - Secure session management and password hashing.
 - Defensive coding patterns to prevent SQL injection and XSS.
+- Session logs track account sign-in/sign-out activity.
+- Medical audit logs track case lifecycle summaries (created, edited, completed, removed, restored) shown as summary-only case history in admin case details.
 
 ---
 

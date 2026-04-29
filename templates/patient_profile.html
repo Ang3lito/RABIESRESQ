@@ -52,12 +52,22 @@
           <input type="text" id="address" name="address" value="{{ patient.address or '' }}" placeholder="Street / Sitio / House No." class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
         </div>
         <div class="md:col-span-2">
-          <label for="barangay" class="mb-1 block text-sm font-medium text-slate-700">Barangay</label>
+          <label for="profile_barangay" class="mb-1 block text-sm font-medium text-slate-700">Barangay</label>
           {% set _legacy_barangay = (patient.address or '').split(',')[0].strip() if (patient.address or '') else '' %}
-          {% set selected_barangay = patient.barangay or _legacy_barangay %}
-          <select id="barangay" name="barangay" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
-            <option value="">Select barangay...</option>
-            {% include "_barangay_options.html" %}
+          {% set selected_barangay = (patient.barangay or _legacy_barangay or '')|trim %}
+          {% set selected_barangay_norm = selected_barangay|lower %}
+          <select id="profile_barangay" name="barangay" class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
+            {% if selected_barangay %}
+              <option value="{{ selected_barangay }}" selected>{{ selected_barangay }}</option>
+            {% else %}
+              <option value="" selected>Select barangay...</option>
+            {% endif %}
+            {% for b in barangay_options %}
+              {% set b_norm = (b or '')|trim|lower %}
+              {% if b_norm != selected_barangay_norm %}
+                <option value="{{ b }}">{{ b }}</option>
+              {% endif %}
+            {% endfor %}
           </select>
         </div>
         <div class="md:col-span-2">

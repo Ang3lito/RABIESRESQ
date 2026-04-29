@@ -425,7 +425,11 @@
 
                 <div>
                   <h3 class="text-sm font-semibold text-slate-700">Pre-Exposure Vaccination Record</h3>
-                  <div class="vc-dose-table-scroll mt-2 overflow-x-auto rounded-xl border border-slate-200">
+                  {% if not can_edit_pre_exposure %}
+                    <p class="mt-1 text-xs font-medium text-amber-700">Editing locked by Final WHO category.</p>
+                  {% endif %}
+                  <fieldset {% if not can_edit_pre_exposure %}disabled{% endif %} class="{% if not can_edit_pre_exposure %}mt-2 opacity-60{% else %}mt-2{% endif %}">
+                  <div class="vc-dose-table-scroll overflow-x-auto rounded-xl border border-slate-200">
                     <table class="min-w-full divide-y divide-slate-200 text-sm">
                       <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
                         <tr><th class="px-2 py-2">Day</th><th class="px-2 py-2">Date</th><th class="px-2 py-2">Type of Vaccine</th><th class="px-2 py-2">Dose</th><th class="px-2 py-2">Route &amp; Site</th><th class="px-2 py-2">Given By</th></tr>
@@ -484,11 +488,16 @@
                       </tbody>
                     </table>
                   </div>
+                  </fieldset>
                 </div>
 
                 <div>
                   <h3 class="text-sm font-semibold text-slate-700">Post-Exposure Vaccination Record</h3>
-                  <div class="vc-dose-table-scroll mt-2 overflow-x-auto rounded-xl border border-slate-200">
+                  {% if not can_edit_post_exposure %}
+                    <p class="mt-1 text-xs font-medium text-amber-700">Editing locked by Final WHO category.</p>
+                  {% endif %}
+                  <fieldset {% if not can_edit_post_exposure %}disabled{% endif %} class="{% if not can_edit_post_exposure %}mt-2 opacity-60{% else %}mt-2{% endif %}">
+                  <div class="vc-dose-table-scroll overflow-x-auto rounded-xl border border-slate-200">
                     <table class="min-w-full divide-y divide-slate-200 text-sm">
                       <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
                         <tr><th class="px-2 py-2">Day</th><th class="px-2 py-2">Date</th><th class="px-2 py-2">Type of Vaccine</th><th class="px-2 py-2">Dose</th><th class="px-2 py-2">Route &amp; Site</th><th class="px-2 py-2">Given By</th></tr>
@@ -547,6 +556,7 @@
                       </tbody>
                     </table>
                   </div>
+                  </fieldset>
                 </div>
 
                 <div>

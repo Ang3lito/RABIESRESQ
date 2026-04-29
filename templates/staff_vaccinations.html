@@ -27,6 +27,8 @@
       {% set export_args = {
         'vaccine_type': vaccine_type,
         'dose_query': dose_query,
+        'dose_preset': dose_preset,
+        'dose_other': dose_other,
         'date_from': date_from,
         'date_to': date_to,
         'administered_by': administered_by,
@@ -61,15 +63,28 @@
         />
       </div>
       <div>
-        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" for="dose_query">Dose</label>
-        <input
-          id="dose_query"
-          name="dose_query"
-          type="text"
-          value="{{ dose_query }}"
-          placeholder="e.g. 2nd or 0.5ml"
+        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" for="dose_preset">Dose</label>
+        <select
+          id="dose_preset"
+          name="dose_preset"
           class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring"
-        />
+        >
+          <option value="" {{ "selected" if not dose_preset else "" }}>All doses</option>
+          <option value="0.1ml" {{ "selected" if dose_preset == "0.1ml" else "" }}>0.1 mL</option>
+          <option value="0.5ml" {{ "selected" if dose_preset == "0.5ml" else "" }}>0.5 mL</option>
+          <option value="1ml" {{ "selected" if dose_preset == "1ml" else "" }}>1 mL</option>
+          <option value="others" {{ "selected" if dose_preset == "others" else "" }}>Others</option>
+        </select>
+        <div id="dose-other-wrap" class="mt-2 {{ '' if dose_preset == 'others' else 'hidden' }}">
+          <input
+            id="dose_other"
+            name="dose_other"
+            type="text"
+            value="{{ dose_other }}"
+            placeholder="Enter custom dose..."
+            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring"
+          />
+        </div>
       </div>
       <div>
         <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" for="date_from">Date From</label>
@@ -144,7 +159,6 @@
     <table class="min-w-full divide-y divide-slate-200 text-sm">
       <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
         <tr>
-          <th class="px-4 py-3">Status</th>
           <th class="px-4 py-3">Vaccine Type</th>
           <th class="px-4 py-3">Dose</th>
           <th class="px-4 py-3">Date Given / Due</th>
@@ -156,25 +170,11 @@
       <tbody class="divide-y divide-slate-100 bg-white">
         {% if vaccinations.items %}
           {% for row in vaccinations.items %}
-            {% set is_pending = (row.administered_by_name == 'Unknown Staff' or not row.vaccine_type or row.vaccine_type == 'N/A') %}
-            <tr class="hover:bg-slate-50 {{ 'bg-amber-50/30' if is_pending else '' }}">
-              <td class="px-4 py-3">
-                {% if is_pending %}
-                  <span class="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-700 shadow-sm shadow-amber-200/50">Due Soon</span>
-                {% else %}
-                  <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 shadow-sm shadow-emerald-200/50">Completed</span>
-                {% endif %}
-              </td>
+            <tr class="hover:bg-slate-50">
               <td class="px-4 py-3 text-slate-700 font-medium">{{ row.vaccine_type }}</td>
               <td class="px-4 py-3 text-slate-700">{{ row.dose_display }}</td>
               <td class="px-4 py-3 text-slate-700 font-bold">{{ row.date_given }}</td>
-              <td class="px-4 py-3 text-slate-600">
-                {% if is_pending %}
-                  <span class="text-slate-400 italic">Pending...</span>
-                {% else %}
-                  {{ row.administered_by_name }}
-                {% endif %}
-              </td>
+              <td class="px-4 py-3 text-slate-600">{{ row.administered_by_name }}</td>
               <td class="px-4 py-3">
                 <a href="{{ url_for('view_patient_case', case_id=row.case_id) }}" class="font-medium text-[#1A4D2E] hover:text-[#1A4D2E]">{{ row.patient_name|namecase }}</a>
               </td>
@@ -194,21 +194,21 @@
     <p>Showing {{ vaccinations.first }} to {{ vaccinations.last }} of {{ vaccinations.total }} results</p>
     <div class="flex items-center gap-2">
       <a
-        href="{{ url_for('staff_vaccinations', vaccine_type=vaccine_type, dose_query=dose_query, date_from=date_from, date_to=date_to, administered_by=administered_by, sort_by=sort_by, sort_dir=sort_dir, page=vaccinations.prev_num or 1) }}"
+        href="{{ url_for('staff_vaccinations', vaccine_type=vaccine_type, dose_query=dose_query, dose_preset=dose_preset, dose_other=dose_other, date_from=date_from, date_to=date_to, administered_by=administered_by, sort_by=sort_by, sort_dir=sort_dir, page=vaccinations.prev_num or 1) }}"
         class="rounded-lg px-2 py-1 {{ 'text-slate-400 pointer-events-none' if not vaccinations.has_prev else 'hover:bg-slate-100 text-slate-700' }}"
       >
         <i class="fa-solid fa-chevron-left"></i>
       </a>
       {% for p in vaccinations.iter_pages() %}
         <a
-          href="{{ url_for('staff_vaccinations', vaccine_type=vaccine_type, dose_query=dose_query, date_from=date_from, date_to=date_to, administered_by=administered_by, sort_by=sort_by, sort_dir=sort_dir, page=p) }}"
+          href="{{ url_for('staff_vaccinations', vaccine_type=vaccine_type, dose_query=dose_query, dose_preset=dose_preset, dose_other=dose_other, date_from=date_from, date_to=date_to, administered_by=administered_by, sort_by=sort_by, sort_dir=sort_dir, page=p) }}"
           class="rounded-lg px-3 py-1 {{ 'bg-[#1A4D2E] text-white' if p == vaccinations.page else 'text-slate-700 hover:bg-slate-100' }}"
         >
           {{ p }}
         </a>
       {% endfor %}
       <a
-        href="{{ url_for('staff_vaccinations', vaccine_type=vaccine_type, dose_query=dose_query, date_from=date_from, date_to=date_to, administered_by=administered_by, sort_by=sort_by, sort_dir=sort_dir, page=vaccinations.next_num or vaccinations.pages) }}"
+        href="{{ url_for('staff_vaccinations', vaccine_type=vaccine_type, dose_query=dose_query, dose_preset=dose_preset, dose_other=dose_other, date_from=date_from, date_to=date_to, administered_by=administered_by, sort_by=sort_by, sort_dir=sort_dir, page=vaccinations.next_num or vaccinations.pages) }}"
         class="rounded-lg px-2 py-1 {{ 'text-slate-400 pointer-events-none' if not vaccinations.has_next else 'hover:bg-slate-100 text-slate-700' }}"
       >
         <i class="fa-solid fa-chevron-right"></i>
@@ -235,6 +235,21 @@
       if (e.key !== "Escape") return;
       const panel = document.getElementById("vaccinations-export-menu-panel");
       if (panel) panel.classList.add("hidden");
+    });
+    document.addEventListener("DOMContentLoaded", function() {
+      const dosePreset = document.getElementById("dose_preset");
+      const doseOtherWrap = document.getElementById("dose-other-wrap");
+      const doseOtherInput = document.getElementById("dose_other");
+      if (!dosePreset || !doseOtherWrap) return;
+      function syncDoseOtherVisibility() {
+        const show = (dosePreset.value || "") === "others";
+        doseOtherWrap.classList.toggle("hidden", !show);
+        if (!show && doseOtherInput) {
+          doseOtherInput.value = "";
+        }
+      }
+      dosePreset.addEventListener("change", syncDoseOtherVisibility);
+      syncDoseOtherVisibility();
     });
   </script>
 {% endblock %}

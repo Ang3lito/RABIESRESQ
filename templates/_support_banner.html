@@ -34,25 +34,12 @@
           {{ banner_subtext|default('You’re keeping the clinic safe') }}
         </p>
 
-        {# Secondary Summary for Pending Cases when in High Risk mode #}
-        {% if banner_status == 'high_risk' and (other_pending_count|default(0) > 0 or due_vax_count|default(0) > 0) %}
+        {% if support_banner_count|default(0) > 0 %}
         <div class="hidden h-1 w-1 rounded-full bg-slate-300 sm:block"></div>
         <p class="text-sm font-semibold text-slate-400">
-          {% if other_pending_count|default(0) > 0 %}
-          {{ other_pending_count }} other cases pending.
-          {% endif %}
-          {% if due_vax_count|default(0) > 0 %}
-          {{ due_vax_count }} vaccinations due.
-          {% endif %}
+          {{ support_banner_count }} total pending cases.
           <a href="{{ all_cases_url|default('#') }}"
             class="ml-1 text-[#1A4D2E] underline underline-offset-4 hover:opacity-70">See all</a>
-        </p>
-        {% elif due_vax_count|default(0) > 0 and banner_status != 'high_risk' %}
-        <div class="hidden h-1 w-1 rounded-full bg-slate-300 sm:block"></div>
-        <p class="text-sm font-semibold text-slate-400">
-          {{ due_vax_count }} vaccinations due soon.
-          <a href="{{ vax_url|default('#') }}"
-            class="ml-1 text-[#1A4D2E] underline underline-offset-4 hover:opacity-70">View due</a>
         </p>
         {% endif %}
       </div>

@@ -18,6 +18,64 @@
   <div class="grid grid-cols-1 gap-10 lg:grid-cols-12">
     <!-- Left Column: Main Instructions -->
     <div class="lg:col-span-8 space-y-10">
+      <!-- What Is Rabies -->
+      <section class="space-y-6">
+        <div class="flex items-center gap-3 px-2">
+          <div class="h-8 w-1.5 rounded-full bg-[#1A4D2E]"></div>
+          <h2 class="text-xl font-bold text-slate-800">What is Rabies?</h2>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <button type="button" onclick="openGuidanceModal('disease')"
+            class="category-btn cursor-pointer group relative flex flex-col items-start rounded-[2rem] border border-slate-100 bg-white p-6 text-left shadow-sm transition-all hover:border-[#1A4D2E] hover:shadow-md">
+            <div
+              class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1A4D2E]/5 text-xl font-bold text-[#1A4D2E]">
+              <i class="fa-solid fa-virus"></i>
+            </div>
+            <h3 class="font-bold text-[#1A4D2E]">The Disease</h3>
+            <p class="mt-2 text-sm text-slate-500 leading-relaxed">
+              Rabies is a viral disease that affects the brain and can be fatal once symptoms appear.
+            </p>
+            <div
+              class="mt-4 flex items-center gap-1 text-xs font-bold text-[#1A4D2E] opacity-0 group-hover:opacity-100 transition-opacity">
+              Details <i class="fa-solid fa-arrow-right ml-1"></i>
+            </div>
+          </button>
+
+          <button type="button" onclick="openGuidanceModal('spread')"
+            class="category-btn cursor-pointer group relative flex flex-col items-start rounded-[2rem] border border-slate-100 bg-white p-6 text-left shadow-sm transition-all hover:border-amber-400 hover:shadow-md">
+            <div
+              class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-xl font-bold text-amber-600">
+              <i class="fa-solid fa-paw"></i>
+            </div>
+            <h3 class="font-bold text-slate-800">How It Spreads</h3>
+            <p class="mt-2 text-sm text-slate-500 leading-relaxed">
+              It spreads through saliva via bites, scratches, or licks on broken skin and mucous membranes.
+            </p>
+            <div
+              class="mt-4 flex items-center gap-1 text-xs font-bold text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity">
+              Details <i class="fa-solid fa-arrow-right ml-1"></i>
+            </div>
+          </button>
+
+          <button type="button" onclick="openGuidanceModal('prevention')"
+            class="category-btn cursor-pointer group relative flex flex-col items-start rounded-[2rem] border border-slate-100 bg-white p-6 text-left shadow-sm transition-all hover:border-red-400 hover:shadow-md">
+            <div
+              class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-xl font-bold text-red-600">
+              <i class="fa-solid fa-shield-heart"></i>
+            </div>
+            <h3 class="font-bold text-slate-800">Prevention</h3>
+            <p class="mt-2 text-sm text-slate-500 leading-relaxed">
+              Rabies is preventable. Follow bite prevention habits and seek care quickly after exposure.
+            </p>
+            <div
+              class="mt-4 flex items-center gap-1 text-xs font-bold text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
+              Details <i class="fa-solid fa-arrow-right ml-1"></i>
+            </div>
+          </button>
+        </div>
+      </section>
+
       <!-- Risk Categories -->
       <section class="space-y-6">
         <div class="flex items-center gap-3 px-2">
@@ -366,15 +424,132 @@
         </div>
       `;
 
+    const preventionContentHtml = `
+        <div class="space-y-4">
+          <div class="flex gap-3">
+            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1A4D2E]">
+              <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-semibold text-[#1A4D2E]">Vaccinate Pets on Schedule</h3>
+              <p class="mt-1 text-sm text-slate-600">
+                Keep dogs and cats up to date with anti-rabies vaccination and retain proof of vaccination.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex gap-3">
+            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1A4D2E]">
+              <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-semibold text-[#1A4D2E]">Avoid Provoking Animals</h3>
+              <p class="mt-1 text-sm text-slate-600">
+                Do not tease, disturb, or corner animals, especially while they are eating, sleeping, or caring for young.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex gap-3">
+            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1A4D2E]">
+              <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-semibold text-[#1A4D2E]">Supervise Children Around Animals</h3>
+              <p class="mt-1 text-sm text-slate-600">
+                Teach children safe behavior with pets and never leave very young children alone with animals.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex gap-3">
+            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1A4D2E]">
+              <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-semibold text-[#1A4D2E]">Do Not Handle Stray or Sick Animals</h3>
+              <p class="mt-1 text-sm text-slate-600">
+                Keep distance from unfamiliar, aggressive, or unusually quiet animals and report them to local authorities.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex gap-3">
+            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1A4D2E]">
+              <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-semibold text-[#1A4D2E]">Secure Waste and Food Sources</h3>
+              <p class="mt-1 text-sm text-slate-600">
+                Properly dispose of trash and avoid leaving food outdoors to reduce stray animal presence near homes.
+              </p>
+            </div>
+          </div>
+        </div>
+      `;
+
+    const diseaseContentHtml = `
+        <div class="space-y-4">
+          <p class="text-sm text-slate-700">
+            Rabies is a preventable but serious viral infection that attacks the central nervous system.
+            Once clinical symptoms appear, it is almost always fatal, which is why early action is critical.
+          </p>
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <h3 class="font-semibold text-[#1A4D2E]">Key Points</h3>
+            <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600">
+              <li>Caused by the rabies virus.</li>
+              <li>Can affect both humans and animals.</li>
+              <li>Preventable through prompt wound care and vaccination.</li>
+            </ul>
+          </div>
+        </div>
+      `;
+
+    const spreadContentHtml = `
+        <div class="space-y-4">
+          <p class="text-sm text-slate-700">
+            Rabies is transmitted through infected saliva, most commonly via bites.
+            It can also spread through scratches or licks on broken skin and mucous membranes.
+          </p>
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <h3 class="font-semibold text-[#1A4D2E]">Common Exposure Routes</h3>
+            <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600">
+              <li>Bites that puncture skin.</li>
+              <li>Scratches with saliva contamination.</li>
+              <li>Licks on open wounds, eyes, nose, or mouth.</li>
+            </ul>
+          </div>
+        </div>
+      `;
+
     function openGuidanceModal(type) {
       const modal = document.getElementById('guidance-modal');
       const titleEl = document.getElementById('guidance-modal-title');
       const bodyEl = document.getElementById('guidance-modal-body');
       if (!modal || !titleEl || !bodyEl) return;
 
-      if (type === 'bite') {
+      if (type === 'disease') {
+        titleEl.textContent = 'Rabies: The Disease';
+        bodyEl.innerHTML = diseaseContentHtml;
+      } else if (type === 'spread') {
+        titleEl.textContent = 'Rabies: How It Spreads';
+        bodyEl.innerHTML = spreadContentHtml;
+      } else if (type === 'bite') {
         titleEl.textContent = 'Guidance After a Bite';
         bodyEl.innerHTML = biteContentHtml;
+      } else if (type === 'prevention') {
+        titleEl.textContent = 'Bite Prevention Tips';
+        bodyEl.innerHTML = preventionContentHtml;
       } else if (type === 'vaccination') {
         titleEl.textContent = 'Guidance After Vaccination';
         bodyEl.innerHTML = vaccinationContentHtml;

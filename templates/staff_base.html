@@ -107,12 +107,6 @@
                 <i class="fa-solid fa-syringe"></i>
                 <span>Vaccinations</span>
               </div>
-              {% set due_vax = (due_vaccinations_count|default(0)) %}
-              {% if due_vax > 0 %}
-                <span class="ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">
-                  {{ due_vax if due_vax < 100 else '99+' }}
-                </span>
-              {% endif %}
             </a>
             <a href="{{ url_for('staff_reports') }}" class="flex items-center gap-3 rounded-md px-4 py-3.5 sidebar-link-transition nav-link-hover {{ 'bg-[#1A4D2E] font-medium text-white shadow-lg shadow-[#1A4D2E]/20' if (active_page|default('dashboard')) == 'reports' else 'text-slate-500 hover:bg-slate-100' }}">
               <i class="fa-solid fa-clipboard-list"></i>
@@ -158,12 +152,6 @@
 
         {% include "_flash.html" %}
         
-        {% if banner_status %}
-          <div class="mb-8">
-            {% include "_support_banner.html" with context %}
-          </div>
-        {% endif %}
-
         <div class="space-y-8 page-fade-in">
           {% block main_content %}{% endblock %}
         </div>

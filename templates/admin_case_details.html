@@ -7,9 +7,28 @@
     <div>
       <h1 class="text-2xl font-bold text-[#1A4D2E] sm:text-3xl">Case details</h1>
       <p class="mt-1 text-sm text-slate-500">{{ clinic.name if clinic else 'Clinic' }} · {{ case_code }}</p>
+      {% if case_is_removed %}
+        <p class="mt-2 inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700 ring-1 ring-inset ring-rose-600/20">
+          <i class="fa-solid fa-box-archive"></i>
+          Removed from staff list{% if case_removed_at %} · {{ case_removed_at }}{% endif %}
+        </p>
+      {% else %}
+        <p class="mt-2 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+          <i class="fa-solid fa-circle-check"></i>
+          Active in staff list
+        </p>
+      {% endif %}
     </div>
     <div class="flex flex-wrap gap-2">
       <a href="{{ url_for('admin_patients') }}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to cases</a>
+      {% if case_is_removed %}
+        <form method="post" action="{{ url_for('admin_restore_case', case_id=case_id) }}">
+          <input type="hidden" name="return_to" value="{{ url_for('admin_case_details', case_id=case_id) }}" />
+          <button type="submit" class="rounded-xl bg-[#1A4D2E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#163f27]">
+            Restore Case
+          </button>
+        </form>
+      {% endif %}
     </div>
   </section>
 
@@ -95,6 +114,37 @@
         </div>
       </dl>
     </div>
+  </section>
+
+  <section id="case-history" class="mt-10 scroll-mt-24 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+    <h2 class="text-xl font-bold text-[#1A4D2E]">Case History</h2>
+    <p class="mt-1 text-sm text-slate-500">Summary timeline of key case lifecycle changes for audit visibility.</p>
+    {% if case_history %}
+      <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200">
+        <table class="min-w-full divide-y divide-slate-200 text-sm">
+          <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
+            <tr>
+              <th class="px-4 py-3">Date &amp; Time</th>
+              <th class="px-4 py-3">Action</th>
+              <th class="px-4 py-3">Changed By</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 bg-white">
+            {% for entry in case_history %}
+              <tr>
+                <td class="px-4 py-3 font-medium text-slate-700">{{ entry.changed_at }}</td>
+                <td class="px-4 py-3 text-slate-700">{{ entry.action }}</td>
+                <td class="px-4 py-3 text-slate-600">{{ entry.changed_by }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+        No case history entries yet for this record.
+      </p>
+    {% endif %}
   </section>
 
   <section id="vaccination-record" class="mt-10 scroll-mt-24">

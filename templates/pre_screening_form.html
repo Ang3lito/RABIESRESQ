@@ -47,7 +47,7 @@
       </div>
 
       <!-- Form Content -->
-      <form id="pre-screening-form" method="post" action="{{ pre_screening_form_action|default(url_for('pre_screening_submit')) }}" class="px-6 py-6" onsubmit="collectAllFormData()">
+      <form id="pre-screening-form" method="post" action="{{ pre_screening_form_action|default(url_for('pre_screening_submit')) }}" class="px-6 py-6" onsubmit="collectAllFormData()" data-confirm="Submit this pre-screening form?" data-confirm-variant="primary">
         <input type="hidden" name="form_type" id="form-type" value="case">
         
         <!-- Step 1: Victim Information -->
@@ -68,14 +68,13 @@
                 <option value="Self" selected>Self</option>
                 <option value="Child">Child</option>
                 <option value="Relative">Relative</option>
-                <option value="Other">Other</option>
               </select>
             </div>
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
                 <label for="victim_first_name" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">First Name</label>
-                <input type="text" id="victim_first_name" name="victim_first_name" value="{{ patient.first_name or '' }}" data-self-value="{{ patient.first_name or '' }}" required pattern="^[A-Za-z.]+$" title="Use letters and periods only." class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="First name">
+                <input type="text" id="victim_first_name" name="victim_first_name" value="{{ patient.first_name or '' }}" data-self-value="{{ patient.first_name or '' }}" required pattern="^[A-Za-z .'-]+$" title="Use letters, spaces, apostrophes, hyphens, and periods only." class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="First name">
               </div>
               <div>
                 <label for="victim_middle_initial" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Middle Initial <span class="font-normal text-slate-500">(optional)</span></label>
@@ -83,7 +82,7 @@
               </div>
               <div>
                 <label for="victim_last_name" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Last Name</label>
-                <input type="text" id="victim_last_name" name="victim_last_name" value="{{ patient.last_name or '' }}" data-self-value="{{ patient.last_name or '' }}" required pattern="^[A-Za-z.]+$" title="Use letters and periods only." class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="Last name">
+                <input type="text" id="victim_last_name" name="victim_last_name" value="{{ patient.last_name or '' }}" data-self-value="{{ patient.last_name or '' }}" required pattern="^[A-Za-z .'-]+$" title="Use letters, spaces, apostrophes, hyphens, and periods only." class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="Last name">
               </div>
             </div>
 
@@ -615,7 +614,7 @@
         <div class="mt-8 flex justify-end gap-3 border-t border-slate-200 pt-6">
           <button type="button" id="back-btn" onclick="previousStep()" class="hidden rounded-lg border-2 border-slate-300 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Back</button>
           <button type="button" id="next-btn" onclick="nextStep()" class="rounded-lg bg-[#1A4D2E] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#1A4D2E]">Next</button>
-          <button type="submit" id="submit-btn" class="hidden rounded-lg bg-[#1A4D2E] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#1A4D2E]">{{ pre_screening_submit_label|default('Submit & Continue to Dashboard') }}</button>
+          <button type="button" id="submit-btn" onclick="submitPreScreeningForm()" class="hidden rounded-lg bg-[#1A4D2E] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#1A4D2E]">{{ pre_screening_submit_label|default('Submit & Continue to Dashboard') }}</button>
         </div>
       </form>
     </div>
@@ -636,15 +635,20 @@ function collectAffectedAreaArray() {
   const form = document.getElementById('pre-screening-form');
   if (!form) return [];
   const areas = [];
+  const placeholderTokens = new Set(['select affected areas', 'select affected areas…', 'select affected areas...']);
   form.querySelectorAll('input[name="affected_area"]:checked').forEach(function(cb) {
-    areas.push(cb.value);
+    var raw = (cb.value || '').trim();
+    if (!raw) return;
+    if (placeholderTokens.has(raw.toLowerCase())) return;
+    areas.push(raw);
   });
   return areas;
 }
 
-function updateAgeFromDob() {
-  var dob = document.getElementById('date_of_birth');
-  var ageEl = document.getElementById('age');
+function updateAgeFromDob(scopeRoot) {
+  var root = scopeRoot || document;
+  var dob = root.querySelector ? root.querySelector('#date_of_birth') : document.getElementById('date_of_birth');
+  var ageEl = root.querySelector ? root.querySelector('#age') : document.getElementById('age');
   if (!dob || !ageEl || !dob.value) return;
   var parts = dob.value.split('-');
   if (parts.length !== 3) return;
@@ -667,7 +671,7 @@ function sanitizeDigitsInput(el) {
 
 function sanitizeNameInput(el) {
   if (!el) return;
-  el.value = (el.value || '').replace(/[^A-Za-z.]/g, '');
+  el.value = (el.value || '').replace(/[^A-Za-z .'-]/g, '');
 }
 
 function setExposureDateMax() {
@@ -734,9 +738,13 @@ function updateAffectedAreaTriggerText() {
   var arr = collectAffectedAreaArray();
   if (arr.length === 0) {
     span.textContent = 'Select affected areas…';
+    span.classList.add('text-slate-400');
+    span.classList.remove('text-[#1A4D2E]');
     span.removeAttribute('title');
     return;
   }
+  span.classList.remove('text-slate-400');
+  span.classList.add('text-[#1A4D2E]');
   var otherInput = document.getElementById('affected_area_other');
   var parts = [];
   arr.forEach(function(v) {
@@ -833,6 +841,8 @@ function closePreScreeningModal() {
   document.querySelectorAll('#pre-screening-form input, #pre-screening-form select').forEach(f => f.classList.remove('border-red-500'));
   var ag = document.getElementById('affected-area-group');
   if (ag) ag.classList.remove('border-red-500');
+  var aaTrigger = document.getElementById('affected-area-trigger');
+  if (aaTrigger) aaTrigger.classList.remove('border-red-500');
   closeAffectedAreaPanel();
   updateAffectedAreaTriggerText();
 }
@@ -929,34 +939,7 @@ function validateStep(step) {
   const stepElement = document.getElementById(stepDivId);
   if (!stepElement) return true;
 
-  if (isAppointmentFlow && step === 3) {
-    var slotId = document.getElementById('appointment_slot_id');
-    var slotDt = document.getElementById('appointment_datetime');
-    if (!slotId || !slotDt || !slotId.value || !slotDt.value) {
-      showAlert('Please select a date and time for your appointment.');
-      return false;
-    }
-    return true;
-  }
-
-  if (step === 2) {
-    const areaChecked = stepElement.querySelectorAll('input[name="affected_area"]:checked');
-    if (areaChecked.length === 0) {
-      showAlert('Please select at least one affected area.');
-      var ag0 = document.getElementById('affected-area-group');
-      if (ag0) ag0.classList.add('border-red-500');
-      return false;
-    }
-    var otherCb = stepElement.querySelector('input[name="affected_area"][value="Other"]:checked');
-    if (otherCb) {
-      var oi = document.getElementById('affected_area_other');
-      if (!oi || !oi.value.trim()) {
-        showAlert('Please specify the other affected area.');
-        if (oi) oi.classList.add('border-red-500');
-        return false;
-      }
-    }
-  }
+  const UNIVERSAL_REQUIRED_MSG = 'Please fill in all required fields.';
 
   // Clear all validation highlights first
   const optionGroups = ['exposure-type', 'wound-type', 'bleeding-spontaneous', 'bleeding-induced', 'prev-immunization', 'animal-type', 'animal-status', 'animal-vaccination', 'local-treatment', 'tetanus-immunization', 'hrtig-immunization'];
@@ -966,9 +949,34 @@ function validateStep(step) {
   stepElement.querySelectorAll('input, select').forEach(f => f.classList.remove('border-red-500'));
   var agClear = document.getElementById('affected-area-group');
   if (agClear) agClear.classList.remove('border-red-500');
+  var aaTriggerClear = document.getElementById('affected-area-trigger');
+  if (aaTriggerClear) aaTriggerClear.classList.remove('border-red-500');
+  var calClear = document.getElementById('availability-calendar');
+  if (calClear) calClear.classList.remove('border-red-500');
+
+  if (isAppointmentFlow && step === 3) {
+    var slotId = document.getElementById('appointment_slot_id');
+    var slotDt = document.getElementById('appointment_datetime');
+    var clinicSel = document.getElementById('clinic_select');
+    var isAppointmentValid = true;
+    if (clinicSel && !clinicSel.value) {
+      clinicSel.classList.add('border-red-500');
+      isAppointmentValid = false;
+    }
+    if (!slotId || !slotDt || !slotId.value || !slotDt.value) {
+      var cal = document.getElementById('availability-calendar');
+      if (cal) cal.classList.add('border-red-500');
+      isAppointmentValid = false;
+    }
+    if (!isAppointmentValid) {
+      showAlert(UNIVERSAL_REQUIRED_MSG);
+    }
+    return isAppointmentValid;
+  }
+
+  let isValid = true;
 
   const requiredFields = stepElement.querySelectorAll('[required]');
-  let isValid = true;
   const invalidRadioGroups = new Set();
   requiredFields.forEach(field => {
     let fieldValid = true;
@@ -981,6 +989,26 @@ function validateStep(step) {
     }
     if (!fieldValid) isValid = false;
   });
+
+  if (step === 2) {
+    const areaChecked = stepElement.querySelectorAll('input[name="affected_area"]:checked');
+    if (areaChecked.length === 0) {
+      var ag0 = document.getElementById('affected-area-group');
+      if (ag0) ag0.classList.add('border-red-500');
+      var aaTrigger = document.getElementById('affected-area-trigger');
+      if (aaTrigger) aaTrigger.classList.add('border-red-500');
+      isValid = false;
+    }
+    var otherCb = stepElement.querySelector('input[name="affected_area"][value="Other"]:checked');
+    if (otherCb) {
+      var oi = document.getElementById('affected_area_other');
+      if (!oi || !oi.value.trim()) {
+        if (oi) oi.classList.add('border-red-500');
+        isValid = false;
+      }
+    }
+  }
+
   // Highlight option buttons (labels) in red for invalid radio groups
   invalidRadioGroups.forEach(name => {
     stepElement.querySelectorAll(`[name="${name}"]`).forEach(radio => {
@@ -992,7 +1020,7 @@ function validateStep(step) {
     });
   });
   if (!isValid) {
-    showAlert('Please fill in all required fields.');
+    showAlert(UNIVERSAL_REQUIRED_MSG);
   }
   return isValid;
 }
@@ -1043,6 +1071,26 @@ function collectAllFormData() {
   formData.affected_area = collectAffectedAreaArray();
   updateAgeFromDob();
   return true;
+}
+
+function submitPreScreeningForm() {
+  if (!validateStep(totalSteps)) {
+    return;
+  }
+  collectAllFormData();
+  const form = document.getElementById('pre-screening-form');
+  if (!form) return;
+  const submitEvt = new Event('submit', { bubbles: true, cancelable: true });
+  const wasHandledBySubmitListener = !form.dispatchEvent(submitEvt);
+  if (wasHandledBySubmitListener) {
+    return;
+  }
+  const submitBtn = document.getElementById('submit-btn');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.classList.add('opacity-70', 'cursor-not-allowed');
+  }
+  form.submit();
 }
 
 function computeRiskCategoryFromForm(data) {
@@ -1618,6 +1666,8 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function syncRelationshipVictimAutofill() {
+    var form = document.getElementById('pre-screening-form');
+    if (!form) return;
     var rel = document.getElementById('relationship_to_user');
     if (!rel) return;
 
@@ -1636,7 +1686,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function setFromSelf() {
       ids.forEach(function(id) {
-        var el = document.getElementById(id);
+        var el = form.querySelector('#' + id);
         if (!el) return;
         var v = el.getAttribute('data-self-value') || '';
         if (el.tagName === 'SELECT') {
@@ -1645,12 +1695,12 @@ document.addEventListener('DOMContentLoaded', function() {
           el.value = v;
         }
       });
-      updateAgeFromDob();
+      updateAgeFromDob(form);
     }
 
     function clearVictim() {
       ids.forEach(function(id) {
-        var el = document.getElementById(id);
+        var el = form.querySelector('#' + id);
         if (!el) return;
         if (el.tagName === 'SELECT') {
           el.value = '';
@@ -1658,7 +1708,7 @@ document.addEventListener('DOMContentLoaded', function() {
           el.value = '';
         }
       });
-      updateAgeFromDob();
+      updateAgeFromDob(form);
     }
 
     if ((rel.value || '').toLowerCase() === 'self') setFromSelf();
@@ -1720,6 +1770,8 @@ document.addEventListener('DOMContentLoaded', function() {
       updateAffectedAreaTriggerText();
       var ag = document.getElementById('affected-area-group');
       if (ag) ag.classList.remove('border-red-500');
+      var aaTrigger = document.getElementById('affected-area-trigger');
+      if (aaTrigger) aaTrigger.classList.remove('border-red-500');
       if (this.value === 'Other' && this.checked) {
         closeAffectedAreaPanel();
         var oi = document.getElementById('affected_area_other');
@@ -1742,11 +1794,12 @@ document.addEventListener('DOMContentLoaded', function() {
   updateAffectedAreaTriggerText();
 
   setExposureDateMax();
-  var dobEl = document.getElementById('date_of_birth');
+  var psForm = document.getElementById('pre-screening-form');
+  var dobEl = psForm ? psForm.querySelector('#date_of_birth') : document.getElementById('date_of_birth');
   if (dobEl) {
-    dobEl.addEventListener('change', function() { updateAgeFromDob(); });
-    dobEl.addEventListener('input', function() { updateAgeFromDob(); });
-    updateAgeFromDob();
+    dobEl.addEventListener('change', function() { updateAgeFromDob(psForm || document); });
+    dobEl.addEventListener('input', function() { updateAgeFromDob(psForm || document); });
+    updateAgeFromDob(psForm || document);
   }
   var firstNameEl = document.getElementById('victim_first_name');
   if (firstNameEl) firstNameEl.addEventListener('input', function() { sanitizeNameInput(firstNameEl); });

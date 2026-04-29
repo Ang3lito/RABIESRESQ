@@ -29,10 +29,11 @@ _OTP_EXPIRY_MINUTES = 10
 _RESET_TOKEN_SALT = "rabiesresq-password-reset-token"
 _RESET_TOKEN_MAX_AGE_SECONDS = 15 * 60  # 15 minutes
 _MAX_VERIFY_ATTEMPTS = 5
+_SESSION_LAST_ACTIVITY_KEY = "last_activity_ts"
 
 logger = logging.getLogger(__name__)
 
-_NAME_LETTER_PERIOD_RE = re.compile(r"^[A-Za-z.]+$")
+_NAME_LETTER_PERIOD_RE = re.compile(r"^[A-Za-z .'-]+$")
 
 
 def _normalize_email(value: str | None) -> str:
@@ -141,6 +142,32 @@ def load_logged_in_user():
 
 
 @bp.before_app_request
+def enforce_session_idle_timeout():
+    user_id = session.get("user_id")
+    if not user_id:
+        return None
+
+    endpoint = (request.endpoint or "").strip()
+    if endpoint == "static" or endpoint.startswith("static."):
+        return None
+
+    now_ts = int(datetime.now(timezone.utc).timestamp())
+    timeout_seconds = int(current_app.permanent_session_lifetime.total_seconds())
+    timeout_seconds = max(60, timeout_seconds)
+
+    session.permanent = True
+    last_activity_ts = session.get(_SESSION_LAST_ACTIVITY_KEY)
+    if isinstance(last_activity_ts, int):
+        if now_ts - last_activity_ts > timeout_seconds:
+            session.clear()
+            flash("Session expired. Please log in again.", "info")
+            return redirect(url_for("auth.login"))
+
+    session[_SESSION_LAST_ACTIVITY_KEY] = now_ts
+    return None
+
+
+@bp.before_app_request
 def enforce_patient_password_change():
     user_id = session.get("user_id")
     if not user_id or session.get("role") != "patient":
@@ -217,6 +244,8 @@ def login_post():
     session["role"] = user["role"]
     session["username"] = user["username"]
     session["email"] = user["email"]
+    session.permanent = True
+    session[_SESSION_LAST_ACTIVITY_KEY] = int(datetime.now(timezone.utc).timestamp())
 
     logged_at = datetime.now().isoformat(timespec="seconds")
     try:
@@ -278,6 +307,8 @@ def register_post():
     pre_existing_conditions = normalize_optional(request.form.get("pre_existing_conditions"))
     current_medications = normalize_optional(request.form.get("current_medications"))
     notification_settings = normalize_optional(request.form.get("notification_settings"))
+    privacy_notice_ack = (request.form.get("privacy_notice_ack") or "").strip().lower() in {"on", "true", "1", "yes"}
+    data_processing_consent = (request.form.get("data_processing_consent") or "").strip().lower() in {"on", "true", "1", "yes"}
 
     if not username:
         flash("Username is required.", "error")
@@ -290,6 +321,12 @@ def register_post():
         return render_template("register.html", form=request.form)
     if password != confirm_password:
         flash("Passwords do not match.", "error")
+        return render_template("register.html", form=request.form)
+    if not privacy_notice_ack:
+        flash("You must acknowledge the Privacy Notice before creating an account.", "error")
+        return render_template("register.html", form=request.form)
+    if not data_processing_consent:
+        flash("You must provide consent for data processing before creating an account.", "error")
         return render_template("register.html", form=request.form)
 
     if date_of_birth:
@@ -306,10 +343,10 @@ def register_post():
         flash("Gender must be Male or Female.", "error")
         return render_template("register.html", form=request.form)
     if not _is_letters_period_only(first_name):
-        flash("First name must contain letters and periods only.", "error")
+        flash("First name must contain letters, spaces, apostrophes, hyphens, and periods only.", "error")
         return render_template("register.html", form=request.form)
     if not _is_letters_period_only(last_name):
-        flash("Last name must contain letters and periods only.", "error")
+        flash("Last name must contain letters, spaces, apostrophes, hyphens, and periods only.", "error")
         return render_template("register.html", form=request.form)
     if not _is_numeric_only(phone_number):
         flash("Phone number must contain numbers only.", "error")

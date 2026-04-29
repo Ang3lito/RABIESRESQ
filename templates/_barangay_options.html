@@ -1,3 +1,4 @@
+{% set _selected_barangay_norm = (selected_barangay or '')|trim|lower %}
 {% for b in barangay_options %}
-  <option value="{{ b }}" {% if (selected_barangay or '') == b %}selected{% endif %}>{{ b }}</option>
+  <option value="{{ b }}" {% if _selected_barangay_norm == (b|trim|lower) %}selected{% endif %}>{{ b }}</option>
 {% endfor %}

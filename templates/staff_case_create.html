@@ -24,7 +24,7 @@
     <p class="mt-1 text-slate-500">Create an existing record.</p>
   </section>
 
-  <form id="case-create-form" method="post" class="mt-6 space-y-5">
+  <form id="case-create-form" method="post" novalidate data-confirm-bypass="1" class="mt-6 space-y-5">
     <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
       <h2 class="text-xl font-semibold text-[#1A4D2E] sm:text-2xl lg:text-3xl">Victim Info Pre-screening Form</h2>
       <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -673,6 +673,7 @@
           labels.forEach((label) => {
             const input = label.querySelector(`input[name="${inputName}"]`);
             const checked = !!(input && input.checked);
+            label.classList.remove("border-red-500");
             label.classList.toggle("border-[#1A4D2E]", checked);
             label.classList.toggle("bg-[#1A4D2E]/5", checked);
             label.classList.toggle("text-[#1A4D2E]", checked);
@@ -1143,6 +1144,133 @@
 
       wireDoseDropdowns(formRoot);
       wireRouteSiteChecklists();
+
+      function validateRequiredCaseCreateFields() {
+        const UNIVERSAL_REQUIRED_MSG = "Please fill in all required fields.";
+        let isValid = true;
+        let firstInvalidEl = null;
+
+        const requiredTextFieldIds = [
+          "first_name",
+          "last_name",
+          "age",
+          "barangay",
+          "victim_address",
+          "phone_number",
+          "exposure_date",
+          "place_of_exposure",
+        ];
+        const requiredRadioGroups = [
+          { name: "type_of_exposure", cls: "exposure-type" },
+          { name: "wound_description", cls: "wound-type" },
+          { name: "patient_prev_immunization", cls: "prev-immunization" },
+          { name: "animal_type", cls: "animal-type" },
+          { name: "animal_status", cls: "animal-status" },
+          { name: "animal_vaccination", cls: "animal-vaccination" },
+          { name: "local_treatment", cls: "local-treatment" },
+          { name: "tetanus_immunization", cls: "tetanus-immunization" },
+          { name: "hrtig_immunization", cls: "hrtig-immunization" },
+        ];
+
+        // Clear old highlights.
+        formRoot.querySelectorAll("input, select, textarea").forEach(function(el) {
+          el.classList.remove("border-red-500");
+        });
+        requiredRadioGroups.forEach(function(group) {
+          qa("." + group.cls).forEach(function(label) {
+            label.classList.remove("border-red-500");
+          });
+        });
+        const affectedGroup = q("#case-create-affected-area-group");
+        if (affectedGroup) affectedGroup.classList.remove("border-red-500");
+        const affectedTrigger = q("#case-create-affected-area-trigger");
+        if (affectedTrigger) affectedTrigger.classList.remove("border-red-500");
+
+        requiredTextFieldIds.forEach(function(id) {
+          const el = q("#" + id);
+          if (!el) return;
+          const value = (el.value || "").trim();
+          if (!value) {
+            el.classList.add("border-red-500");
+            if (!firstInvalidEl) firstInvalidEl = el;
+            isValid = false;
+          }
+        });
+
+        requiredRadioGroups.forEach(function(group) {
+          const checked = q(`input[name="${group.name}"]:checked`);
+          if (checked) return;
+          qa("." + group.cls).forEach(function(label) {
+            label.classList.add("border-red-500");
+          });
+          if (!firstInvalidEl) {
+            const groupInput = q(`input[name="${group.name}"]`);
+            if (groupInput) firstInvalidEl = groupInput;
+          }
+          isValid = false;
+        });
+
+        const selectedAreas = qa('input[name="affected_area"]:checked');
+        if (selectedAreas.length === 0) {
+          if (affectedGroup) affectedGroup.classList.add("border-red-500");
+          if (affectedTrigger) affectedTrigger.classList.add("border-red-500");
+          if (!firstInvalidEl && affectedTrigger) firstInvalidEl = affectedTrigger;
+          isValid = false;
+        }
+
+        const placeSelNow = q("#place_of_exposure");
+        const placeOther = q("#place_of_exposure_other");
+        if (placeSelNow && placeSelNow.value === "Other" && placeOther && !(placeOther.value || "").trim()) {
+          placeOther.classList.add("border-red-500");
+          isValid = false;
+        }
+
+        const animalSel = q('input[name="animal_type"]:checked');
+        const otherAnimal = q("#other_animal");
+        if (animalSel && animalSel.value === "Others" && otherAnimal && !(otherAnimal.value || "").trim()) {
+          otherAnimal.classList.add("border-red-500");
+          isValid = false;
+        }
+
+        const localTreatSel = q('input[name="local_treatment"]:checked');
+        const otherTreatment = q("#other_treatment");
+        if (localTreatSel && localTreatSel.value === "Others" && otherTreatment && !(otherTreatment.value || "").trim()) {
+          otherTreatment.classList.add("border-red-500");
+          isValid = false;
+        }
+
+        const hrtigSel = q('input[name="hrtig_immunization"]:checked');
+        const hrtigDate = q("#hrtig_date");
+        if (hrtigSel && hrtigSel.value === "Yes" && hrtigDate && !(hrtigDate.value || "").trim()) {
+          hrtigDate.classList.add("border-red-500");
+          isValid = false;
+        }
+
+        if (!isValid) {
+          showAlert(UNIVERSAL_REQUIRED_MSG);
+          const alertModal = document.getElementById("alert-modal");
+          const alertOkBtn = alertModal ? alertModal.querySelector("button[onclick='closeAlert()']") : null;
+          if (alertOkBtn && firstInvalidEl) {
+            const focusBack = function() {
+              setTimeout(function() {
+                if (typeof firstInvalidEl.focus === "function") firstInvalidEl.focus();
+                if (typeof firstInvalidEl.scrollIntoView === "function") {
+                  firstInvalidEl.scrollIntoView({ behavior: "smooth", block: "center" });
+                }
+              }, 0);
+              alertOkBtn.removeEventListener("click", focusBack);
+            };
+            alertOkBtn.addEventListener("click", focusBack);
+          }
+        }
+        return isValid;
+      }
+
+      formRoot.addEventListener("submit", function(ev) {
+        if (!validateRequiredCaseCreateFields()) {
+          ev.preventDefault();
+        }
+      });
 
       const schedules = [
         { prefix: "vc_pre", days: [0, 7, 28] },

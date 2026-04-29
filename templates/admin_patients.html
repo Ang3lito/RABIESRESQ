@@ -163,6 +163,7 @@
             <th class="px-6 py-4">Date of Exposure</th>
             <th class="px-6 py-4">Category</th>
             <th class="px-6 py-4">Status</th>
+            <th class="px-6 py-4">Record State</th>
             <th class="px-6 py-4 text-center">Action</th>
           </tr>
         </thead>
@@ -196,20 +197,45 @@
                     <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700 ring-1 ring-inset ring-slate-500/20">{{ case.case_status or 'N/A' }}</span>
                   {% endif %}
                 </td>
+                <td class="px-6 py-4">
+                  {% if case.staff_removed %}
+                    <span class="inline-flex items-center rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20">Removed</span>
+                  {% else %}
+                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">Active</span>
+                  {% endif %}
+                </td>
                 <td class="px-6 py-4 text-center">
-                  <a
-                    href="{{ url_for('admin_case_details', case_id=case.id) }}"
-                    class="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 transition-all hover:bg-[#1A4D2E] hover:text-white"
-                  >
-                    View Details
-                    <i class="fa-solid fa-arrow-right"></i>
-                  </a>
+                  <div class="inline-flex flex-wrap items-center justify-center gap-2">
+                    <a
+                      href="{{ url_for('admin_case_details', case_id=case.id) }}"
+                      class="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 transition-all hover:bg-[#1A4D2E] hover:text-white"
+                    >
+                      View Details
+                      <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                    {% if case.staff_removed %}
+                      <form method="post" action="{{ url_for('admin_restore_case', case_id=case.id) }}">
+                        <input
+                          type="hidden"
+                          name="return_to"
+                          value="{{ url_for('admin_patients', search=search, category=selected_category, status=selected_status, page=cases.page) }}"
+                        />
+                        <button
+                          type="submit"
+                          class="inline-flex items-center gap-2 rounded-xl bg-[#1A4D2E] px-4 py-2 text-xs font-bold text-white transition-all hover:bg-[#163f27]"
+                        >
+                          Restore
+                          <i class="fa-solid fa-rotate-left"></i>
+                        </button>
+                      </form>
+                    {% endif %}
+                  </div>
                 </td>
               </tr>
             {% endfor %}
           {% else %}
             <tr>
-              <td colspan="5" class="px-6 py-12 text-center">
+              <td colspan="6" class="px-6 py-12 text-center">
                 <div class="inline-flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-400 mb-4">
                   <i class="fa-solid fa-folder-open text-2xl"></i>
                 </div>

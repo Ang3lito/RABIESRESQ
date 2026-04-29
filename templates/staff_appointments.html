@@ -23,7 +23,7 @@
     <a href="{{ url_for('staff_availability') }}" class="rounded-lg border border-[#1A4D2E] bg-white px-4 py-2 text-sm font-medium text-[#1A4D2E] hover:bg-[#1A4D2E]/5">Manage availability</a>
   </section>
 
-  {% set f = appt_filter|default('active') %}
+  {% set f = appt_filter|default('all') %}
   <section class="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
     <form method="get" action="{{ url_for('staff_appointments') }}" class="w-full lg:max-w-xl">
       <input type="hidden" name="filter" value="{{ f }}" />
@@ -40,6 +40,10 @@
     </form>
     <div class="flex flex-wrap gap-2 text-xs">
       <a
+        href="{{ url_for('staff_appointments', search=search, filter='all', page=1) }}"
+        class="rounded-full border px-3 py-1.5 font-medium {% if f == 'all' %}border-[#1A4D2E] bg-[#1A4D2E] text-white{% else %}border-slate-200 bg-white text-slate-700 hover:bg-slate-50{% endif %}"
+      >All</a>
+      <a
         href="{{ url_for('staff_appointments', search=search, filter='active', page=1) }}"
         class="rounded-full border px-3 py-1.5 font-medium {% if f == 'active' %}border-[#1A4D2E] bg-[#1A4D2E] text-white{% else %}border-slate-200 bg-white text-slate-700 hover:bg-slate-50{% endif %}"
       >Active</a>
@@ -47,10 +51,6 @@
         href="{{ url_for('staff_appointments', search=search, filter='expired', page=1) }}"
         class="rounded-full border px-3 py-1.5 font-medium {% if f == 'expired' %}border-[#1A4D2E] bg-[#1A4D2E] text-white{% else %}border-slate-200 bg-white text-slate-700 hover:bg-slate-50{% endif %}"
       >Expired</a>
-      <a
-        href="{{ url_for('staff_appointments', search=search, filter='all', page=1) }}"
-        class="rounded-full border px-3 py-1.5 font-medium {% if f == 'all' %}border-[#1A4D2E] bg-[#1A4D2E] text-white{% else %}border-slate-200 bg-white text-slate-700 hover:bg-slate-50{% endif %}"
-      >All</a>
     </div>
   </section>
 

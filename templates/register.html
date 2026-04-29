@@ -214,14 +214,14 @@
                 <input
                   id="register-first-name"
                   class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-[2rem] text-[#1A4D2E] focus:bg-white focus:border-phthalo focus:ring-4 focus:ring-phthalo/5 focus:outline-none transition-all"
-                  type="text" name="first_name" value="{{ f.get('first_name','') }}" placeholder="John" pattern="^[A-Za-z.]+$" title="Use letters and periods only." />
+                  type="text" name="first_name" value="{{ f.get('first_name','') }}" placeholder="John" pattern="^[A-Za-z .'-]+$" title="Use letters, spaces, apostrophes, hyphens, and periods only." />
               </div>
               <div class="space-y-2">
                 <label class="text-sm font-semibold text-slate-700 ml-1">Last Name</label>
                 <input
                   id="register-last-name"
                   class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-[2rem] text-[#1A4D2E] focus:bg-white focus:border-phthalo focus:ring-4 focus:ring-phthalo/5 focus:outline-none transition-all"
-                  type="text" name="last_name" value="{{ f.get('last_name','') }}" placeholder="Doe" pattern="^[A-Za-z.]+$" title="Use letters and periods only." />
+                  type="text" name="last_name" value="{{ f.get('last_name','') }}" placeholder="Doe" pattern="^[A-Za-z .'-]+$" title="Use letters, spaces, apostrophes, hyphens, and periods only." />
               </div>
               <div class="space-y-2">
                 <label class="text-sm font-semibold text-slate-700 ml-1">Phone Number</label>
@@ -276,7 +276,41 @@
             </div>
           </section>
 
-          <div class="flex flex-col-reverse sm:flex-row items-center gap-4 pt-6">
+          <section class="space-y-3 pt-2">
+            <label class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                name="privacy_notice_ack"
+                class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1A4D2E] focus:ring-[#1A4D2E]"
+                {% if f.get('privacy_notice_ack') %}checked{% endif %}
+                required
+              />
+              <span>
+                I have read and understood the
+                <button
+                  type="button"
+                  id="open-privacy-notice"
+                  class="font-semibold text-[#1A4D2E] underline decoration-[#1A4D2E]/60 underline-offset-2 hover:opacity-80"
+                >
+                  Privacy Notice
+                </button>.
+              </span>
+            </label>
+            <label class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                name="data_processing_consent"
+                class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1A4D2E] focus:ring-[#1A4D2E]"
+                {% if f.get('data_processing_consent') %}checked{% endif %}
+                required
+              />
+              <span>
+                I consent to the collection and processing of my personal and health data for RabiesResQ services.
+              </span>
+            </label>
+          </section>
+
+          <div class="flex flex-col-reverse sm:flex-row items-center gap-4 pt-2">
             <a class="w-full sm:w-auto text-center px-6 py-4 text-slate-500 font-bold hover:text-[#1A4D2E] transition-colors"
               href="{{ url_for('auth.login') }}">
               Back to Login
@@ -291,6 +325,49 @@
       </div>
     </div>
 
+  </div>
+
+  <div id="privacy-notice-modal" class="fixed inset-0 z-50 hidden">
+    <div id="privacy-notice-backdrop" class="absolute inset-0 bg-slate-900/50"></div>
+    <div class="relative z-10 flex min-h-screen items-center justify-center p-4 sm:p-6">
+      <section class="max-h-[85vh] w-full max-w-3xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl">
+        <header class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+          <div>
+            <h2 class="text-2xl font-bold text-[#1A4D2E]">Privacy Notice</h2>
+            <p class="mt-1 text-xs text-slate-500">RabiesResQ Data Privacy Statement</p>
+          </div>
+          <button id="close-privacy-notice" type="button" class="rounded-lg px-3 py-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700">
+            Close
+          </button>
+        </header>
+        <div class="max-h-[65vh] overflow-y-auto px-6 py-5 custom-scrollbar text-sm text-slate-700">
+          <article>
+            <h3 class="font-bold text-[#1A4D2E]">1. Data We Collect</h3>
+            <p class="mt-1">RabiesResQ collects personal and health-related information necessary to create user accounts, manage appointments, and maintain clinical case records.</p>
+          </article>
+          <article class="mt-4">
+            <h3 class="font-bold text-[#1A4D2E]">2. Purpose of Processing</h3>
+            <p class="mt-1">Your information is processed for legitimate healthcare and system operations, including patient registration, case management, vaccination monitoring, and care coordination.</p>
+          </article>
+          <article class="mt-4">
+            <h3 class="font-bold text-[#1A4D2E]">3. Access and Protection</h3>
+            <p class="mt-1">Access to records is limited to authorized users through role-based access controls. RabiesResQ implements reasonable organizational and technical safeguards, including secure authentication and activity logging.</p>
+          </article>
+          <article class="mt-4">
+            <h3 class="font-bold text-[#1A4D2E]">4. Data Retention</h3>
+            <p class="mt-1">Personal data is retained only for as long as necessary to fulfill healthcare, legal, and operational requirements, and is handled in accordance with applicable data privacy obligations.</p>
+          </article>
+          <article class="mt-4">
+            <h3 class="font-bold text-[#1A4D2E]">5. Consent</h3>
+            <p class="mt-1">By creating an account, you acknowledge this Privacy Notice and consent to the collection and processing of your personal data for the purposes stated above.</p>
+          </article>
+          <article class="mt-4">
+            <h3 class="font-bold text-[#1A4D2E]">6. Contact</h3>
+            <p class="mt-1">For questions, requests, or concerns regarding your personal data, please contact the clinic administration through the official support channels.</p>
+          </article>
+        </div>
+      </section>
+    </div>
   </div>
 
   <script src="{{ url_for('static', filename='js/password_toggle.js') }}"></script>
@@ -328,6 +405,10 @@
         var phone = document.getElementById("register-phone-number");
         var dob = document.getElementById("register-date-of-birth");
         var age = document.getElementById("register-age");
+        var openPrivacyNoticeBtn = document.getElementById("open-privacy-notice");
+        var closePrivacyNoticeBtn = document.getElementById("close-privacy-notice");
+        var privacyNoticeModal = document.getElementById("privacy-notice-modal");
+        var privacyNoticeBackdrop = document.getElementById("privacy-notice-backdrop");
 
         if (firstName) firstName.addEventListener("input", function () { sanitizeName(firstName); });
         if (lastName) lastName.addEventListener("input", function () { sanitizeName(lastName); });
@@ -341,6 +422,30 @@
           dob.addEventListener("input", syncAge);
           syncAge();
         }
+
+        var openPrivacyNotice = function () {
+          if (!privacyNoticeModal) return;
+          privacyNoticeModal.classList.remove("hidden");
+          document.body.classList.add("overflow-hidden");
+        };
+        var closePrivacyNotice = function () {
+          if (!privacyNoticeModal) return;
+          privacyNoticeModal.classList.add("hidden");
+          document.body.classList.remove("overflow-hidden");
+        };
+
+        if (openPrivacyNoticeBtn) {
+          openPrivacyNoticeBtn.addEventListener("click", openPrivacyNotice);
+        }
+        if (closePrivacyNoticeBtn) {
+          closePrivacyNoticeBtn.addEventListener("click", closePrivacyNotice);
+        }
+        if (privacyNoticeBackdrop) {
+          privacyNoticeBackdrop.addEventListener("click", closePrivacyNotice);
+        }
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape") closePrivacyNotice();
+        });
       });
     })();
   </script>
