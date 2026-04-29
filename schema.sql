@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS patients (
   first_name TEXT,
   last_name TEXT,
   phone_number TEXT,
+  barangay TEXT,
   address TEXT,
   date_of_birth TEXT,
   age INTEGER,
@@ -122,6 +123,9 @@ CREATE TABLE IF NOT EXISTS cases (
   who_category_overridden_by_user_id INTEGER,
   who_category_overridden_at TEXT,
   who_category_override_reason TEXT,
+  staff_removed INTEGER NOT NULL DEFAULT 0 CHECK(staff_removed IN (0,1)),
+  staff_removed_at TEXT,
+  staff_removed_by_user_id INTEGER,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE RESTRICT,
   FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE RESTRICT

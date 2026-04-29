@@ -217,6 +217,7 @@
       {% if not disable_confirm_modal|default(false) %}
         <script src="{{ url_for('static', filename='js/confirm_modal.js') }}"></script>
       {% endif %}
+      <script src="{{ url_for('static', filename='js/password_toggle.js') }}"></script>
       <script src="{{ url_for('static', filename='js/notification_sound.js') }}"></script>
       {% block extra_scripts %}{% endblock %}
     {% endblock %}

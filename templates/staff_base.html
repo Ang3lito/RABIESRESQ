@@ -23,8 +23,8 @@
     {% block head_extra %}{% endblock %}
     <style>
       @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+        from { opacity: 0; }
+        to { opacity: 1; }
       }
       .page-fade-in {
         animation: fadeIn 0.4s ease-out forwards;
@@ -219,6 +219,7 @@
       {% if not disable_confirm_modal|default(false) %}
         <script src="{{ url_for('static', filename='js/confirm_modal.js') }}"></script>
       {% endif %}
+      <script src="{{ url_for('static', filename='js/password_toggle.js') }}"></script>
       <script src="{{ url_for('static', filename='js/notification_sound.js') }}"></script>
       {% block extra_scripts %}{% endblock %}
     {% endblock %}

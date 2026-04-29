@@ -212,25 +212,29 @@
               <div class="space-y-2">
                 <label class="text-sm font-semibold text-slate-700 ml-1">First Name</label>
                 <input
+                  id="register-first-name"
                   class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-[2rem] text-[#1A4D2E] focus:bg-white focus:border-phthalo focus:ring-4 focus:ring-phthalo/5 focus:outline-none transition-all"
-                  type="text" name="first_name" value="{{ f.get('first_name','') }}" placeholder="John" />
+                  type="text" name="first_name" value="{{ f.get('first_name','') }}" placeholder="John" pattern="^[A-Za-z.]+$" title="Use letters and periods only." />
               </div>
               <div class="space-y-2">
                 <label class="text-sm font-semibold text-slate-700 ml-1">Last Name</label>
                 <input
+                  id="register-last-name"
                   class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-[2rem] text-[#1A4D2E] focus:bg-white focus:border-phthalo focus:ring-4 focus:ring-phthalo/5 focus:outline-none transition-all"
-                  type="text" name="last_name" value="{{ f.get('last_name','') }}" placeholder="Doe" />
+                  type="text" name="last_name" value="{{ f.get('last_name','') }}" placeholder="Doe" pattern="^[A-Za-z.]+$" title="Use letters and periods only." />
               </div>
               <div class="space-y-2">
                 <label class="text-sm font-semibold text-slate-700 ml-1">Phone Number</label>
                 <input
+                  id="register-phone-number"
                   class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-[2rem] text-[#1A4D2E] focus:bg-white focus:border-phthalo focus:ring-4 focus:ring-phthalo/5 focus:outline-none transition-all"
-                  type="text" name="phone_number" value="{{ f.get('phone_number','') }}"
-                  placeholder="+63 9xx xxx xxxx" />
+                  type="text" name="phone_number" value="{{ f.get('phone_number','') }}" inputmode="numeric" pattern="^[0-9]+$" title="Use numbers only."
+                  placeholder="09XXXXXXXXX" />
               </div>
               <div class="space-y-2">
                 <label class="text-sm font-semibold text-slate-700 ml-1">Date of Birth</label>
                 <input
+                  id="register-date-of-birth"
                   class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-[2rem] text-[#1A4D2E] focus:bg-white focus:border-phthalo focus:ring-4 focus:ring-phthalo/5 focus:outline-none transition-all"
                   type="date" name="date_of_birth" value="{{ f.get('date_of_birth','') }}" />
               </div>
@@ -238,24 +242,35 @@
                 <label class="text-sm font-semibold text-slate-700 ml-1">Address</label>
                 <input
                   class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-[2rem] text-[#1A4D2E] focus:bg-white focus:border-phthalo focus:ring-4 focus:ring-phthalo/5 focus:outline-none transition-all"
-                  type="text" name="address" value="{{ f.get('address','') }}" placeholder="123 Street Name, City" />
+                  type="text" name="address" value="{{ f.get('address','') }}" placeholder="Street / Sitio / House No." />
+              </div>
+              <div class="md:col-span-2 space-y-2">
+                <label class="text-sm font-semibold text-slate-700 ml-1">Barangay</label>
+                {% set selected_barangay = f.get('barangay','') %}
+                <select
+                  class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-[2rem] text-[#1A4D2E] focus:bg-white focus:border-phthalo focus:ring-4 focus:ring-phthalo/5 focus:outline-none transition-all appearance-none cursor-pointer"
+                  name="barangay">
+                  <option value="">Select barangay...</option>
+                  {% include "_barangay_options.html" %}
+                </select>
               </div>
               <div class="space-y-2">
                 <label class="text-sm font-semibold text-slate-700 ml-1">Age</label>
                 <input
+                  id="register-age"
                   class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-[2rem] text-[#1A4D2E] focus:bg-white focus:border-phthalo focus:ring-4 focus:ring-phthalo/5 focus:outline-none transition-all"
-                  type="number" name="age" min="0" value="{{ f.get('age','') }}" placeholder="25" />
+                  type="number" name="age" min="0" value="{{ f.get('age','') }}" placeholder="25" readonly />
               </div>
               <div class="space-y-2">
                 <label class="text-sm font-semibold text-slate-700 ml-1">Gender</label>
                 <select
+                  id="register-gender"
                   class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-[2rem] text-[#1A4D2E] focus:bg-white focus:border-phthalo focus:ring-4 focus:ring-phthalo/5 focus:outline-none transition-all appearance-none cursor-pointer"
                   name="gender">
                   {% set gval = f.get('gender','') %}
-                  <option value="" {% if not gval %}selected{% endif %}>Select Gender</option>
+                  <option value="" disabled {% if not gval %}selected{% endif %}>Select Gender</option>
                   <option value="Male" {% if gval=='Male' %}selected{% endif %}>Male</option>
                   <option value="Female" {% if gval=='Female' %}selected{% endif %}>Female</option>
-                  <option value="Other" {% if gval=='Other' %}selected{% endif %}>Other</option>
                 </select>
               </div>
             </div>
@@ -278,24 +293,56 @@
 
   </div>
 
+  <script src="{{ url_for('static', filename='js/password_toggle.js') }}"></script>
   <script>
-    document.querySelectorAll('[data-toggle-password]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        const id = this.getAttribute('data-toggle-password');
-        const input = document.getElementById(id);
-        const open = this.querySelector('.eye-open');
-        const closed = this.querySelector('.eye-closed');
-        if (input.type === 'password') {
-          input.type = 'text';
-          open.classList.remove('hidden');
-          closed.classList.add('hidden');
-        } else {
-          input.type = 'password';
-          open.classList.add('hidden');
-          closed.classList.remove('hidden');
+    (function () {
+      function sanitizeDigits(el) {
+        if (!el) return;
+        el.value = (el.value || "").replace(/\D+/g, "");
+      }
+
+      function sanitizeName(el) {
+        if (!el) return;
+        el.value = (el.value || "").replace(/[^A-Za-z.]/g, "");
+      }
+
+      function deriveAgeFromDob(dobValue) {
+        if (!dobValue) return "";
+        var parts = dobValue.split("-");
+        if (parts.length !== 3) return "";
+        var y = parseInt(parts[0], 10);
+        var m = parseInt(parts[1], 10) - 1;
+        var d = parseInt(parts[2], 10);
+        if (Number.isNaN(y) || Number.isNaN(m) || Number.isNaN(d)) return "";
+        var birth = new Date(y, m, d);
+        var today = new Date();
+        var age = today.getFullYear() - birth.getFullYear();
+        var monthDiff = today.getMonth() - birth.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
+        return age < 0 ? "0" : String(age);
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        var firstName = document.getElementById("register-first-name");
+        var lastName = document.getElementById("register-last-name");
+        var phone = document.getElementById("register-phone-number");
+        var dob = document.getElementById("register-date-of-birth");
+        var age = document.getElementById("register-age");
+
+        if (firstName) firstName.addEventListener("input", function () { sanitizeName(firstName); });
+        if (lastName) lastName.addEventListener("input", function () { sanitizeName(lastName); });
+        if (phone) phone.addEventListener("input", function () { sanitizeDigits(phone); });
+
+        if (dob && age) {
+          var syncAge = function () {
+            age.value = deriveAgeFromDob(dob.value);
+          };
+          dob.addEventListener("change", syncAge);
+          dob.addEventListener("input", syncAge);
+          syncAge();
         }
       });
-    });
+    })();
   </script>
 </body>
 

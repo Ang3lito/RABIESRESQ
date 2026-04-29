@@ -211,10 +211,6 @@
             </div>
           </a>
         </div>
-        <button type="button" onclick="openPreScreeningModal('case')"
-          class="mt-8 w-full rounded-2xl bg-[#1A4D2E] py-4 text-sm font-bold text-white shadow-lg shadow-[#1A4D2E]/20 hover:scale-[1.02] transition-transform">
-          Report a Bite Case
-        </button>
       </div>
     </aside>
   </div>
@@ -444,6 +440,7 @@
 {% endblock %}
 
 {% block extra_modals %}
+{{ super() }}
 <!-- Category description modal -->
 <div id="category-modal" class="hidden fixed inset-0 z-[70] overflow-y-auto">
   <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeCategoryModal()"></div>

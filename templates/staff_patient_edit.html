@@ -44,17 +44,53 @@
                   />
                 </div>
                 <div>
+                  <label class="mb-1 block text-sm text-slate-600" for="date_of_birth">Date of Birth</label>
+                  <input
+                    id="date_of_birth"
+                    name="date_of_birth"
+                    type="date"
+                    value="{{ (case.date_of_birth or '')[:10] }}"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
+                  />
+                </div>
+                <div>
+                  <label class="mb-1 block text-sm text-slate-600" for="gender">Gender</label>
+                  {% set g = (case.gender or '') %}
+                  <select
+                    id="gender"
+                    name="gender"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
+                  >
+                    <option value="">Select</option>
+                    <option value="Male" {{ "selected" if g == "Male" else "" }}>Male</option>
+                    <option value="Female" {{ "selected" if g == "Female" else "" }}>Female</option>
+                  </select>
+                </div>
+                <div>
                   <label class="mb-1 block text-sm text-slate-600" for="age">Age</label>
                   <input
                     id="age"
                     name="age"
-                    type="text"
+                    type="number"
                     value="{{ case.age or '' }}"
                     class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
                   />
                 </div>
                 <div>
-                  <label class="mb-1 block text-sm text-slate-600" for="address">Barangay (Address)</label>
+                  <label class="mb-1 block text-sm text-slate-600" for="barangay">Barangay</label>
+                  {% set _legacy_barangay = (case.address or '').split(',')[0].strip() if (case.address or '') else '' %}
+                  {% set selected_barangay = case.barangay or _legacy_barangay %}
+                  <select
+                    id="barangay"
+                    name="barangay"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring"
+                  >
+                    <option value="">Select barangay...</option>
+                    {% include "_barangay_options.html" %}
+                  </select>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="mb-1 block text-sm text-slate-600" for="address">Address</label>
                   <input
                     id="address"
                     name="address"
@@ -589,12 +625,12 @@
               {% endfor %}
             </datalist>
 
-            <div class="fixed bottom-5 right-5 z-50 rounded-[2rem] border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur">
-              <div class="flex items-center gap-3">
-                <button type="submit" class="rounded-xl bg-[#1A4D2E] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#1A4D2E]">
+            <div class="fixed inset-x-4 bottom-4 z-50 rounded-[2rem] border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur sm:inset-x-auto sm:bottom-5 sm:right-5">
+              <div class="flex items-center justify-end gap-3">
+                <button type="submit" class="flex-1 rounded-xl bg-[#1A4D2E] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#1A4D2E] sm:flex-none">
                   Save Changes
                 </button>
-                <a href="{{ url_for('view_patient_case', case_id=case.case_id) }}" class="rounded-xl px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-700">
+                <a href="{{ url_for('view_patient_case', case_id=case.case_id) }}" class="flex-1 rounded-xl px-3 py-2 text-center text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-700 sm:flex-none sm:text-left">
                   Cancel
                 </a>
               </div>
@@ -718,6 +754,35 @@
       }
       wireMinExpiryDateInput("vc_pcec_expiry", "Expiry date cannot be before today.");
       wireMinExpiryDateInput("vc_tetanus_expiry", "Tetanus expiry date cannot be before today.");
+
+      function wireMfgBeforeExpiry(mfgId, expiryId, message) {
+        const mfgEl = document.getElementById(mfgId);
+        const expEl = document.getElementById(expiryId);
+        if (!mfgEl || !expEl) return;
+
+        const validatePair = function() {
+          const mfg = (mfgEl.value || "").trim();
+          const exp = (expEl.value || "").trim();
+
+          if (exp) mfgEl.max = exp;
+          else mfgEl.removeAttribute("max");
+
+          if (mfg && exp && mfg > exp) {
+            mfgEl.setCustomValidity(message);
+          } else {
+            mfgEl.setCustomValidity("");
+          }
+        };
+
+        validatePair();
+        mfgEl.addEventListener("input", validatePair);
+        mfgEl.addEventListener("change", validatePair);
+        expEl.addEventListener("input", validatePair);
+        expEl.addEventListener("change", validatePair);
+      }
+
+      wireMfgBeforeExpiry("vc_pcec_mfg_date", "vc_pcec_expiry", "Mfg. date must not be later than expiry date.");
+      wireMfgBeforeExpiry("vc_tetanus_mfg_date", "vc_tetanus_expiry", "Mfg. date must not be later than expiry date.");
 
       const arVaccineSel = document.getElementById("vc_anti_rabies_vaccine");
       if (arVaccineSel) {
@@ -910,19 +975,49 @@
         });
       }
 
+      function _vcTriggerIsVisible(trigger) {
+        if (!trigger) return false;
+        var r = trigger.getBoundingClientRect();
+        // Consider it "not visible" once it's fully outside the viewport (with small padding).
+        var pad = 8;
+        if (r.bottom < pad) return false;
+        if (r.top > window.innerHeight - pad) return false;
+        if (r.right < pad) return false;
+        if (r.left > window.innerWidth - pad) return false;
+        return true;
+      }
+
       function repositionOpenVcFixedDropdowns(scopeRoot) {
         var root = scopeRoot || document;
         root.querySelectorAll("[data-vc-route-site-widget]").forEach(function(w) {
           var panel = w.querySelector("[data-vc-rs-panel]");
           var trigger = w.querySelector("[data-vc-rs-trigger]");
           if (!panel || !trigger || panel.classList.contains("hidden")) return;
+          if (!_vcTriggerIsVisible(trigger)) {
+            closeRouteSitePanel(w);
+            return;
+          }
           positionVcFixedDropdown(trigger, panel);
         });
         root.querySelectorAll("[data-vc-dose-widget]").forEach(function(w) {
           var panel = w.querySelector("[data-vc-dose-panel]");
           var trigger = w.querySelector("[data-vc-dose-trigger]");
           if (!panel || !trigger || panel.classList.contains("hidden")) return;
+          if (!_vcTriggerIsVisible(trigger)) {
+            closeDosePanel(w);
+            return;
+          }
           positionVcFixedDropdown(trigger, panel);
+        });
+      }
+
+      var _vcRepositionQueued = false;
+      function scheduleVcReposition() {
+        if (_vcRepositionQueued) return;
+        _vcRepositionQueued = true;
+        requestAnimationFrame(function() {
+          _vcRepositionQueued = false;
+          repositionOpenVcFixedDropdowns();
         });
       }
 
@@ -1043,10 +1138,10 @@
           document.querySelectorAll("[data-vc-route-site-widget]").forEach(closeRouteSitePanel);
           document.querySelectorAll("[data-vc-dose-widget]").forEach(closeDosePanel);
         });
-        window.addEventListener("resize", function() { repositionOpenVcFixedDropdowns(); });
-        window.addEventListener("scroll", function() { repositionOpenVcFixedDropdowns(); }, true);
+        window.addEventListener("resize", function() { scheduleVcReposition(); });
+        window.addEventListener("scroll", function() { scheduleVcReposition(); }, true);
         document.querySelectorAll(".vc-dose-table-scroll").forEach(function(el) {
-          el.addEventListener("scroll", function() { repositionOpenVcFixedDropdowns(); }, { passive: true });
+          el.addEventListener("scroll", function() { scheduleVcReposition(); }, { passive: true });
         });
       }
 

@@ -247,25 +247,7 @@
 
   </div>
 
-  <script>
-    document.querySelectorAll('[data-toggle-password]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        const id = this.getAttribute('data-toggle-password');
-        const input = document.getElementById(id);
-        const open = this.querySelector('.eye-open');
-        const closed = this.querySelector('.eye-closed');
-        if (input.type === 'password') {
-          input.type = 'text';
-          open.classList.remove('hidden');
-          closed.classList.add('hidden');
-        } else {
-          input.type = 'password';
-          open.classList.add('hidden');
-          closed.classList.remove('hidden');
-        }
-      });
-    });
-  </script>
+  <script src="{{ url_for('static', filename='js/password_toggle.js') }}"></script>
 </body>
 
 </html>

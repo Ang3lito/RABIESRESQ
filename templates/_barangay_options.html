@@ -1,0 +1,3 @@
+{% for b in barangay_options %}
+  <option value="{{ b }}" {% if (selected_barangay or '') == b %}selected{% endif %}>{{ b }}</option>
+{% endfor %}

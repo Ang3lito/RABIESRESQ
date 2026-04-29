@@ -274,6 +274,8 @@
                   type="text"
                   name="first_name"
                   value="{{ sf.first_name|default('', true) }}"
+                  pattern="^[A-Za-z.]+$"
+                  title="Use letters and periods only."
                   class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
                 />
               </div>
@@ -287,6 +289,8 @@
                   type="text"
                   name="last_name"
                   value="{{ sf.last_name|default('', true) }}"
+                  pattern="^[A-Za-z.]+$"
+                  title="Use letters and periods only."
                   class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
                 />
               </div>
@@ -314,10 +318,9 @@
                   name="gender"
                   class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 transition focus:ring"
                 >
-                  <option value="" {% if not ns_gender %}selected{% endif %}>Select</option>
+                  <option value="" disabled {% if not ns_gender %}selected{% endif %}>Select</option>
                   <option value="Male" {% if ns_gender == 'Male' %}selected{% endif %}>Male</option>
                   <option value="Female" {% if ns_gender == 'Female' %}selected{% endif %}>Female</option>
-                  <option value="Other" {% if ns_gender == 'Other' %}selected{% endif %}>Other</option>
                 </select>
               </div>
               <div class="sm:col-span-2">

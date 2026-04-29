@@ -53,6 +53,7 @@
           {% set is_cancelled = status_lower in ['cancelled', 'canceled', 'removed'] %}
           {% set is_completed = status_lower == 'completed' %}
           {% set is_no_show = status_lower in ['no show', 'missed'] %}
+          {% set can_modify = can_patient_modify|default(false) %}
 
           {% if is_completed %}
             <p class="text-xs text-slate-600">
@@ -77,54 +78,75 @@
             </form>
           {% elif is_no_show %}
             <p class="text-xs text-slate-600">
-              You missed this appointment. You may reschedule it to a new date and time.
+              You missed this appointment.
             </p>
-            <a
-              href="{{ url_for('patient_appointment_edit', appointment_id=appointment.id) }}"
-              class="inline-flex w-full items-center justify-center rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A4D2E]"
-            >
-              Reschedule date &amp; time
-            </a>
+            {% if can_modify %}
+              <p class="text-xs text-slate-600">
+                You may reschedule it (pre-screening only, before the first dose).
+              </p>
+              <a
+                href="{{ url_for('patient_appointment_edit', appointment_id=appointment.id) }}"
+                class="inline-flex w-full items-center justify-center rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A4D2E]"
+              >
+                Reschedule date &amp; time
+              </a>
+            {% else %}
+              <p class="text-xs text-slate-600">
+                Rescheduling is only available for pre-screening appointments before the first dose.
+              </p>
+            {% endif %}
           {% elif can_edit %}
-            <p class="text-xs text-slate-600">
-              This appointment is still pending. You can reschedule or cancel it below.
-            </p>
-            <a
-              href="{{ url_for('patient_appointment_edit', appointment_id=appointment.id) }}"
-              class="inline-flex w-full items-center justify-center rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A4D2E]"
-            >
-              Reschedule date &amp; time
-            </a>
-            <form
-              method="post"
-              action="{{ url_for('patient_cancel_appointment', appointment_id=appointment.id) }}"
-              data-confirm="Cancel this appointment?"
-              data-confirm-variant="danger"
-            >
-              <button
-                type="submit"
-                class="mt-1 inline-flex w-full items-center justify-center rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+            {% if can_modify %}
+              <p class="text-xs text-slate-600">
+                This appointment is still pending. You can reschedule or cancel it below.
+              </p>
+              <a
+                href="{{ url_for('patient_appointment_edit', appointment_id=appointment.id) }}"
+                class="inline-flex w-full items-center justify-center rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A4D2E]"
               >
-                Cancel appointment
-              </button>
-            </form>
+                Reschedule date &amp; time
+              </a>
+              <form
+                method="post"
+                action="{{ url_for('patient_cancel_appointment', appointment_id=appointment.id) }}"
+                data-confirm="Cancel this appointment?"
+                data-confirm-variant="danger"
+              >
+                <button
+                  type="submit"
+                  class="mt-1 inline-flex w-full items-center justify-center rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+                >
+                  Cancel appointment
+                </button>
+              </form>
+            {% else %}
+              <p class="text-xs text-slate-600">
+                Reschedule/cancel is only available for pre-screening appointments before the first dose.
+              </p>
+            {% endif %}
           {% else %}
-            <p class="text-xs text-slate-600">
-              This appointment is scheduled. If you can no longer attend, you may cancel it below.
-            </p>
-            <form
-              method="post"
-              action="{{ url_for('patient_cancel_appointment', appointment_id=appointment.id) }}"
-              data-confirm="Cancel this appointment?"
-              data-confirm-variant="danger"
-            >
-              <button
-                type="submit"
-                class="mt-1 inline-flex w-full items-center justify-center rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+            {% if can_modify %}
+              <p class="text-xs text-slate-600">
+                This appointment is scheduled. If you can no longer attend, you may cancel it below.
+              </p>
+              <form
+                method="post"
+                action="{{ url_for('patient_cancel_appointment', appointment_id=appointment.id) }}"
+                data-confirm="Cancel this appointment?"
+                data-confirm-variant="danger"
               >
-                Cancel appointment
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  class="mt-1 inline-flex w-full items-center justify-center rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+                >
+                  Cancel appointment
+                </button>
+              </form>
+            {% else %}
+              <p class="text-xs text-slate-600">
+                Cancelling is only available for pre-screening appointments before the first dose.
+              </p>
+            {% endif %}
           {% endif %}
         </article>
 

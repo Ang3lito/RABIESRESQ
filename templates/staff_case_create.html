@@ -48,14 +48,10 @@
         </div>
         <div>
           <label class="mb-1 block text-sm text-slate-600" for="barangay">Barangay</label>
+          {% set selected_barangay = barangay_value %}
           <select id="barangay" name="barangay" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 outline-none ring-[#1A4D2E]/30 focus:ring">
             <option value="">Select barangay...</option>
-            <option value="Adlaon" {{ "selected" if barangay_value == "Adlaon" else "" }}>Adlaon</option>
-            <option value="Agsungot" {{ "selected" if barangay_value == "Agsungot" else "" }}>Agsungot</option>
-            <option value="Apas" {{ "selected" if barangay_value == "Apas" else "" }}>Apas</option>
-            {% for b in ['Babag','Bacayan','Banilad','Basak Pardo','Basak San Nicolas','Binaliw','Bonbon','Budlaan','Buhisan','Bulacao','Buot','Busay','Calamba','Cambinocot','Capitol Site','Carreta','Cogon Pardo','Cogon Ramos','Day-as','Duljo Fatima','Ermita','Guadalupe','Guba','Hipodromo','Inayawan','Kalubihan','Kalunasan','Kamagayan','Kamputhaw','Kasambagan','Kinasang-an Pardo','Labangon','Lahug','Lorega San Miguel','Lusaran','Luz','Mabini','Mabolo','Malubog','Mambaling','Pahina Central','Pahina San Nicolas','Pamutan','Pari-an','Paril','Pasil','Pit-os','Poblacion Pardo','Pulangbato','Pung-ol Sibugay','Punta Princesa','Quiot Pardo','Sambag I','Sambag II','San Antonio','San Jose','San Nicolas Proper','San Roque','Santa Cruz','Santo Niño','Sapangdaku','Sawang Calero','Sinsin','Sirao','Suba','Sudlon I','Sudlon II','T. Padilla','Tabunan','Tagba-o','Talamban','Taptap','Tejero','Tinago','Tisa','To-ong','Zapatera'] %}
-              <option value="{{ b }}" {{ "selected" if barangay_value == b else "" }}>{{ b }}</option>
-            {% endfor %}
+            {% include "_barangay_options.html" %}
           </select>
         </div>
         <div class="md:col-span-2">

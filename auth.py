@@ -1,7 +1,8 @@
 import functools
 import logging
+import re
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from flask import (
     Blueprint,
@@ -31,6 +32,8 @@ _MAX_VERIFY_ATTEMPTS = 5
 
 logger = logging.getLogger(__name__)
 
+_NAME_LETTER_PERIOD_RE = re.compile(r"^[A-Za-z.]+$")
+
 
 def _normalize_email(value: str | None) -> str:
     return (value or "").strip().lower()
@@ -40,6 +43,32 @@ def _is_valid_email(email: str) -> bool:
     if not email or len(email) > 254:
         return False
     return "@" in email and "." in email.split("@")[-1]
+
+
+def _is_letters_period_only(value: str | None) -> bool:
+    raw = (value or "").strip()
+    if not raw:
+        return True
+    return bool(_NAME_LETTER_PERIOD_RE.fullmatch(raw))
+
+
+def _is_numeric_only(value: str | None) -> bool:
+    raw = (value or "").strip()
+    if not raw:
+        return True
+    return raw.isdigit()
+
+
+def _age_from_iso_date(dob_str: str | None) -> int | None:
+    if not dob_str:
+        return None
+    try:
+        d = date.fromisoformat(dob_str.strip()[:10])
+    except ValueError:
+        return None
+    today = date.today()
+    age = today.year - d.year - ((today.month, today.day) < (d.month, d.day))
+    return max(0, age)
 
 
 def _generate_otp() -> str:
@@ -240,22 +269,15 @@ def register_post():
     first_name = normalize_optional(request.form.get("first_name"))
     last_name = normalize_optional(request.form.get("last_name"))
     phone_number = (request.form.get("phone_number") or "").strip() or None
+    barangay = normalize_optional(request.form.get("barangay"))
     address = normalize_optional(request.form.get("address"))
-    date_of_birth = (request.form.get("date_of_birth") or "").strip() or None
-    age_raw = (request.form.get("age") or "").strip()
+    date_of_birth_raw = (request.form.get("date_of_birth") or "").strip()
+    date_of_birth = date_of_birth_raw[:10].strip() if date_of_birth_raw else None
     gender = normalize_optional(request.form.get("gender"))
     allergies = normalize_optional(request.form.get("allergies"))
     pre_existing_conditions = normalize_optional(request.form.get("pre_existing_conditions"))
     current_medications = normalize_optional(request.form.get("current_medications"))
     notification_settings = normalize_optional(request.form.get("notification_settings"))
-
-    age = None
-    if age_raw:
-        try:
-            age = int(age_raw)
-        except ValueError:
-            flash("Age must be a number.", "error")
-            return render_template("register.html", form=request.form)
 
     if not username:
         flash("Username is required.", "error")
@@ -269,6 +291,31 @@ def register_post():
     if password != confirm_password:
         flash("Passwords do not match.", "error")
         return render_template("register.html", form=request.form)
+
+    if date_of_birth:
+        try:
+            dob_date = date.fromisoformat(date_of_birth)
+            if dob_date > date.today():
+                flash("Date of birth cannot be in the future.", "error")
+                return render_template("register.html", form=request.form)
+        except ValueError:
+            flash("Date of birth is invalid.", "error")
+            return render_template("register.html", form=request.form)
+
+    if gender and gender not in {"Male", "Female"}:
+        flash("Gender must be Male or Female.", "error")
+        return render_template("register.html", form=request.form)
+    if not _is_letters_period_only(first_name):
+        flash("First name must contain letters and periods only.", "error")
+        return render_template("register.html", form=request.form)
+    if not _is_letters_period_only(last_name):
+        flash("Last name must contain letters and periods only.", "error")
+        return render_template("register.html", form=request.form)
+    if not _is_numeric_only(phone_number):
+        flash("Phone number must contain numbers only.", "error")
+        return render_template("register.html", form=request.form)
+
+    age = _age_from_iso_date(date_of_birth)
 
     db = get_db()
     exists = db.execute(
@@ -289,15 +336,16 @@ def register_post():
         db.execute(
             """
             INSERT INTO patients (
-              user_id, first_name, last_name, phone_number, address, date_of_birth, age, gender,
+              user_id, first_name, last_name, phone_number, barangay, address, date_of_birth, age, gender,
               allergies, pre_existing_conditions, current_medications, notification_settings
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 user_id,
                 first_name,
                 last_name,
                 phone_number,
+                barangay,
                 address,
                 date_of_birth,
                 age,

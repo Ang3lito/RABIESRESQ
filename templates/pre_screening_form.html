@@ -75,7 +75,7 @@
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
                 <label for="victim_first_name" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">First Name</label>
-                <input type="text" id="victim_first_name" name="victim_first_name" value="{{ patient.first_name or '' }}" data-self-value="{{ patient.first_name or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="First name">
+                <input type="text" id="victim_first_name" name="victim_first_name" value="{{ patient.first_name or '' }}" data-self-value="{{ patient.first_name or '' }}" required pattern="^[A-Za-z.]+$" title="Use letters and periods only." class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="First name">
               </div>
               <div>
                 <label for="victim_middle_initial" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Middle Initial <span class="font-normal text-slate-500">(optional)</span></label>
@@ -83,7 +83,7 @@
               </div>
               <div>
                 <label for="victim_last_name" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Last Name</label>
-                <input type="text" id="victim_last_name" name="victim_last_name" value="{{ patient.last_name or '' }}" data-self-value="{{ patient.last_name or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="Last name">
+                <input type="text" id="victim_last_name" name="victim_last_name" value="{{ patient.last_name or '' }}" data-self-value="{{ patient.last_name or '' }}" required pattern="^[A-Za-z.]+$" title="Use letters and periods only." class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="Last name">
               </div>
             </div>
 
@@ -95,10 +95,9 @@
               <div>
                 <label for="gender" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Gender</label>
                 <select id="gender" name="gender" data-self-value="{{ patient.gender or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
-                  <option value="">Select gender...</option>
+                  <option value="" disabled {% if not patient.gender %}selected{% endif %}>Select gender...</option>
                   <option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
                   <option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
-                  <option value="Other" {% if patient.gender == 'Other' %}selected{% endif %}>Other</option>
                 </select>
               </div>
               <div>
@@ -112,20 +111,23 @@
                 <label for="barangay" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Barangay</label>
                 {% set _addr = patient.address or '' %}
                 {% set _parts = _addr.split(',') %}
-                {% set patient_barangay = _parts[0].strip() if _parts else '' %}
-                <select id="barangay" name="barangay" data-self-value="{{ patient_barangay }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
+                {% set _legacy_barangay = _parts[0].strip() if _parts else '' %}
+                {% set selected_barangay = patient.barangay or _legacy_barangay %}
+                <select id="barangay" name="barangay" data-self-value="{{ selected_barangay }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
                   <option value="">Select barangay...</option>
-                  <option value="Adlaon" {% if patient_barangay == 'Adlaon' %}selected{% endif %}>Adlaon</option>
-                  <option value="Agsungot" {% if patient_barangay == 'Agsungot' %}selected{% endif %}>Agsungot</option>
-                  <option value="Apas" {% if patient_barangay == 'Apas' %}selected{% endif %}>Apas</option>
-                  {% for b in ['Babag','Bacayan','Banilad','Basak Pardo','Basak San Nicolas','Binaliw','Bonbon','Budlaan','Buhisan','Bulacao','Buot','Busay','Calamba','Cambinocot','Capitol Site','Carreta','Cogon Pardo','Cogon Ramos','Day-as','Duljo Fatima','Ermita','Guadalupe','Guba','Hipodromo','Inayawan','Kalubihan','Kalunasan','Kamagayan','Kamputhaw','Kasambagan','Kinasang-an Pardo','Labangon','Lahug','Lorega San Miguel','Lusaran','Luz','Mabini','Mabolo','Malubog','Mambaling','Pahina Central','Pahina San Nicolas','Pamutan','Pari-an','Paril','Pasil','Pit-os','Poblacion Pardo','Pulangbato','Pung-ol Sibugay','Punta Princesa','Quiot Pardo','Sambag I','Sambag II','San Antonio','San Jose','San Nicolas Proper','San Roque','Santa Cruz','Santo Niño','Sapangdaku','Sawang Calero','Sinsin','Sirao','Suba','Sudlon I','Sudlon II','T. Padilla','Tabunan','Tagba-o','Talamban','Taptap','Tejero','Tinago','Tisa','To-ong','Zapatera'] %}
-                  <option value="{{ b }}" {% if patient_barangay == b %}selected{% endif %}>{{ b }}</option>
-                  {% endfor %}
+                  {% include "_barangay_options.html" %}
                 </select>
               </div>
               <div>
                 <label for="contact_number" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Contact Number</label>
-                <input type="tel" id="contact_number" name="contact_number" value="{{ patient.phone_number or '' }}" data-self-value="{{ patient.phone_number or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="09XXXXXXXXX">
+                <input type="tel" id="contact_number" name="contact_number" value="{{ patient.phone_number or '' }}" data-self-value="{{ patient.phone_number or '' }}" inputmode="numeric" pattern="^[0-9]+$" title="Use numbers only." required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="09XXXXXXXXX">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div class="md:col-span-2">
+                <label for="victim_address" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Street / Sitio / House No.</label>
+                <input type="text" id="victim_address" name="victim_address" value="{{ patient.address or '' }}" data-self-value="{{ patient.address or '' }}" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="Enter additional address details...">
               </div>
             </div>
 
@@ -658,6 +660,16 @@ function updateAgeFromDob() {
   ageEl.value = age;
 }
 
+function sanitizeDigitsInput(el) {
+  if (!el) return;
+  el.value = (el.value || '').replace(/\D+/g, '');
+}
+
+function sanitizeNameInput(el) {
+  if (!el) return;
+  el.value = (el.value || '').replace(/[^A-Za-z.]/g, '');
+}
+
 function setExposureDateMax() {
   var el = document.getElementById('exposure_date');
   if (!el) return;
@@ -744,14 +756,21 @@ function openPreScreeningModal(formType = 'case') {
   if (window.preScreeningEmbedded) {
     return;
   }
-  document.getElementById('pre-screening-modal').classList.remove('hidden');
-  document.getElementById('form-type').value = formType;
+  var modal = document.getElementById('pre-screening-modal');
+  var formTypeEl = document.getElementById('form-type');
+  if (!modal || !formTypeEl) return;
+  // Ensure required overlay container classes are present on every open.
+  modal.classList.add('fixed', 'inset-0', 'z-[80]', 'overflow-y-auto');
+  modal.classList.remove('hidden');
+  formTypeEl.value = formType;
   isAppointmentFlow = (formType === 'appointment');
   totalSteps = isAppointmentFlow ? 4 : 3;
   currentStep = 1;
   formData = {};
-  document.getElementById('appointment_slot_id').value = '';
-  document.getElementById('appointment_datetime').value = '';
+  var slotIdEl = document.getElementById('appointment_slot_id');
+  var slotDtEl = document.getElementById('appointment_datetime');
+  if (slotIdEl) slotIdEl.value = '';
+  if (slotDtEl) slotDtEl.value = '';
   var clinicSlot = document.getElementById('clinic_id_slot');
   if (clinicSlot && document.getElementById('clinic_select')) {
     clinicSlot.value = document.getElementById('clinic_select').value;
@@ -797,12 +816,14 @@ function closePreScreeningModal() {
     }
     return;
   }
-  document.getElementById('pre-screening-modal').classList.add('hidden');
-  document.getElementById('pre-screening-modal').classList.remove('z-[80]', 'backdrop-blur-sm', 'bg-slate-900/60');
+  var modal = document.getElementById('pre-screening-modal');
+  var form = document.getElementById('pre-screening-form');
+  if (!modal || !form) return;
+  modal.classList.add('hidden');
   document.body.style.overflow = '';
   currentStep = 1;
   formData = {};
-  document.getElementById('pre-screening-form').reset();
+  form.reset();
   showStep(1);
   // Clear red validation highlights from option buttons and inputs
   const optionGroups = ['exposure-type', 'wound-type', 'bleeding-spontaneous', 'bleeding-induced', 'prev-immunization', 'animal-type', 'animal-status', 'animal-vaccination', 'local-treatment', 'tetanus-immunization', 'hrtig-immunization'];
@@ -1608,6 +1629,7 @@ document.addEventListener('DOMContentLoaded', function() {
       'gender',
       'age',
       'barangay',
+      'victim_address',
       'contact_number',
       'email_address',
     ];
@@ -1723,8 +1745,15 @@ document.addEventListener('DOMContentLoaded', function() {
   var dobEl = document.getElementById('date_of_birth');
   if (dobEl) {
     dobEl.addEventListener('change', function() { updateAgeFromDob(); });
+    dobEl.addEventListener('input', function() { updateAgeFromDob(); });
     updateAgeFromDob();
   }
+  var firstNameEl = document.getElementById('victim_first_name');
+  if (firstNameEl) firstNameEl.addEventListener('input', function() { sanitizeNameInput(firstNameEl); });
+  var lastNameEl = document.getElementById('victim_last_name');
+  if (lastNameEl) lastNameEl.addEventListener('input', function() { sanitizeNameInput(lastNameEl); });
+  var contactEl = document.getElementById('contact_number');
+  if (contactEl) contactEl.addEventListener('input', function() { sanitizeDigitsInput(contactEl); });
 
   if (window.preScreeningEmbedded) {
     var ft = document.getElementById('form-type');

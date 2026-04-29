@@ -2,6 +2,7 @@ import calendar
 import csv
 import logging
 import os
+import re
 import secrets
 import sqlite3
 import string
@@ -41,6 +42,158 @@ try:
     PHILIPPINES_TZ = ZoneInfo("Asia/Manila")
 except Exception:
     PHILIPPINES_TZ = timezone(timedelta(hours=8))  # Philippines has no DST; fixed offset fallback
+
+# Cebu City barangays (same master list as pre-screening / staff filters).
+CEBU_BARANGAY_NAMES: tuple[str, ...] = (
+    "Adlaon",
+    "Agsungot",
+    "Apas",
+    "Babag",
+    "Bacayan",
+    "Banilad",
+    "Basak Pardo",
+    "Basak San Nicolas",
+    "Binaliw",
+    "Bonbon",
+    "Budlaan",
+    "Buhisan",
+    "Bulacao",
+    "Buot",
+    "Busay",
+    "Calamba",
+    "Cambinocot",
+    "Capitol Site",
+    "Carreta",
+    "Cogon Pardo",
+    "Cogon Ramos",
+    "Day-as",
+    "Duljo Fatima",
+    "Ermita",
+    "Guadalupe",
+    "Guba",
+    "Hipodromo",
+    "Inayawan",
+    "Kalubihan",
+    "Kalunasan",
+    "Kamagayan",
+    "Kamputhaw",
+    "Kasambagan",
+    "Kinasang-an Pardo",
+    "Labangon",
+    "Lahug",
+    "Lorega San Miguel",
+    "Lusaran",
+    "Luz",
+    "Mabini",
+    "Mabolo",
+    "Malubog",
+    "Mambaling",
+    "Pahina Central",
+    "Pahina San Nicolas",
+    "Pamutan",
+    "Pari-an",
+    "Paril",
+    "Pasil",
+    "Pit-os",
+    "Poblacion Pardo",
+    "Pulangbato",
+    "Pung-ol Sibugay",
+    "Punta Princesa",
+    "Quiot Pardo",
+    "Sambag I",
+    "Sambag II",
+    "San Antonio",
+    "San Jose",
+    "San Nicolas Proper",
+    "San Roque",
+    "Santa Cruz",
+    "Santo Niño",
+    "Sapangdaku",
+    "Sawang Calero",
+    "Sinsin",
+    "Sirao",
+    "Suba",
+    "Sudlon I",
+    "Sudlon II",
+    "T. Padilla",
+    "Tabunan",
+    "Tagba-o",
+    "Talamban",
+    "Taptap",
+    "Tejero",
+    "Tinago",
+    "Tisa",
+    "To-ong",
+    "Zapatera",
+)
+
+_SQL_STAFF_CASE_NOT_REMOVED = "COALESCE(c.staff_removed, 0) = 0"
+
+
+def _sql_patient_barangay_lowercase_like() -> str:
+    """Lowercased resolved barangay (column or legacy first segment of address) for LIKE filters."""
+    return """
+        LOWER(
+          COALESCE(
+            NULLIF(TRIM(COALESCE(p.barangay, '')), ''),
+            CASE
+              WHEN INSTR(COALESCE(p.address, ''), ',') > 0
+              THEN TRIM(SUBSTR(COALESCE(p.address, ''), 1, INSTR(COALESCE(p.address, ''), ',') - 1))
+              ELSE TRIM(COALESCE(p.address, ''))
+            END
+          )
+        ) LIKE ?
+    """
+
+
+def _canonical_barangay_if_known(segment: str) -> str | None:
+    t = (segment or "").strip()
+    if not t:
+        return None
+    tl = t.lower()
+    for name in CEBU_BARANGAY_NAMES:
+        if name.lower() == tl:
+            return name
+    return None
+
+
+def _barangay_export_value(barangay_col: str | None, address_col: str | None) -> str:
+    b = (barangay_col or "").strip()
+    if b:
+        return b
+    a = (address_col or "").strip()
+    if not a:
+        return ""
+    if "," in a:
+        return a.split(",", 1)[0].strip()
+    return a
+
+
+def _backfill_patients_barangay_address(db) -> None:
+    """One-time style backfill: split legacy combined address; optional whole-string barangay match."""
+    rows = db.execute("SELECT id, address, barangay FROM patients").fetchall()
+    for r in rows:
+        pid = int(r["id"])
+        raw_addr = (r["address"] or "").strip()
+        existing_b = (r["barangay"] or "").strip()
+        if existing_b or not raw_addr:
+            continue
+        if "," in raw_addr:
+            first, rest = raw_addr.split(",", 1)
+            b = (first or "").strip()
+            street = (rest or "").strip()
+            db.execute(
+                "UPDATE patients SET barangay = ?, address = ? WHERE id = ?",
+                (b or None, street or None, pid),
+            )
+        else:
+            canon = _canonical_barangay_if_known(raw_addr)
+            if canon:
+                db.execute(
+                    "UPDATE patients SET barangay = ?, address = ? WHERE id = ?",
+                    (canon, None, pid),
+                )
+    db.commit()
 
 
 def _now_philippines_local_iso() -> str:
@@ -360,6 +513,57 @@ def _case_has_vaccination_record(db, case_id: int) -> bool:
     ).fetchone():
         return True
     return False
+
+
+def _case_has_first_dose_recorded(db, case_id: int) -> bool:
+    """True if at least one administered dose was recorded for the case."""
+    if db.execute(
+        "SELECT 1 FROM vaccination_records WHERE case_id = ? LIMIT 1",
+        (case_id,),
+    ).fetchone():
+        return True
+    if db.execute(
+        """
+        SELECT 1
+        FROM vaccination_card_doses
+        WHERE case_id = ?
+          AND NULLIF(TRIM(COALESCE(dose_date, '')), '') IS NOT NULL
+        LIMIT 1
+        """,
+        (case_id,),
+    ).fetchone():
+        return True
+    return False
+
+
+def _appointment_is_prescreening(db, appointment_row) -> bool:
+    """True if this appointment should be treated as the pre-screening appointment."""
+    appt_type = (appointment_row["type"] or "").strip().lower()
+    if appt_type in ("pre-screening", "pre_screening", "prescreening"):
+        return True
+
+    # Fallback: earliest appointment for the case
+    case_id = appointment_row["case_id"]
+    if not case_id:
+        return False
+    first = db.execute(
+        """
+        SELECT id
+        FROM appointments
+        WHERE case_id = ?
+        ORDER BY datetime(appointment_datetime) ASC, id ASC
+        LIMIT 1
+        """,
+        (case_id,),
+    ).fetchone()
+    return first is not None and int(first["id"]) == int(appointment_row["id"])
+
+
+def _patient_can_modify_appointment(db, appointment_row) -> bool:
+    """True if patient is allowed to reschedule/cancel this appointment."""
+    if not _appointment_is_prescreening(db, appointment_row):
+        return False
+    return not _case_has_first_dose_recorded(db, int(appointment_row["case_id"]))
 
 
 def _walk_in_appointment_status_for_case(db, case_id: int) -> str:
@@ -1649,18 +1853,23 @@ def _insights_sql_animal_bucket() -> str:
 
 
 def _insights_sql_barangay_seg() -> str:
-    """First segment of patient address (barangay), trimmed."""
+    """Resolved barangay: dedicated column, else legacy first segment of address."""
     return """
-        CASE
-          WHEN TRIM(COALESCE(p.address, '')) = '' THEN ''
-          ELSE TRIM(
+        TRIM(
+          COALESCE(
+            NULLIF(TRIM(COALESCE(p.barangay, '')), ''),
             CASE
-              WHEN INSTR(TRIM(p.address), ',') > 0
-              THEN SUBSTR(TRIM(p.address), 1, INSTR(TRIM(p.address), ',') - 1)
-              ELSE TRIM(p.address)
+              WHEN TRIM(COALESCE(p.address, '')) = '' THEN ''
+              ELSE TRIM(
+                CASE
+                  WHEN INSTR(TRIM(p.address), ',') > 0
+                  THEN SUBSTR(TRIM(p.address), 1, INSTR(TRIM(p.address), ',') - 1)
+                  ELSE TRIM(p.address)
+                END
+              )
             END
           )
-        END
+        )
     """
 
 
@@ -1906,9 +2115,9 @@ def _admin_reporting_insights_dict(
 
     addr_rows = db.execute(
         f"""
-        SELECT p.address AS addr
+        SELECT ({_insights_sql_barangay_seg()}) AS addr
         {_insights_base_from_where()}
-          AND TRIM(COALESCE(p.address, '')) <> ''
+          AND TRIM(COALESCE(({_insights_sql_barangay_seg()}), '')) <> ''
         {fc}
         """,
         (clinic_id, date_from, date_to, *fparams),
@@ -1918,7 +2127,7 @@ def _admin_reporting_insights_dict(
         raw = (r["addr"] or "").strip()
         if not raw:
             continue
-        seg = raw.split(",")[0].strip()
+        seg = raw.strip()
         if len(seg) > 60:
             seg = seg[:57] + "..."
         barangay_counts[seg] = barangay_counts.get(seg, 0) + 1
@@ -2102,7 +2311,7 @@ def _admin_reporting_insights_dict(
         f"""
         SELECT DISTINCT ({_insights_sql_barangay_seg()}) AS b
         {_insights_base_from_where()}
-          AND TRIM(COALESCE(p.address, '')) <> ''
+          AND TRIM(COALESCE(({_insights_sql_barangay_seg()}), '')) <> ''
         {fc}
         ORDER BY b ASC
         """,
@@ -2330,6 +2539,23 @@ def _age_from_iso_date(dob_str: str | None) -> int | None:
     return max(0, age)
 
 
+_NAME_LETTER_PERIOD_RE = re.compile(r"^[A-Za-z.]+$")
+
+
+def _is_letters_period_only(value: str | None) -> bool:
+    raw = (value or "").strip()
+    if not raw:
+        return True
+    return bool(_NAME_LETTER_PERIOD_RE.fullmatch(raw))
+
+
+def _is_numeric_only(value: str | None) -> bool:
+    raw = (value or "").strip()
+    if not raw:
+        return True
+    return raw.isdigit()
+
+
 def classify_pre_screening_risk(
     type_of_exposure: str | None,
     affected_area: str | None,
@@ -2544,11 +2770,29 @@ def _prescreening_parse_validate_derive(
     if require_demographics:
         if not date_of_birth:
             errors.append("Birthday is required.")
+        else:
+            try:
+                _dob_date = date.fromisoformat(date_of_birth[:10])
+                if _dob_date > date.today():
+                    errors.append("Birthday cannot be in the future.")
+            except ValueError:
+                errors.append("Birthday is invalid.")
         if not gender:
             errors.append("Gender is required.")
+        elif gender not in {"Male", "Female"}:
+            errors.append("Gender must be Male or Female.")
+
+    if not _is_letters_period_only(victim_first_name):
+        errors.append("First name must contain letters and periods only.")
+    if not _is_letters_period_only(victim_last_name):
+        errors.append("Last name must contain letters and periods only.")
+    if not _is_numeric_only(contact_number):
+        errors.append("Contact number must contain numbers only.")
 
     if errors:
         return errors, None
+
+    age_value = _age_from_iso_date(date_of_birth) if date_of_birth else None
 
     animal_detail = animal_type
     if other_animal and animal_type == "Others":
@@ -2622,12 +2866,13 @@ def _prescreening_parse_validate_derive(
         "victim_middle_initial": victim_middle_initial,
         "date_of_birth": date_of_birth,
         "gender": gender,
-        "age": age,
+        "age": str(age_value) if age_value is not None else "",
         "barangay": barangay,
         "victim_address": victim_address,
         "contact_number": contact_number,
         "email_address": email_address,
         "relationship_to_user": relationship_to_user,
+        # Backward compatibility only; DB writes should use split barangay + address fields.
         "combined_address": combined_address,
         "first_name": first_name,
         "last_name": last_name,
@@ -2646,13 +2891,6 @@ def _patient_defaults_from_prescreening_form(form) -> dict:
     """Build a patient-shaped dict for repopulating pre_screening_form.html after validation errors."""
     barangay = (form.get("barangay") or "").strip()
     victim_address = (form.get("victim_address") or "").strip()
-    addr = ""
-    if barangay and victim_address:
-        addr = f"{barangay}, {victim_address}"
-    elif barangay:
-        addr = barangay
-    elif victim_address:
-        addr = victim_address
     return {
         "first_name": (form.get("victim_first_name") or "").strip(),
         "last_name": (form.get("victim_last_name") or "").strip(),
@@ -2661,7 +2899,8 @@ def _patient_defaults_from_prescreening_form(form) -> dict:
         "age": (form.get("age") or "").strip(),
         "phone_number": (form.get("contact_number") or "").strip(),
         "email": (form.get("email_address") or "").strip(),
-        "address": addr,
+        "barangay": barangay,
+        "address": victim_address,
     }
 
 
@@ -3008,6 +3247,7 @@ def create_app():
                   first_name TEXT,
                   last_name TEXT,
                   phone_number TEXT,
+                  barangay TEXT,
                   address TEXT,
                   date_of_birth TEXT,
                   age INTEGER,
@@ -3027,12 +3267,12 @@ def create_app():
                 db.execute(
                     """
                     INSERT INTO patients_new (
-                      id, user_id, first_name, last_name, phone_number, address, date_of_birth,
+                      id, user_id, first_name, last_name, phone_number, barangay, address, date_of_birth,
                       age, gender, allergies, pre_existing_conditions, current_medications,
                       notification_settings, relationship_to_user, onboarding_completed
                     )
                     SELECT
-                      id, user_id, first_name, last_name, phone_number, address, date_of_birth,
+                      id, user_id, first_name, last_name, phone_number, NULL, address, date_of_birth,
                       age, gender, allergies, pre_existing_conditions, current_medications,
                       notification_settings, COALESCE(relationship_to_user, 'Self'),
                       COALESCE(onboarding_completed, 0)
@@ -3043,12 +3283,12 @@ def create_app():
                 db.execute(
                     """
                     INSERT INTO patients_new (
-                      id, user_id, first_name, last_name, phone_number, address, date_of_birth,
+                      id, user_id, first_name, last_name, phone_number, barangay, address, date_of_birth,
                       age, gender, allergies, pre_existing_conditions, current_medications,
                       notification_settings, relationship_to_user, onboarding_completed
                     )
                     SELECT
-                      id, user_id, first_name, last_name, phone_number, address, date_of_birth,
+                      id, user_id, first_name, last_name, phone_number, NULL, address, date_of_birth,
                       age, gender, allergies, pre_existing_conditions, current_medications,
                       notification_settings, 'Self', COALESCE(onboarding_completed, 0)
                     FROM patients
@@ -3275,6 +3515,39 @@ def create_app():
             db.execute("ALTER TABLE cases ADD COLUMN staff_completed_at TEXT")
             db.commit()
 
+    def _ensure_patients_barangay_column():
+        db = get_db()
+        cols = {row["name"] for row in db.execute("PRAGMA table_info(patients)").fetchall()}
+        if "barangay" not in cols:
+            db.execute("ALTER TABLE patients ADD COLUMN barangay TEXT")
+            db.commit()
+
+    def _ensure_cases_staff_removed_columns():
+        db = get_db()
+        cols = {row["name"] for row in db.execute("PRAGMA table_info(cases)").fetchall()}
+        if "staff_removed" not in cols:
+            db.execute(
+                "ALTER TABLE cases ADD COLUMN staff_removed INTEGER NOT NULL DEFAULT 0"
+            )
+            db.commit()
+        cols = {row["name"] for row in db.execute("PRAGMA table_info(cases)").fetchall()}
+        if "staff_removed_at" not in cols:
+            db.execute("ALTER TABLE cases ADD COLUMN staff_removed_at TEXT")
+            db.commit()
+        if "staff_removed_by_user_id" not in cols:
+            db.execute("ALTER TABLE cases ADD COLUMN staff_removed_by_user_id INTEGER")
+            db.commit()
+        # Map legacy "Remove Case" rows (archived) onto staff_removed for staff-only hiding.
+        db.execute(
+            """
+            UPDATE cases
+            SET staff_removed = 1
+            WHERE COALESCE(staff_removed, 0) = 0
+              AND LOWER(TRIM(COALESCE(case_status, ''))) = 'archived'
+            """
+        )
+        db.commit()
+
     with app.app_context():
         _ensure_patient_onboarding_column()
         _ensure_clinic_personnel_profile_columns()
@@ -3290,6 +3563,12 @@ def create_app():
         _migrate_admin_page_last_seen_session_logs()
         _ensure_staff_page_last_seen_table()
         _ensure_cases_staff_completed_at_column()
+        _ensure_patients_barangay_column()
+        _ensure_cases_staff_removed_columns()
+        try:
+            _backfill_patients_barangay_address(get_db())
+        except Exception:
+            pass
 
     # #region agent log helper
     def _debug_log(run_id: str, hypothesis_id: str, location: str, message: str, data: dict | None = None):
@@ -3324,6 +3603,8 @@ def create_app():
                 WHEN LOWER(COALESCE(p.relationship_to_user, 'self')) = 'self' THEN 0
                 ELSE 1
             END,
+            -- Prefer the most complete Self record (DOB/Gender/Name), so blank placeholder rows
+            -- don't hide the real profile values.
             CASE WHEN TRIM(COALESCE(p.date_of_birth, '')) <> '' THEN 0 ELSE 1 END,
             CASE WHEN TRIM(COALESCE(p.gender, '')) <> '' THEN 0 ELSE 1 END,
             CASE
@@ -3787,6 +4068,10 @@ def create_app():
         return int(row["n"] or 0)
 
     @app.context_processor
+    def _inject_barangay_options():
+        return {"barangay_options": CEBU_BARANGAY_NAMES}
+
+    @app.context_processor
     def _inject_staff_scheduled_appointments_count():
         try:
             if session.get("role") != "clinic_personnel":
@@ -4041,6 +4326,38 @@ def create_app():
             total_completed = _total_completed_doses_all_courses(card_doses_by_type)
             has_vaccination_update = total_completed > 0
 
+            has_cancelled_only = (
+                not has_vaccination_update
+                and db.execute(
+                    """
+                    SELECT 1
+                    FROM appointments a
+                    WHERE a.case_id = ?
+                      AND a.clinic_id = ?
+                      AND COALESCE(a.type, '') != 'Walk-in'
+                      AND LOWER(TRIM(COALESCE(a.status, ''))) IN ('cancelled', 'canceled')
+                    LIMIT 1
+                    """,
+                    (case_id, clinic_id),
+                ).fetchone()
+                is not None
+                and db.execute(
+                    """
+                    SELECT 1
+                    FROM appointments a
+                    WHERE a.case_id = ?
+                      AND a.clinic_id = ?
+                      AND COALESCE(a.type, '') != 'Walk-in'
+                      AND LOWER(TRIM(COALESCE(a.status, ''))) NOT IN (
+                        'removed', 'cancelled', 'canceled', 'expired', 'completed'
+                      )
+                    LIMIT 1
+                    """,
+                    (case_id, clinic_id),
+                ).fetchone()
+                is None
+            )
+
             status_metrics = _compute_vaccination_status_for_case(card_doses_by_type, risk_str)
             vc_exp = int(status_metrics["expected_doses"] or 0)
             vc_done = int(status_metrics["doses_completed"] or 0)
@@ -4081,6 +4398,8 @@ def create_app():
                 desired_status = "Completed"
             elif vc_exp and vc_done >= vc_exp:
                 desired_status = "Completed"
+            elif has_cancelled_only:
+                desired_status = "Cancelled"
             elif no_show_eligible:
                 desired_status = "No Show"
             else:
@@ -4297,6 +4616,9 @@ def create_app():
 
         # Optional status filter for dashboard chips
         status_filter = (request.args.get("status") or "").strip().lower()
+        if status_filter in ("no show", "no-show", "no_show"):
+            status_filter = "missed"
+        show_all = (request.args.get("view") or "").strip().lower() == "all"
 
         def _bucket_status(row: sqlite3.Row) -> str:
             status_value = (row["status"] or "").strip().lower()
@@ -4553,6 +4875,7 @@ def create_app():
             patient=patient,
             cases=cases,
             appointments=enriched_appointments,
+            show_all_appointments=show_all,
             clinics=clinics,
             has_any_appointments=has_any_appointments,
             selected_status=(
@@ -4675,6 +4998,8 @@ def create_app():
 
             # Vaccination card + doses for this case
             case_id = appt["case_id"]
+            if not _case_has_first_dose_recorded(db, int(case_id)):
+                continue
             vc_row = db.execute(
                 "SELECT * FROM vaccination_card WHERE case_id = ?", (case_id,)
             ).fetchone()
@@ -4712,14 +5037,6 @@ def create_app():
                 if prev_date:
                     parts.append(f"Prior vaccine date: {prev_date}")
                 pre_screening_vaccination_note = " | ".join(parts)
-
-            if (
-                not doses_rows
-                and not vaccination_card
-                and not pre_screening_vaccination_note
-                and not _case_has_vaccination_record(db, case_id)
-            ):
-                continue
 
             card_doses_by_type: dict[str, dict[int, dict]] = {
                 "pre_exposure": {},
@@ -4795,7 +5112,7 @@ def create_app():
         # Ensure the appointment belongs to any patient under this user (self or dependents)
         appt = db.execute(
             """
-            SELECT a.id, a.status
+            SELECT a.id, a.status, a.type, a.case_id
             FROM appointments a
             JOIN patients p ON p.id = a.patient_id
             WHERE a.id = ? AND p.user_id = ?
@@ -4807,8 +5124,13 @@ def create_app():
             flash("Appointment not found.", "error")
             return redirect(url_for("patient_dashboard"))
 
-        if appt["status"] == "Cancelled":
+        status_lower = ((appt["status"] or "").strip()).lower()
+        if status_lower in ("cancelled", "canceled"):
             flash("Appointment is already cancelled.", "info")
+            return redirect(url_for("patient_dashboard"))
+
+        if not _patient_can_modify_appointment(db, appt):
+            flash("This appointment can no longer be cancelled.", "info")
             return redirect(url_for("patient_dashboard"))
 
         db.execute(
@@ -4901,6 +5223,11 @@ def create_app():
         _mark_appointment_notifications_read_for_appointment(
             session["user_id"], appointment_id
         )
+        # When a patient opens a case appointment, also clear case-level vaccination highlights
+        # so the dashboard card highlight disappears after it has been viewed once.
+        _mark_vaccination_notifications_read_for_case(
+            session["user_id"], int(appt["case_id"])
+        )
 
         # Compute human-friendly appointment number for this patient (all non-hidden appointments up to this one)
         count_row = db.execute(
@@ -4940,6 +5267,7 @@ def create_app():
         status_value = (appt["status"] or "").strip()
         status_lower = status_value.lower()
         can_edit = status_lower in ("pending", "queued", "scheduled", "no show", "expired")
+        can_patient_modify = _patient_can_modify_appointment(db, appt)
 
         # Vaccination card data (shared with staff case view, read-only for patients)
         case_id = appt["case_id"]
@@ -4995,6 +5323,7 @@ def create_app():
             appt_date_display=appt_date_display,
             appt_time_display=appt_time_display,
             can_edit=can_edit,
+            can_patient_modify=can_patient_modify,
             vaccination_card=vaccination_card,
             card_doses_by_type=card_doses_by_type,
             active_record_type=active_record_type,
@@ -5166,6 +5495,10 @@ def create_app():
         if context is None:
             flash("Vaccination card not found for this appointment.", "error")
             return redirect(url_for("patient_vaccinations"))
+        db = get_db()
+        if not _case_has_first_dose_recorded(db, int(context["case_id"])):
+            flash("This vaccination card is available after at least one recorded dose.", "info")
+            return redirect(url_for("patient_vaccinations"))
 
         _mark_vaccination_notifications_read_for_case(
             session["user_id"], int(context["case_id"])
@@ -5201,6 +5534,10 @@ def create_app():
         )
         if context is None:
             flash("Vaccination card not found for this appointment.", "error")
+            return redirect(url_for("patient_vaccinations"))
+        db = get_db()
+        if not _case_has_first_dose_recorded(db, int(context["case_id"])):
+            flash("This vaccination card is available after at least one recorded dose.", "info")
             return redirect(url_for("patient_vaccinations"))
 
         html = render_template("vaccination_card_pdf.html", **context)
@@ -5282,6 +5619,10 @@ def create_app():
             flash("Appointment not found.", "error")
             return redirect(url_for("patient_dashboard"))
 
+        if not _patient_can_modify_appointment(db, appt):
+            flash("This appointment can no longer be rescheduled.", "info")
+            return redirect(url_for("patient_appointment_view", appointment_id=appointment_id))
+
         status_value = (appt["status"] or "").strip()
         status_lower = status_value.lower()
         if status_lower not in ("pending", "queued", "no show"):
@@ -5304,7 +5645,7 @@ def create_app():
                     WHERE a2.clinic_id = s.clinic_id
                       AND a2.appointment_datetime = s.slot_datetime
                       AND a2.id != ?
-                      AND LOWER(COALESCE(a2.status, '')) != 'cancelled') AS booking_count
+                      AND LOWER(COALESCE(a2.status, '')) NOT IN ('cancelled', 'canceled')) AS booking_count
             FROM availability_slots s
             WHERE s.clinic_id = ?
               AND s.is_active = 1
@@ -5361,6 +5702,10 @@ def create_app():
             flash("Appointment not found.", "error")
             return redirect(url_for("patient_dashboard"))
 
+        if not _patient_can_modify_appointment(db, appt):
+            flash("This appointment can no longer be rescheduled.", "info")
+            return redirect(url_for("patient_appointment_view", appointment_id=appointment_id))
+
         status_value = (appt["status"] or "").strip()
         status_lower = status_value.lower()
         if status_lower not in ("pending", "queued", "no show"):
@@ -5408,7 +5753,7 @@ def create_app():
             WHERE clinic_id = ?
               AND appointment_datetime = ?
               AND id != ?
-              AND LOWER(COALESCE(status, '')) != 'cancelled'
+              AND LOWER(COALESCE(status, '')) NOT IN ('cancelled', 'canceled')
             """,
             (appt["clinic_id"], slot_datetime, appointment_id),
         ).fetchone()["n"]
@@ -5480,7 +5825,7 @@ def create_app():
                    (SELECT COUNT(*) FROM appointments a
                     WHERE a.clinic_id = s.clinic_id
                       AND a.appointment_datetime = s.slot_datetime
-                      AND LOWER(COALESCE(a.status, '')) != 'cancelled') AS booking_count
+                      AND LOWER(COALESCE(a.status, '')) NOT IN ('cancelled', 'canceled')) AS booking_count
             FROM availability_slots s
             WHERE s.clinic_id = ?
               AND s.is_active = 1
@@ -5566,10 +5911,10 @@ def create_app():
         gender = pdata["gender"]
         age = pdata["age"]
         barangay = pdata["barangay"]
+        victim_address = pdata["victim_address"]
         contact_number = pdata["contact_number"]
         email_address = pdata["email_address"]
         relationship_to_user = pdata["relationship_to_user"]
-        combined_address = pdata["combined_address"]
         first_name = pdata["first_name"]
         last_name = pdata["last_name"]
         animal_detail = pdata["animal_detail"]
@@ -5593,7 +5938,7 @@ def create_app():
         who_category_reasons_json = json.dumps(who_reasons, ensure_ascii=False)
 
         target_patient_id = patient["id"]
-        has_victim_info = bool(first_name or last_name or date_of_birth or gender or age or barangay or combined_address or contact_number or email_address)
+        has_victim_info = bool(first_name or last_name or date_of_birth or gender or age or barangay or victim_address or contact_number or email_address)
         if has_victim_info:
             computed_age = _age_from_iso_date(date_of_birth)
             if computed_age is not None:
@@ -5613,7 +5958,8 @@ def create_app():
                 new_last_name = last_name if last_name else patient["last_name"]
                 new_date_of_birth = date_of_birth if date_of_birth else patient.get("date_of_birth")
                 new_gender = gender if gender else patient.get("gender")
-                new_address = combined_address if combined_address else patient["address"]
+                new_barangay = barangay if barangay else (patient.get("barangay") or "")
+                new_address = victim_address if victim_address else patient["address"]
                 new_phone = contact_number if contact_number else patient["phone_number"]
 
                 db.execute(
@@ -5624,12 +5970,13 @@ def create_app():
                         date_of_birth = ?,
                         gender = ?,
                         age = ?,
+                        barangay = ?,
                         address = ?,
                         phone_number = ?,
                         relationship_to_user = ?
                     WHERE id = ?
                     """,
-                    (new_first_name, new_last_name, new_date_of_birth, new_gender, parsed_age, new_address, new_phone, "Self", patient["id"]),
+                    (new_first_name, new_last_name, new_date_of_birth, new_gender, parsed_age, new_barangay or None, new_address, new_phone, "Self", patient["id"]),
                 )
 
                 if email_address:
@@ -5638,16 +5985,17 @@ def create_app():
                 db.execute(
                     """
                     INSERT INTO patients (
-                        user_id, first_name, last_name, phone_number, address, date_of_birth, gender, age,
+                        user_id, first_name, last_name, phone_number, barangay, address, date_of_birth, gender, age,
                         relationship_to_user, onboarding_completed
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         session["user_id"],
                         first_name,
                         last_name,
                         contact_number or None,
-                        combined_address or None,
+                        barangay or None,
+                        victim_address or None,
                         date_of_birth,
                         gender,
                         parsed_age,
@@ -5757,7 +6105,7 @@ def create_app():
                     """
                     SELECT COUNT(*) AS n FROM appointments
                     WHERE clinic_id = ? AND appointment_datetime = ?
-                    AND LOWER(COALESCE(status, '')) != 'cancelled'
+                    AND LOWER(COALESCE(status, '')) NOT IN ('cancelled', 'canceled')
                     """,
                     (clinic_id, slot_datetime),
                 ).fetchone()["n"]
@@ -5875,6 +6223,7 @@ def create_app():
         last_name = normalize_name_case(request.form.get("last_name", ""))
         date_of_birth = request.form.get("date_of_birth", "").strip()
         gender = normalize_name_case(request.form.get("gender", ""))
+        barangay = normalize_name_case(request.form.get("barangay", ""))
         address = normalize_name_case(request.form.get("address", ""))
         phone_number = request.form.get("phone_number", "").strip()
         email = request.form.get("email", "").strip().lower()
@@ -5883,6 +6232,7 @@ def create_app():
         current_medications = normalize_name_case(request.form.get("current_medications", ""))
         
         # Password change fields (optional)
+        password_change_intent = (request.form.get("password_change_intent") or "").strip()
         new_password = request.form.get("new_password", "").strip()
         confirm_password = request.form.get("confirm_password", "").strip()
 
@@ -5894,8 +6244,11 @@ def create_app():
         elif "@" not in email:
             errors.append("Email must be valid.")
         
-        if new_password:
-            if len(new_password) < 8:
+        changing_password = password_change_intent == "1"
+        if changing_password:
+            if not new_password or not confirm_password:
+                errors.append("To change your password, please fill in both password fields.")
+            elif len(new_password) < 8:
                 errors.append("Password must be at least 8 characters.")
             elif new_password != confirm_password:
                 errors.append("Passwords do not match.")
@@ -5903,7 +6256,14 @@ def create_app():
         if errors:
             for error in errors:
                 flash(error, "error")
-            return render_template("patient_profile.html", patient=patient, active_page="profile")
+            return render_template(
+                "patient_profile.html",
+                patient=patient,
+                active_page="profile",
+                show_password_fields=changing_password,
+            )
+
+        derived_age = _age_from_iso_date(date_of_birth) if date_of_birth else None
 
         # Update patients table
         db.execute(
@@ -5913,6 +6273,8 @@ def create_app():
                 last_name = ?,
                 date_of_birth = ?,
                 gender = ?,
+                age = ?,
+                barangay = ?,
                 address = ?,
                 phone_number = ?,
                 allergies = ?,
@@ -5925,6 +6287,8 @@ def create_app():
                 last_name if last_name else None,
                 date_of_birth if date_of_birth else None,
                 gender if gender else None,
+                derived_age if derived_age is not None else patient.get("age"),
+                barangay if barangay else None,
                 address if address else None,
                 phone_number if phone_number else None,
                 allergies if allergies else None,
@@ -5944,8 +6308,8 @@ def create_app():
             (email, session["user_id"]),
         )
 
-        # Update password if provided
-        if new_password:
+        # Update password only when explicitly requested
+        if changing_password:
             password_hash = generate_password_hash(new_password)
             db.execute(
                 """
@@ -6002,6 +6366,7 @@ def create_app():
             SELECT COUNT(DISTINCT c.patient_id) AS total
             FROM cases c
             WHERE c.clinic_id = ?
+              AND COALESCE(c.staff_removed, 0) = 0
             """,
             (clinic_id,),
         ).fetchone()["total"]
@@ -6022,6 +6387,7 @@ def create_app():
             SELECT COUNT(*) AS total
             FROM cases c
             WHERE c.clinic_id = ?
+              AND COALESCE(c.staff_removed, 0) = 0
               AND LOWER(COALESCE(c.case_status, 'pending')) = 'pending'
             """,
             (clinic_id,),
@@ -6032,6 +6398,7 @@ def create_app():
             SELECT COUNT(*) AS total
             FROM cases c
             WHERE c.clinic_id = ?
+              AND COALESCE(c.staff_removed, 0) = 0
               AND LOWER(c.risk_level) IN ('category iii', 'high', 'high-risk', 'high risk')
             """,
             (clinic_id,),
@@ -6059,6 +6426,7 @@ def create_app():
                 SELECT COUNT(*)
                 FROM cases c
                 WHERE c.clinic_id = ?
+                  AND COALESCE(c.staff_removed, 0) = 0
                   AND LOWER(COALESCE(c.case_status, '')) = 'no show'
               ) AS missed,
               SUM(CASE WHEN LOWER(status) = 'rescheduled' THEN 1 ELSE 0 END) AS rescheduled
@@ -6370,6 +6738,7 @@ def create_app():
             "date_of_birth": "",
             "gender": "",
             "age": "",
+            "barangay": "",
             "phone_number": "",
             "email": "",
             "address": "",
@@ -6399,32 +6768,9 @@ def create_app():
                 dob = pdata["date_of_birth"]
                 gender = pdata["gender"]
                 phone_number = pdata["contact_number"] or None
-                address = pdata["combined_address"]
+                barangay = pdata["barangay"] or None
+                address = pdata["victim_address"] or None
                 age_value = _age_from_iso_date(dob) if dob else None
-                if age_value is None and pdata["age"]:
-                    try:
-                        age_value = int(pdata["age"])
-                    except ValueError:
-                        flash("Age must be a number.", "error")
-                        patient = _patient_defaults_from_prescreening_form(request.form)
-                        breadcrumbs = [
-                            {"label": "Home", "href": url_for("staff_dashboard")},
-                            {"label": "Cases", "href": url_for("staff_patients")},
-                            {"label": "New Patient", "href": None},
-                        ]
-                        return render_template(
-                            "staff_new_patient.html",
-                            staff=staff,
-                            staff_display_name=display_name,
-                            patient=patient,
-                            clinics=clinics,
-                            breadcrumbs=breadcrumbs,
-                            active_page="cases",
-            pre_screening_embedded=False,
-            pre_screening_form_action=url_for("staff_new_patient_account"),
-            pre_screening_cancel_url=url_for("staff_patients"),
-            pre_screening_submit_label="Create patient account",
-                        )
 
                 username_seed = email.split("@", 1)[0]
                 if first_name or last_name:
@@ -6457,11 +6803,11 @@ def create_app():
                     db.execute(
                         """
                         INSERT INTO patients (
-                          user_id, first_name, last_name, age, phone_number, address, date_of_birth,
+                          user_id, first_name, last_name, age, phone_number, barangay, address, date_of_birth,
                           gender, relationship_to_user, onboarding_completed
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Self', 1)
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Self', 1)
                         """,
-                        (user_id, first_name, last_name, age_value, phone_number, address, dob, gender),
+                        (user_id, first_name, last_name, age_value, phone_number, barangay, address, dob, gender),
                     )
                     patient_id = db.execute(
                         """
@@ -6788,7 +7134,7 @@ def create_app():
                 form_data["animal_type"] = pdata.get("animal_type") or form_data["animal_type"]
                 form_data["barangay"] = pdata.get("barangay") or form_data["barangay"]
                 form_data["victim_address"] = pdata.get("victim_address") or form_data["victim_address"]
-                form_data["address"] = pdata.get("combined_address") or form_data["address"]
+                form_data["address"] = pdata.get("victim_address") or form_data["address"]
                 form_data["other_animal"] = pdata.get("other_animal") or ""
                 form_data["animal_status"] = pdata.get("animal_status") or ""
                 form_data["animal_vaccination"] = pdata.get("animal_vaccination") or ""
@@ -6823,8 +7169,8 @@ def create_app():
                     db.execute(
                         """
                         INSERT INTO patients (
-                          user_id, first_name, last_name, age, phone_number, address, relationship_to_user, onboarding_completed
-                        ) VALUES (?, ?, ?, ?, ?, ?, 'Walk-in', 1)
+                          user_id, first_name, last_name, age, phone_number, barangay, address, relationship_to_user, onboarding_completed
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Walk-in', 1)
                         """,
                         (
                             session["user_id"],
@@ -6832,7 +7178,8 @@ def create_app():
                             form_data["last_name"] or None,
                             age_value,
                             form_data["phone_number"] or None,
-                            (pdata.get("combined_address") if pdata else form_data["address"]) or None,
+                            (pdata.get("barangay") if pdata else form_data["barangay"]) or None,
+                            (pdata.get("victim_address") if pdata else form_data["address"]) or None,
                         ),
                     )
                     patient_id = db.execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
@@ -6920,6 +7267,13 @@ def create_app():
                         return redirect(url_for("staff_create_case_record"))
                     if vc_tetanus_expiry and vc_tetanus_expiry < today_iso:
                         flash("Tetanus expiry date cannot be earlier than today.", "error")
+                        return redirect(url_for("staff_create_case_record"))
+
+                    if vc_pcec_mfg_date and vc_pcec_expiry and vc_pcec_mfg_date > vc_pcec_expiry:
+                        flash("Anti-rabies Mfg. date cannot be later than Expiry date.", "error")
+                        return redirect(url_for("staff_create_case_record"))
+                    if vc_tetanus_mfg_date and vc_tetanus_expiry and vc_tetanus_mfg_date > vc_tetanus_expiry:
+                        flash("Tetanus Mfg. date cannot be later than Expiry date.", "error")
                         return redirect(url_for("staff_create_case_record"))
 
                     vc_pvrv_ins, vc_erig_ins = _anti_rabies_vaccine_from_form(_v("vc_anti_rabies_vaccine"))
@@ -7081,7 +7435,7 @@ def create_app():
         if category not in {"all", "category i", "category ii", "category iii"}:
             category = "all"
         case_status = (request.args.get("status") or "all").strip().lower()
-        if case_status not in {"all", "pending", "completed", "no show"}:
+        if case_status not in {"all", "pending", "completed", "no show", "cancelled"}:
             case_status = "all"
 
         # Extended filters (reasonable subset + inventory joins)
@@ -7117,6 +7471,7 @@ def create_app():
 
         where_clauses = [
             "c.clinic_id = ?",
+            _SQL_STAFF_CASE_NOT_REMOVED,
             "LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('archived', 'queued', 'scheduled')",
         ]
         params: list[object] = [staff["clinic_id"]]
@@ -7163,15 +7518,7 @@ def create_app():
             params.append(age_max)
 
         if barangay:
-            # Barangay is typically the first segment of the address before a comma.
-            where_clauses.append(
-                """LOWER(
-                      CASE WHEN INSTR(COALESCE(p.address,''), ',') > 0
-                           THEN TRIM(SUBSTR(COALESCE(p.address,''), 1, INSTR(COALESCE(p.address,''), ',') - 1))
-                           ELSE TRIM(COALESCE(p.address,''))
-                      END
-                    ) LIKE ?"""
-            )
+            where_clauses.append(_sql_patient_barangay_lowercase_like())
             params.append(f"%{barangay.lower()}%")
 
         if site_of_bite:
@@ -7473,6 +7820,7 @@ def create_app():
         where_clauses = [
             "a.clinic_id = ?",
             "COALESCE(a.type, '') != 'Walk-in'",
+            _SQL_STAFF_CASE_NOT_REMOVED,
             status_clause,
         ]
         params: list[object] = [staff["clinic_id"]]
@@ -7642,6 +7990,7 @@ def create_app():
 
         where_clauses = [
             "c.clinic_id = ?",
+            _SQL_STAFF_CASE_NOT_REMOVED,
             "LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('archived', 'queued', 'scheduled')",
         ]
         params: list[object] = [clinic_id]
@@ -7680,14 +8029,7 @@ def create_app():
             where_clauses.append("COALESCE(p.age, 0) <= ?")
             params.append(age_max)
         if barangay:
-            where_clauses.append(
-                """LOWER(
-                      CASE WHEN INSTR(COALESCE(p.address,''), ',') > 0
-                           THEN TRIM(SUBSTR(COALESCE(p.address,''), 1, INSTR(COALESCE(p.address,''), ',') - 1))
-                           ELSE TRIM(COALESCE(p.address,''))
-                      END
-                    ) LIKE ?"""
-            )
+            where_clauses.append(_sql_patient_barangay_lowercase_like())
             params.append(f"%{barangay.lower()}%")
         if site_of_bite:
             where_clauses.append("LOWER(COALESCE(c.affected_area, '')) LIKE ?")
@@ -7771,6 +8113,7 @@ def create_app():
               p.gender,
               p.age,
               p.phone_number,
+              p.barangay,
               p.address,
               c.exposure_date,
               c.exposure_time,
@@ -7822,12 +8165,6 @@ def create_app():
             """,
             params,
         ).fetchall()
-
-        def _barangay_from_address(addr: str | None) -> str:
-            a = (addr or "").strip()
-            if not a:
-                return ""
-            return a.split(",", 1)[0].strip()
 
         import csv
         import io
@@ -7914,7 +8251,7 @@ def create_app():
                     r["age"] if r["age"] is not None else "",
                     r["phone_number"] or "",
                     r["address"] or "",
-                    _barangay_from_address(r["address"]),
+                    _barangay_export_value(r["barangay"], r["address"]),
                     r["exposure_date"] or "",
                     r["exposure_time"] or "",
                     r["place_of_exposure"] or "",
@@ -8033,6 +8370,7 @@ def create_app():
 
         where_clauses = [
             "c.clinic_id = ?",
+            _SQL_STAFF_CASE_NOT_REMOVED,
             "LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('archived', 'queued', 'scheduled')",
         ]
         params: list[object] = [clinic_id]
@@ -8071,14 +8409,7 @@ def create_app():
             where_clauses.append("COALESCE(p.age, 0) <= ?")
             params.append(age_max)
         if barangay:
-            where_clauses.append(
-                """LOWER(
-                      CASE WHEN INSTR(COALESCE(p.address,''), ',') > 0
-                           THEN TRIM(SUBSTR(COALESCE(p.address,''), 1, INSTR(COALESCE(p.address,''), ',') - 1))
-                           ELSE TRIM(COALESCE(p.address,''))
-                      END
-                    ) LIKE ?"""
-            )
+            where_clauses.append(_sql_patient_barangay_lowercase_like())
             params.append(f"%{barangay.lower()}%")
         if site_of_bite:
             where_clauses.append("LOWER(COALESCE(c.affected_area, '')) LIKE ?")
@@ -8161,6 +8492,7 @@ def create_app():
               p.gender,
               p.age,
               p.phone_number,
+              p.barangay,
               p.address,
               c.exposure_date,
               c.exposure_time,
@@ -8213,12 +8545,6 @@ def create_app():
             params,
         ).fetchall()
 
-        def _barangay_from_address(addr: str | None) -> str:
-            a = (addr or "").strip()
-            if not a:
-                return ""
-            return a.split(",", 1)[0].strip()
-
         case_ids = [int(r["case_id"]) for r in raw]
         doses_by_case: dict[int, list[dict[str, object]]] = {}
         if case_ids:
@@ -8241,7 +8567,7 @@ def create_app():
             d = dict(r)
             cid = int(d["case_id"])
             d["case_code"] = f"C-000{cid}"
-            d["barangay"] = _barangay_from_address(d.get("address"))
+            d["barangay"] = _barangay_export_value(d.get("barangay"), d.get("address"))
             d["vaccination_doses"] = doses_by_case.get(cid, [])
             rows.append(d)
 
@@ -9330,7 +9656,7 @@ def create_app():
                    (SELECT COUNT(*) FROM appointments a
                     WHERE a.clinic_id = s.clinic_id
                       AND a.appointment_datetime = s.slot_datetime
-                      AND LOWER(COALESCE(a.status, '')) != 'cancelled') AS booking_count
+                      AND LOWER(COALESCE(a.status, '')) NOT IN ('cancelled', 'canceled')) AS booking_count
             FROM availability_slots s
             WHERE s.clinic_id = ?
               AND DATE(s.slot_datetime) >= ?
@@ -9818,6 +10144,7 @@ def create_app():
             JOIN clinics cl ON cl.id = c.clinic_id
             WHERE c.id = ?
               AND c.clinic_id = ?
+              AND COALESCE(c.staff_removed, 0) = 0
             """,
             (case_id, staff["clinic_id"]),
         ).fetchone()
@@ -10121,6 +10448,7 @@ def create_app():
             SELECT id, who_category_auto, who_category_final
             FROM cases
             WHERE id = ? AND clinic_id = ?
+              AND COALESCE(staff_removed, 0) = 0
             """,
             (case_id, staff["clinic_id"]),
         ).fetchone()
@@ -10196,6 +10524,7 @@ def create_app():
             SELECT id
             FROM cases
             WHERE id = ? AND clinic_id = ?
+              AND COALESCE(staff_removed, 0) = 0
             """,
             (case_id, staff["clinic_id"]),
         ).fetchone()
@@ -10245,7 +10574,7 @@ def create_app():
 
         case_row = db.execute(
             """
-            SELECT id, case_status
+            SELECT id, COALESCE(staff_removed, 0) AS staff_removed
             FROM cases
             WHERE id = ? AND clinic_id = ?
             """,
@@ -10254,18 +10583,24 @@ def create_app():
         if case_row is None:
             flash("Case not found.", "error")
             return redirect(url_for("staff_patients"))
+        if int(case_row["staff_removed"] or 0) == 1:
+            flash("This case is already removed from the clinic list.", "info")
+            return redirect(url_for("staff_patients"))
 
+        removed_at = datetime.now().isoformat(timespec="seconds")
         db.execute(
             """
             UPDATE cases
-            SET case_status = ?
+            SET staff_removed = 1,
+                staff_removed_at = ?,
+                staff_removed_by_user_id = ?
             WHERE id = ? AND clinic_id = ?
             """,
-            ("archived", case_id, staff["clinic_id"]),
+            (removed_at, session["user_id"], case_id, staff["clinic_id"]),
         )
         db.commit()
 
-        flash("Case removed successfully.", "success")
+        flash("Case removed from clinic list (record retained).", "success")
         return redirect(url_for("staff_patients"))
 
     @app.post("/staff/cases/<int:case_id>/complete")
@@ -10377,7 +10712,10 @@ def create_app():
               p.id AS patient_id,
               p.first_name,
               p.last_name,
+              p.date_of_birth,
+              p.gender,
               p.age,
+              p.barangay,
               p.address,
               p.phone_number,
               u.email
@@ -10387,6 +10725,7 @@ def create_app():
             LEFT JOIN pre_screening_details psd ON psd.case_id = c.id
             WHERE c.id = ?
               AND c.clinic_id = ?
+              AND COALESCE(c.staff_removed, 0) = 0
             """,
             (case_id, staff["clinic_id"]),
         ).fetchone()
@@ -10409,6 +10748,9 @@ def create_app():
         if request.method == "POST":
             full_name = (request.form.get("full_name") or "").strip()
             age_raw = (request.form.get("age") or "").strip()
+            date_of_birth = (request.form.get("date_of_birth") or "").strip()
+            gender = normalize_name_case((request.form.get("gender") or "").strip())
+            barangay = normalize_name_case((request.form.get("barangay") or "").strip())
             address = normalize_name_case((request.form.get("address") or "").strip())
             phone_number = (request.form.get("phone_number") or "").strip()
             email = (request.form.get("email") or "").strip().lower()
@@ -10459,7 +10801,10 @@ def create_app():
                 last_name = parts[1] if len(parts) > 1 else ""
 
             age = case_patient["age"]
-            if age_raw:
+            derived_age = _age_from_iso_date(date_of_birth) if date_of_birth else None
+            if derived_age is not None:
+                age = derived_age
+            elif age_raw:
                 try:
                     age = int(age_raw)
                 except ValueError:
@@ -10525,7 +10870,10 @@ def create_app():
                 UPDATE patients
                 SET first_name = ?,
                     last_name = ?,
+                    date_of_birth = ?,
+                    gender = ?,
                     age = ?,
+                    barangay = ?,
                     address = ?,
                     phone_number = ?
                 WHERE id = ?
@@ -10533,7 +10881,10 @@ def create_app():
                 (
                     first_name if first_name is not None else case_patient["first_name"],
                     last_name if last_name is not None else case_patient["last_name"],
+                    date_of_birth if date_of_birth else case_patient["date_of_birth"],
+                    gender if gender else case_patient["gender"],
                     age,
+                    barangay if barangay else case_patient.get("barangay"),
                     address if address else case_patient["address"],
                     phone_number if phone_number else case_patient["phone_number"],
                     case_patient["patient_id"],
@@ -10666,6 +11017,13 @@ def create_app():
                 flash("Tetanus expiry date cannot be earlier than today.", "error")
                 return redirect(url_for("edit_patient_case", case_id=case_id))
 
+            if vc_pcec_mfg_date and vc_pcec_expiry and vc_pcec_mfg_date > vc_pcec_expiry:
+                flash("Anti-rabies Mfg. date cannot be later than Expiry date.", "error")
+                return redirect(url_for("edit_patient_case", case_id=case_id))
+            if vc_tetanus_mfg_date and vc_tetanus_expiry and vc_tetanus_mfg_date > vc_tetanus_expiry:
+                flash("Tetanus Mfg. date cannot be later than Expiry date.", "error")
+                return redirect(url_for("edit_patient_case", case_id=case_id))
+
             existing_vc = db.execute(
                 "SELECT anti_rabies, tetanus_prophylaxis FROM vaccination_card WHERE case_id = ?",
                 (case_id,),
@@ -10773,7 +11131,7 @@ def create_app():
             db.commit()
 
             flash("Case information updated.", "success")
-            return redirect(url_for("edit_patient_case", case_id=case_id))
+            return redirect(url_for("view_patient_case", case_id=case_id))
 
         staff_display_name = _staff_display_name(staff)
 
@@ -11262,6 +11620,7 @@ def create_app():
 
         where_clauses = [
             "c.clinic_id = ?",
+            _SQL_STAFF_CASE_NOT_REMOVED,
             "LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('archived', 'queued', 'scheduled')",
         ]
         params: list[object] = [clinic_id]
@@ -11786,13 +12145,19 @@ def create_app():
             errors.append("Employee ID is required.")
         if title not in ("Doctor", "Nurse"):
             errors.append("Title must be Doctor or Nurse.")
+        if not _is_letters_period_only(first_name):
+            errors.append("First name must contain letters and periods only.")
+        if not _is_letters_period_only(last_name):
+            errors.append("Last name must contain letters and periods only.")
         if date_of_birth:
             try:
-                date.fromisoformat(date_of_birth[:10])
+                dob_date = date.fromisoformat(date_of_birth[:10])
+                if dob_date > date.today():
+                    errors.append("Date of birth cannot be in the future.")
             except ValueError:
                 errors.append("Date of birth is invalid.")
-        if gender and gender not in {"Male", "Female", "Other"}:
-            errors.append("Gender must be Male, Female, or Other.")
+        if gender and gender not in {"Male", "Female"}:
+            errors.append("Gender must be Male or Female.")
 
         if not errors:
             dup_user = db.execute(

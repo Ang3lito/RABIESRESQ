@@ -203,9 +203,7 @@
           <label class="mb-1 block text-xs font-medium text-slate-600" for="barangay">Location (Barangay)</label>
           <select id="barangay" name="barangay" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring">
             <option value="" {{ "selected" if not selected_barangay else "" }}>All</option>
-            {% for b in ['Adlaon','Agsungot','Apas','Babag','Bacayan','Banilad','Basak Pardo','Basak San Nicolas','Binaliw','Bonbon','Budlaan','Buhisan','Bulacao','Buot','Busay','Calamba','Cambinocot','Capitol Site','Carreta','Cogon Pardo','Cogon Ramos','Day-as','Duljo Fatima','Ermita','Guadalupe','Guba','Hipodromo','Inayawan','Kalubihan','Kalunasan','Kamagayan','Kamputhaw','Kasambagan','Kinasang-an Pardo','Labangon','Lahug','Lorega San Miguel','Lusaran','Luz','Mabini','Mabolo','Malubog','Mambaling','Pahina Central','Pahina San Nicolas','Pamutan','Pari-an','Paril','Pasil','Pit-os','Poblacion Pardo','Pulangbato','Pung-ol Sibugay','Punta Princesa','Quiot Pardo','Sambag I','Sambag II','San Antonio','San Jose','San Nicolas Proper','San Roque','Santa Cruz','Santo Niño','Sapangdaku','Sawang Calero','Sinsin','Sirao','Suba','Sudlon I','Sudlon II','T. Padilla','Tabunan','Tagba-o','Talamban','Taptap','Tejero','Tinago','Tisa','To-ong','Zapatera'] %}
-              <option value="{{ b }}" {{ "selected" if (selected_barangay or '') == b else "" }}>{{ b }}</option>
-            {% endfor %}
+            {% include "_barangay_options.html" %}
           </select>
         </div>
       </div>
@@ -234,6 +232,7 @@
             <option value="pending" {{ "selected" if selected_status == "pending" else "" }}>Pending</option>
             <option value="completed" {{ "selected" if selected_status == "completed" else "" }}>Completed</option>
             <option value="no show" {{ "selected" if selected_status == "no show" else "" }}>No show</option>
+            <option value="cancelled" {{ "selected" if selected_status == "cancelled" else "" }}>Cancelled</option>
           </select>
         </div>
         <div class="hidden lg:block lg:flex-1"></div>
@@ -312,12 +311,12 @@
     <table class="min-w-full divide-y divide-slate-200 text-sm">
       <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
         <tr>
-          <th class="px-4 py-3">Case ID</th>
-          <th class="px-4 py-3">Patient Name</th>
-          <th class="px-4 py-3">Date of Exposure</th>
-          <th class="px-4 py-3">Category</th>
-          <th class="px-4 py-3">Status</th>
-          <th class="px-4 py-3">Schedule / Next Dose</th>
+          <th class="whitespace-nowrap px-4 py-3">Case ID</th>
+          <th class="whitespace-nowrap px-4 py-3">Patient Name</th>
+          <th class="whitespace-nowrap px-4 py-3">Date of Exposure</th>
+          <th class="whitespace-nowrap px-4 py-3 min-w-[6.5rem]">Category</th>
+          <th class="whitespace-nowrap px-4 py-3">Status</th>
+          <th class="whitespace-nowrap px-4 py-3">Schedule / Next Dose</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-100 bg-white">
@@ -353,6 +352,8 @@
                   <span class="rounded-full bg-[#1A4D2E]/10 px-2.5 py-1 text-xs font-semibold text-[#1A4D2E]">Completed</span>
                 {% elif status_lower == 'no show' %}
                   <span class="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">No Show</span>
+                {% elif status_lower == 'cancelled' %}
+                  <span class="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">Cancelled</span>
                 {% else %}
                   <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{{ case.case_status or 'N/A' }}</span>
                 {% endif %}
