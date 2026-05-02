@@ -12365,15 +12365,13 @@ def create_app():
             f"""
             SELECT
               a.id,
+              a.patient_id,
               a.appointment_datetime,
               a.status,
               a.case_id,
-              c.exposure_date,
-              COALESCE(TRIM(p.first_name || ' ' || p.last_name), pu.username) AS patient_display_name
+              c.exposure_date
             FROM appointments a
             INNER JOIN cases c ON c.id = a.case_id
-            INNER JOIN patients p ON p.id = a.patient_id
-            INNER JOIN users pu ON pu.id = p.user_id
             WHERE {where_sql}
             ORDER BY datetime(a.appointment_datetime) DESC, a.id DESC
             LIMIT ? OFFSET ?
@@ -12410,9 +12408,9 @@ def create_app():
             appt_items.append(
                 {
                     "display_id": f"A-{row['id']:05d}",
+                    "patient_display_id": f"P-{int(row['patient_id']):05d}",
                     "case_id": case_id,
                     "case_code": f"C-{case_id:05d}",
-                    "patient_display_name": (row["patient_display_name"] or "").strip() or "—",
                     "exposure_date_display": exp_display or "—",
                     "datetime_display": dt_display,
                     "badge": badge,
