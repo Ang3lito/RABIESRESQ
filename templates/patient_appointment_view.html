@@ -168,6 +168,23 @@
               </div>
             </div>
 
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <dt class="text-slate-500">Clinic branch</dt>
+                <dd class="mt-1 font-semibold text-slate-800">
+                  {% if appointment.clinic_name %}
+                    {{ appointment.clinic_name }}{% if appointment.clinic_branch_code %} <span class="text-slate-500 font-normal">({{ appointment.clinic_branch_code }})</span>{% endif %}
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </dd>
+              </div>
+              <div>
+                <dt class="text-slate-500">Case ID</dt>
+                <dd class="mt-1 font-semibold text-slate-800">{{ case_display_code or 'N/A' }}</dd>
+              </div>
+            </div>
+
             <div>
               <dt class="text-slate-500">Category / Risk</dt>
               {% set category_value = appointment.who_category_final or appointment.who_category_auto or appointment.risk_level or 'N/A' %}

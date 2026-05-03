@@ -1,0 +1,133 @@
+{% extends "super_admin_base.html" %}
+
+{% block title %}Super Admin Dashboard — RabiesResQ{% endblock %}
+
+{% block header_left %}
+<div>
+  <h1 class="text-2xl font-bold text-[#1A4D2E] sm:text-3xl">Dashboard</h1>
+  <p class="mt-1 text-sm text-slate-500">System-wide overview (all clinic branches).</p>
+</div>
+{% endblock %}
+
+{% block main_content %}
+<section class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+  <!-- Clinic Branches -->
+  <article
+    class="group relative overflow-hidden rounded-[2rem] border border-white bg-white p-6 shadow-sm transition-all hover:shadow-md">
+    <div class="flex items-start justify-between">
+      <div>
+        <p class="text-sm font-medium text-slate-500">Clinic Branches</p>
+        <h3 class="mt-2 text-4xl font-bold tracking-tight text-[#1A4D2E]">{{ stats.clinics }}</h3>
+      </div>
+      <div
+        class="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 transition-colors group-hover:bg-indigo-100">
+        <i class="fa-solid fa-hospital text-xl"></i>
+      </div>
+    </div>
+    <div class="mt-6 flex items-center justify-between border-t border-slate-50 pt-4">
+      <a href="{{ url_for('super_clinics') }}"
+        class="text-sm font-semibold text-indigo-600 hover:text-indigo-700 hover:underline decoration-2 underline-offset-4">
+        Manage branches <i class="fa-solid fa-arrow-right ml-1 text-xs"></i>
+      </a>
+    </div>
+  </article>
+
+  <!-- Cases -->
+  <article
+    class="group relative overflow-hidden rounded-[2rem] border border-white bg-white p-6 shadow-sm transition-all hover:shadow-md">
+    <div class="flex items-start justify-between">
+      <div>
+        <p class="text-sm font-medium text-slate-500">Total Cases</p>
+        <h3 class="mt-2 text-4xl font-bold tracking-tight text-[#1A4D2E]">{{ stats.cases }}</h3>
+      </div>
+      <div
+        class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 transition-colors group-hover:bg-emerald-100">
+        <i class="fa-solid fa-folder-open text-xl"></i>
+      </div>
+    </div>
+    <div class="mt-6 flex items-center justify-between border-t border-slate-50 pt-4">
+      <a href="{{ url_for('super_cases') }}"
+        class="text-sm font-semibold text-emerald-600 hover:text-emerald-700 hover:underline decoration-2 underline-offset-4">
+        Browse cases <i class="fa-solid fa-arrow-right ml-1 text-xs"></i>
+      </a>
+    </div>
+  </article>
+
+  <!-- Vaccination Records -->
+  <article
+    class="group relative overflow-hidden rounded-[2rem] border border-white bg-white p-6 shadow-sm transition-all hover:shadow-md">
+    <div class="flex items-start justify-between">
+      <div>
+        <p class="text-sm font-medium text-slate-500">Vaccinations</p>
+        <h3 class="mt-2 text-4xl font-bold tracking-tight text-[#1A4D2E]">{{ stats.vaccinations }}</h3>
+      </div>
+      <div
+        class="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 transition-colors group-hover:bg-sky-100">
+        <i class="fa-solid fa-syringe text-xl"></i>
+      </div>
+    </div>
+    <div class="mt-6 flex items-center justify-between border-t border-slate-50 pt-4">
+      <a href="{{ url_for('super_reporting') }}"
+        class="text-sm font-semibold text-sky-600 hover:text-sky-700 hover:underline decoration-2 underline-offset-4">
+        View reports <i class="fa-solid fa-arrow-right ml-1 text-xs"></i>
+      </a>
+    </div>
+  </article>
+
+  <!-- Clinic Administrators -->
+  <article
+    class="group relative overflow-hidden rounded-[2rem] border border-white bg-white p-6 shadow-sm transition-all hover:shadow-md">
+    <div class="flex items-start justify-between">
+      <div>
+        <p class="text-sm font-medium text-slate-500">Clinic Admins</p>
+        <h3 class="mt-2 text-4xl font-bold tracking-tight text-[#1A4D2E]">{{ stats.admins }}</h3>
+      </div>
+      <div
+        class="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 transition-colors group-hover:bg-purple-100">
+        <i class="fa-solid fa-user-shield text-xl"></i>
+      </div>
+    </div>
+    <div class="mt-6 flex items-center justify-between border-t border-slate-50 pt-4">
+      <a href="{{ url_for('super_users') }}"
+        class="text-sm font-semibold text-purple-600 hover:text-purple-700 hover:underline decoration-2 underline-offset-4">
+        Manage admins <i class="fa-solid fa-arrow-right ml-1 text-xs"></i>
+      </a>
+    </div>
+  </article>
+</section>
+
+<section class="rounded-[2rem] border border-slate-100 bg-white p-8 shadow-sm">
+  <div class="flex items-center gap-3">
+    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+      <i class="fa-solid fa-circle-info text-lg"></i>
+    </div>
+    <h2 class="text-xl font-bold text-slate-900">Platform Management Scope</h2>
+  </div>
+  <div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+    <div class="rounded-2xl bg-slate-50 p-5 transition-colors hover:bg-slate-100/50">
+      <h3 class="flex items-center gap-2 font-bold text-slate-800">
+        <i class="fa-solid fa-network-wired text-indigo-500 text-xs"></i>
+        Infrastructure
+      </h3>
+      <p class="mt-2 text-sm text-slate-600 leading-relaxed">Establish new clinic branches, configure local operational
+        settings, and manage regional expansion across the platform.</p>
+    </div>
+    <div class="rounded-2xl bg-slate-50 p-5 transition-colors hover:bg-slate-100/50">
+      <h3 class="flex items-center gap-2 font-bold text-slate-800">
+        <i class="fa-solid fa-globe text-emerald-500 text-xs"></i>
+        Global Oversight
+      </h3>
+      <p class="mt-2 text-sm text-slate-600 leading-relaxed">Maintain unified visibility into cases and vaccination
+        records across the entire clinic network without direct patient data exposure.</p>
+    </div>
+    <div class="rounded-2xl bg-slate-50 p-5 transition-colors hover:bg-slate-100/50">
+      <h3 class="flex items-center gap-2 font-bold text-slate-800">
+        <i class="fa-solid fa-lock text-purple-500 text-xs"></i>
+        Access Control
+      </h3>
+      <p class="mt-2 text-sm text-slate-600 leading-relaxed">Provision and manage Clinic Administrator accounts and
+        audit their session activity to ensure strict security compliance.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

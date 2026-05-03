@@ -1,0 +1,60 @@
+{% extends "super_admin_base.html" %}
+
+{% block title %}Admin session logs — RabiesResQ{% endblock %}
+
+{% block header_left %}
+  <div>
+    <h1 class="text-2xl font-bold text-[#1A4D2E] sm:text-3xl">Administrator session logs</h1>
+    <p class="mt-1 text-sm text-slate-500">Login and logout activity for clinic administrators only.</p>
+  </div>
+{% endblock %}
+
+{% block main_content %}
+  <section class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-left text-sm whitespace-nowrap">
+        <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500">
+          <tr>
+            <th class="px-6 py-4">User</th>
+            <th class="px-6 py-4">Role at login</th>
+            <th class="px-6 py-4">Logged in</th>
+            <th class="px-6 py-4">Logged out</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 bg-white">
+          {% if logs.items %}
+            {% for row in logs.items %}
+              <tr class="transition-colors hover:bg-slate-50/80">
+                <td class="px-6 py-4 font-semibold text-slate-800">{{ row.username }}</td>
+                <td class="px-6 py-4">
+                  <span class="inline-flex items-center rounded-lg bg-purple-50 px-2 py-1 text-[11px] font-bold text-purple-700 ring-1 ring-inset ring-purple-600/20">{{ row.role_label or row.role_at_login }}</span>
+                </td>
+                <td class="px-6 py-4 text-slate-600">{{ row.logged_in_at }}</td>
+                <td class="px-6 py-4 text-slate-600">{{ row.logged_out_display }}</td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="4" class="px-6 py-12 text-center text-slate-500">No administrator session records.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="mt-8 flex flex-col items-center gap-4 text-sm text-slate-600">
+    <p>Showing <b>{{ logs.first }}</b> to <b>{{ logs.last }}</b> of <b>{{ logs.total }}</b> results</p>
+    <div class="flex flex-wrap items-center justify-center gap-2">
+      <a href="{{ url_for('super_session_logs', page=logs.prev_num or 1) }}" class="rounded-[10px] px-2 py-1 {{ 'text-slate-300 pointer-events-none' if not logs.has_prev else 'hover:bg-slate-100 text-slate-700' }}"><i class="fa-solid fa-chevron-left"></i></a>
+      {% for p in logs.iter_pages() %}
+        {% if p %}
+          <a href="{{ url_for('super_session_logs', page=p) }}" class="rounded-[10px] px-3 py-1.5 {{ 'bg-[#1A4D2E] text-white shadow-md' if p == logs.page else 'text-slate-700 hover:bg-slate-100 border border-transparent hover:border-slate-200' }}">{{ p }}</a>
+        {% else %}
+          <span class="px-2 text-slate-400">...</span>
+        {% endif %}
+      {% endfor %}
+      <a href="{{ url_for('super_session_logs', page=logs.next_num or logs.pages) }}" class="rounded-[10px] px-2 py-1 {{ 'text-slate-300 pointer-events-none' if not logs.has_next else 'hover:bg-slate-100 text-slate-700' }}"><i class="fa-solid fa-chevron-right"></i></a>
+    </div>
+  </footer>
+{% endblock %}

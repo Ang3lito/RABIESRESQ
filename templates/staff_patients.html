@@ -181,6 +181,13 @@
         role="region"
         aria-labelledby="staff-refine-toggle"
       >
+      {% if clinic_branch_options %}
+      <div class="rounded-xl border border-slate-200 bg-slate-50/90 px-4 py-3">
+        <p class="text-xs font-medium text-slate-600">Clinic branch</p>
+        <p class="mt-1 text-sm font-semibold text-[#1A4D2E]">{{ clinic_branch_options[0].label }}</p>
+        <p class="mt-1 text-xs text-slate-500">Staff accounts only see cases for this branch.</p>
+      </div>
+      {% endif %}
       <div class="grid grid-cols-1 gap-3 lg:grid-cols-4">
         <div class="min-w-0">
           <label class="mb-1 block text-xs font-medium text-slate-600" for="gender">Gender</label>

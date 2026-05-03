@@ -137,6 +137,23 @@
             <option value="no show" {{ "selected" if selected_status == "no show" else "" }}>No Show</option>
           </select>
         </div>
+
+        <!-- Clinic branch (assigned clinic only; not a cross-branch filter) -->
+        <div class="w-full lg:w-56 xl:w-64">
+          <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500" for="admin-case-clinic-branch">Clinic branch</label>
+          <select
+            id="admin-case-clinic-branch"
+            disabled
+            class="w-full cursor-not-allowed appearance-none rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-4 pr-10 text-sm font-medium text-slate-700 outline-none opacity-90"
+            style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394A3B8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 1rem top 50%; background-size: 0.65rem auto;"
+            aria-label="Clinic branch for this administrator account"
+          >
+            {% for opt in clinic_branch_options %}
+            <option value="{{ opt.id }}" selected>{{ opt.label }}</option>
+            {% endfor %}
+          </select>
+          <p class="mt-1 text-xs text-slate-500">Cases are limited to your assigned branch.</p>
+        </div>
       </div>
 
       <button type="submit" class="w-full shrink-0 rounded-2xl bg-[#1A4D2E] px-8 py-3 text-sm font-bold text-white shadow-lg shadow-[#1A4D2E]/20 transition-all hover:scale-[1.02] hover:bg-opacity-90 lg:w-auto">

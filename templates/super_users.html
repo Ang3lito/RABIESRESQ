@@ -1,0 +1,320 @@
+{% extends "super_admin_base.html" %}
+
+{% block title %}Administrators — RabiesResQ{% endblock %}
+
+{% block header_left %}
+  <div>
+    <h1 class="text-2xl font-bold text-[#1A4D2E] sm:text-3xl">Clinic administrators</h1>
+    <p class="mt-1 text-sm text-slate-500">Create and deactivate administrator accounts only.</p>
+  </div>
+{% endblock %}
+
+{% block main_content %}
+  <!-- New Administrator Form -->
+  <section class="rounded-[2rem] border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div class="border-b border-slate-100 bg-slate-50/50 px-8 py-4">
+      <h2 class="text-lg font-bold text-[#1A4D2E]">New Clinic Administrator</h2>
+      <p class="text-xs text-slate-500">Create a top-level account with management privileges for a specific branch.</p>
+    </div>
+    
+    <div class="p-8">
+      <form method="post" action="{{ url_for('super_users_new') }}" class="space-y-8">
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          <!-- Account Details -->
+          <div class="space-y-4">
+            <h3 class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400">
+              <i class="fa-solid fa-shield-halved"></i> Account Details
+            </h3>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div class="sm:col-span-1">
+                <label class="mb-1.5 block text-xs font-bold text-slate-500" for="su-username">Username</label>
+                <div class="relative">
+                  <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                    <i class="fa-solid fa-user text-[10px]"></i>
+                  </div>
+                  <input id="su-username" name="username" required autocomplete="off" 
+                    class="w-full rounded-xl border border-slate-200 bg-slate-50/30 py-2.5 pl-9 pr-4 text-sm transition-focus focus:border-[#1A4D2E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]/10" 
+                    placeholder="admin_username" />
+                </div>
+              </div>
+              <div class="sm:col-span-1">
+                <label class="mb-1.5 block text-xs font-bold text-slate-500" for="su-email">Email Address</label>
+                <div class="relative">
+                  <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                    <i class="fa-solid fa-envelope text-[10px]"></i>
+                  </div>
+                  <input id="su-email" name="email" type="email" required 
+                    class="w-full rounded-xl border border-slate-200 bg-slate-50/30 py-2.5 pl-9 pr-4 text-sm transition-focus focus:border-[#1A4D2E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]/10" 
+                    placeholder="admin@example.com" />
+                </div>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="mb-1.5 block text-xs font-bold text-slate-500" for="su-clinic-search">Assigned Clinic Branch</label>
+                <div class="relative" id="clinic-combobox">
+                  <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                    <i class="fa-solid fa-hospital text-[10px]"></i>
+                  </div>
+                  <input 
+                    type="text"
+                    id="su-clinic-search"
+                    placeholder="Select branch…"
+                    autocomplete="off"
+                    required
+                    class="w-full rounded-xl border border-slate-200 bg-slate-50/30 py-2.5 pl-9 pr-10 text-sm italic placeholder:text-slate-400 transition-focus focus:border-[#1A4D2E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]/10"
+                  />
+                  <input type="hidden" name="clinic_id" id="su-clinic-id" required />
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400">
+                    <i class="fa-solid fa-chevron-down text-[10px] transition-transform" id="combobox-arrow"></i>
+                  </div>
+                  
+                  <!-- Options List -->
+                  <div 
+                    id="clinic-options" 
+                    class="absolute z-50 mt-2 hidden max-h-60 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl shadow-slate-200/50"
+                  >
+                    {% for c in clinic_rows %}
+                      <div 
+                        data-value="{{ c.id }}" 
+                        data-label="{{ c.name }} ({{ c.branch_code or '—' }})"
+                        class="clinic-option flex cursor-pointer items-center justify-between rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 group transition-colors"
+                      >
+                        <span class="font-medium text-slate-700 group-hover:text-[#1A4D2E]">{{ c.name }}</span>
+                        <span class="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-500 border border-slate-200 uppercase transition-colors group-hover:bg-[#1A4D2E]/10 group-hover:text-[#1A4D2E] group-hover:border-[#1A4D2E]/20">
+                          {{ c.branch_code or '—' }}
+                        </span>
+                      </div>
+                    {% endfor %}
+                    <div id="no-results" class="hidden px-4 py-3 text-center text-xs text-slate-400 italic">No branches found matching your search.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Personal Details -->
+          <div class="space-y-4">
+            <h3 class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400">
+              <i class="fa-solid fa-address-card"></i> Personal Details
+            </h3>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div class="sm:col-span-1">
+                <label class="mb-1.5 block text-xs font-bold text-slate-500" for="su-fn">First Name</label>
+                <div class="relative">
+                  <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                    <i class="fa-solid fa-signature text-[10px]"></i>
+                  </div>
+                  <input id="su-fn" name="first_name" 
+                    class="w-full rounded-xl border border-slate-200 bg-slate-50/30 py-2.5 pl-9 pr-4 text-sm transition-focus focus:border-[#1A4D2E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]/10" 
+                    placeholder="John" />
+                </div>
+              </div>
+              <div class="sm:col-span-1">
+                <label class="mb-1.5 block text-xs font-bold text-slate-500" for="su-ln">Last Name</label>
+                <div class="relative">
+                  <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                    <i class="fa-solid fa-signature text-[10px]"></i>
+                  </div>
+                  <input id="su-ln" name="last_name" 
+                    class="w-full rounded-xl border border-slate-200 bg-slate-50/30 py-2.5 pl-9 pr-4 text-sm transition-focus focus:border-[#1A4D2E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]/10" 
+                    placeholder="Doe" />
+                </div>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="mb-1.5 block text-xs font-bold text-slate-500" for="su-employee">Employee / Staff ID</label>
+                <div class="relative">
+                  <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                    <i class="fa-solid fa-id-badge text-[10px]"></i>
+                  </div>
+                  <input id="su-employee" name="employee_id" required 
+                    class="w-full rounded-xl border border-slate-200 bg-slate-50/30 py-2.5 pl-9 pr-4 text-sm transition-focus focus:border-[#1A4D2E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]/10" 
+                    placeholder="EMP-12345" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end border-t border-slate-100 pt-6">
+          <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-[#1A4D2E] px-8 py-3 text-sm font-bold text-white shadow-lg shadow-[#1A4D2E]/20 transition-all hover:bg-[#163f27] active:scale-[0.98]">
+            <i class="fa-solid fa-user-plus text-xs"></i>
+            Create Administrator
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Administrators Table -->
+  <section class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-left text-sm whitespace-nowrap">
+        <thead class="bg-slate-50 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">
+          <tr>
+            <th class="px-8 py-4">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-user-shield text-indigo-400"></i>
+                Administrator User
+              </span>
+            </th>
+            <th class="px-8 py-4">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-hospital text-slate-400"></i>
+                Assigned Branch
+              </span>
+            </th>
+            <th class="px-8 py-4">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-toggle-on text-emerald-400"></i>
+                Status
+              </span>
+            </th>
+            <th class="px-8 py-4 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for a in admins %}
+            <tr class="group transition-colors even:bg-slate-50/30 hover:bg-slate-100/50">
+              <td class="px-8 py-5">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-50 font-bold text-indigo-600 border border-indigo-100">
+                    {{ a.username[0]|upper }}
+                  </div>
+                  <div class="flex flex-col leading-tight">
+                    <span class="font-bold text-slate-900 group-hover:text-[#1A4D2E] transition-colors">{{ a.username }}</span>
+                    <span class="text-xs text-slate-500">{{ a.email }}</span>
+                  </div>
+                </div>
+              </td>
+              <td class="px-8 py-5">
+                <div class="flex flex-col leading-tight">
+                  <span class="font-semibold text-slate-700">{{ a.clinic_name }}</span>
+                  <span class="font-mono text-[10px] uppercase text-slate-400">{{ a.clinic_branch_code or '—' }}</span>
+                </div>
+              </td>
+              <td class="px-8 py-5">
+                {% if a.is_active %}
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 border border-emerald-100">
+                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                    Active
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-rose-700 border border-rose-100">
+                    <span class="h-1.5 w-1.5 rounded-full bg-rose-400"></span>
+                    Inactive
+                  </span>
+                {% endif %}
+              </td>
+              <td class="px-8 py-5 text-right">
+                {% if a.user_id != session_user_id %}
+                  <form method="post" action="{{ url_for('super_user_set_active', user_id=a.user_id) }}" class="inline">
+                    {% if a.is_active %}
+                      <input type="hidden" name="active" value="0" />
+                      <button type="submit" 
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 transition-all hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600" 
+                        data-confirm="Deactivate this administrator? They will lose all access to the platform." 
+                        data-confirm-variant="danger">
+                        <i class="fa-solid fa-user-minus text-[10px]"></i>
+                        Deactivate
+                      </button>
+                    {% else %}
+                      <input type="hidden" name="active" value="1" />
+                      <button type="submit" 
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-[#1A4D2E] px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-[#163f27] hover:shadow-md">
+                        <i class="fa-solid fa-user-check text-[10px]"></i>
+                        Activate
+                      </button>
+                    {% endif %}
+                  </form>
+                {% else %}
+                  <span class="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-400 italic">
+                    Current Session
+                  </span>
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="4" class="px-8 py-16 text-center">
+                <div class="flex flex-col items-center">
+                  <div class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-300">
+                    <i class="fa-solid fa-user-shield text-3xl"></i>
+                  </div>
+                  <p class="mt-4 text-sm font-medium text-slate-400">No clinic administrators registered.</p>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('su-clinic-search');
+    const idInput = document.getElementById('su-clinic-id');
+    const optionsContainer = document.getElementById('clinic-options');
+    const options = document.querySelectorAll('.clinic-option');
+    const noResults = document.getElementById('no-results');
+    const arrow = document.getElementById('combobox-arrow');
+    const combobox = document.getElementById('clinic-combobox');
+
+    function filterOptions() {
+        const query = searchInput.value.toLowerCase();
+        let hasMatch = false;
+        options.forEach(opt => {
+            const label = opt.getAttribute('data-label').toLowerCase();
+            if (label.includes(query)) {
+                opt.style.display = 'flex';
+                hasMatch = true;
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+        noResults.style.display = hasMatch ? 'none' : 'block';
+    }
+
+    searchInput.addEventListener('focus', () => {
+        optionsContainer.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+        filterOptions();
+    });
+
+    searchInput.addEventListener('input', () => {
+        idInput.value = ''; // Reset ID if user is typing
+        searchInput.classList.add('italic');
+        filterOptions();
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!combobox.contains(e.target)) {
+            optionsContainer.classList.add('hidden');
+            arrow.style.transform = 'rotate(0deg)';
+            
+            // Revert if no valid selection made
+            if (!idInput.value) {
+                searchInput.value = '';
+                searchInput.classList.add('italic');
+            } else {
+                const selected = Array.from(options).find(opt => opt.getAttribute('data-value') === idInput.value);
+                if (selected) {
+                    searchInput.value = selected.getAttribute('data-label');
+                    searchInput.classList.remove('italic');
+                }
+            }
+        }
+    });
+
+    options.forEach(opt => {
+        opt.addEventListener('click', () => {
+            searchInput.value = opt.getAttribute('data-label');
+            searchInput.classList.remove('italic');
+            idInput.value = opt.getAttribute('data-value');
+            optionsContainer.classList.add('hidden');
+            arrow.style.transform = 'rotate(0deg)';
+        });
+    });
+});
+</script>
+{% endblock %}

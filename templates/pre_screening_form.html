@@ -536,15 +536,16 @@
           </div>
           <input type="hidden" name="appointment_slot_id" id="appointment_slot_id" value="" />
           <input type="hidden" name="appointment_datetime" id="appointment_datetime" value="" />
-          <input type="hidden" name="clinic_id" id="clinic_id_slot" value="{{ clinics[0].id if clinics and clinics|length == 1 else '' }}" />
-          {% if clinics and clinics|length > 1 %}
+          <input type="hidden" name="clinic_id" id="clinic_id_slot" value="{{ clinics[0].id if clinics else '' }}" />
+          {% if clinics %}
           <div class="mb-4">
-            <label for="clinic_select" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Clinic</label>
-            <select id="clinic_select" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
+            <label for="clinic_select" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Clinic branch <span class="text-red-600">*</span></label>
+            <select id="clinic_select" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" title="Choose which clinic branch this appointment is for">
               {% for c in clinics %}
-              <option value="{{ c.id }}" {% if loop.first %}selected{% endif %}>{{ c.name }}</option>
+              <option value="{{ c.id }}" {% if loop.first %}selected{% endif %}>{{ c.name }}{% if c.branch_code %} — {{ c.branch_code }}{% endif %}</option>
               {% endfor %}
             </select>
+            <p class="mt-1 text-xs text-slate-500">Availability and scheduling apply to the branch you select.</p>
           </div>
           {% endif %}
           <div class="mb-4">

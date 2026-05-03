@@ -1,0 +1,41 @@
+{% extends "super_admin_base.html" %}
+
+{% block title %}Reporting — Super Admin — RabiesResQ{% endblock %}
+
+{% block header_left %}
+  <div>
+    <h1 class="text-2xl font-bold text-[#1A4D2E] sm:text-3xl">Per-clinic reporting</h1>
+    <p class="mt-1 text-sm text-slate-500">Totals across all branches.</p>
+  </div>
+{% endblock %}
+
+{% block main_content %}
+  <section class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-left text-sm">
+        <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500">
+          <tr>
+            <th class="px-5 py-3">Clinic</th>
+            <th class="px-5 py-3">Branch code</th>
+            <th class="px-5 py-3">Total cases</th>
+            <th class="px-5 py-3">Vaccination rows</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for r in clinic_summary %}
+            <tr class="hover:bg-slate-50/80">
+              <td class="px-5 py-3 font-semibold text-slate-800">{{ r.name }}</td>
+              <td class="px-5 py-3 font-mono text-xs">{{ r.branch_code }}</td>
+              <td class="px-5 py-3 text-slate-700">{{ r.case_total }}</td>
+              <td class="px-5 py-3 text-slate-700">{{ r.vaccination_total }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="4" class="px-5 py-10 text-center text-slate-500">No clinic data.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

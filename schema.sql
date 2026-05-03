@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS clinics (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   address TEXT,
-  operating_hours_json TEXT
+  operating_hours_json TEXT,
+  branch_code TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -27,7 +28,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   must_change_password INTEGER NOT NULL DEFAULT 0 CHECK(must_change_password IN (0,1)),
   is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN (0,1)),
-  role TEXT NOT NULL CHECK(role IN ('patient','clinic_personnel','system_admin')),
+  role TEXT NOT NULL CHECK(role IN ('patient','clinic_personnel','system_admin','super_admin')),
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
@@ -71,10 +72,27 @@ CREATE TABLE IF NOT EXISTS patients (
 CREATE TABLE IF NOT EXISTS system_admins (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL UNIQUE,
+  clinic_id INTEGER NOT NULL,
+  first_name TEXT,
+  last_name TEXT,
+  employee_id TEXT UNIQUE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS super_admins (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL UNIQUE,
   first_name TEXT,
   last_name TEXT,
   employee_id TEXT UNIQUE,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS clinic_case_sequences (
+  clinic_id INTEGER PRIMARY KEY,
+  next_seq INTEGER NOT NULL DEFAULT 0,
+  FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS clinic_personnel (
@@ -104,6 +122,7 @@ CREATE TABLE IF NOT EXISTS cases (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   patient_id INTEGER NOT NULL,
   clinic_id INTEGER NOT NULL,
+  case_ref TEXT NOT NULL UNIQUE,
   exposure_date TEXT NOT NULL,
   exposure_time TEXT,
   place_of_exposure TEXT,
@@ -367,6 +386,18 @@ CREATE TABLE IF NOT EXISTS admin_page_last_seen (
 
 CREATE INDEX IF NOT EXISTS idx_cases_patient_id ON cases(patient_id);
 CREATE INDEX IF NOT EXISTS idx_cases_clinic_id ON cases(clinic_id);
+CREATE INDEX IF NOT EXISTS idx_cases_case_ref ON cases(case_ref);
+
+CREATE TABLE IF NOT EXISTS case_access_audit (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  accessor_user_id INTEGER NOT NULL,
+  case_id INTEGER NOT NULL,
+  accessed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (accessor_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_case_access_audit_case ON case_access_audit(case_id);
+CREATE INDEX IF NOT EXISTS idx_case_access_audit_user ON case_access_audit(accessor_user_id);
 
 CREATE INDEX IF NOT EXISTS idx_eval_case_id ON pre_screening_evaluations(case_id);
 CREATE INDEX IF NOT EXISTS idx_eval_guideline_id ON pre_screening_evaluations(guideline_id);

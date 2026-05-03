@@ -1,0 +1,145 @@
+{% extends "super_admin_base.html" %}
+
+{% block title %}Clinic branches — RabiesResQ{% endblock %}
+
+{% block header_left %}
+  <div>
+    <h1 class="text-2xl font-bold text-[#1A4D2E] sm:text-3xl">Clinic branches</h1>
+    <p class="mt-1 text-sm text-slate-500">Create and review branches (central database).</p>
+  </div>
+{% endblock %}
+
+{% block main_content %}
+  <!-- Add Branch Form -->
+  <section class="rounded-[2rem] border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div class="border-b border-slate-100 bg-slate-50/50 px-8 py-4">
+      <h2 class="text-lg font-bold text-[#1A4D2E]">Add New Branch</h2>
+      <p class="text-xs text-slate-500">Register a new clinic location to the network.</p>
+    </div>
+    <div class="p-8">
+      <form method="post" action="{{ url_for('super_clinics') }}" class="grid grid-cols-1 gap-6 md:grid-cols-6">
+        <div class="md:col-span-3">
+          <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500" for="branch-name">
+            Clinic Name
+          </label>
+          <div class="relative">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+              <i class="fa-solid fa-hospital-user text-xs"></i>
+            </div>
+            <input id="branch-name" name="name" required 
+              class="w-full rounded-xl border border-slate-200 bg-slate-50/30 py-2.5 pl-10 pr-4 text-sm transition-focus focus:border-[#1A4D2E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]/10" 
+              placeholder="e.g. Central Health Station" />
+          </div>
+        </div>
+
+        <div class="md:col-span-1">
+          <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500" for="branch-code">
+            Branch Code
+          </label>
+          <div class="relative">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+              <i class="fa-solid fa-hashtag text-xs"></i>
+            </div>
+            <input id="branch-code" name="branch_code" required 
+              class="w-full rounded-xl border border-slate-200 bg-slate-50/30 py-2.5 pl-10 pr-4 font-mono text-sm uppercase transition-focus focus:border-[#1A4D2E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]/10" 
+              placeholder="CHS" />
+          </div>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500" for="branch-address">
+            Address <span class="font-normal normal-case text-slate-400">(Optional)</span>
+          </label>
+          <div class="relative">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+              <i class="fa-solid fa-location-dot text-xs"></i>
+            </div>
+            <input id="branch-address" name="address" 
+              class="w-full rounded-xl border border-slate-200 bg-slate-50/30 py-2.5 pl-10 pr-4 text-sm transition-focus focus:border-[#1A4D2E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]/10" 
+              placeholder="Street, City" />
+          </div>
+        </div>
+
+        <div class="md:col-span-6 flex justify-end">
+          <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-[#1A4D2E] px-8 py-3 text-sm font-bold text-white shadow-lg shadow-[#1A4D2E]/20 transition-all hover:bg-[#163f27] active:scale-[0.98]">
+            <i class="fa-solid fa-plus text-xs"></i>
+            Register Branch
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Clinic Branches Table -->
+  <section class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-left text-sm">
+        <thead class="bg-slate-50 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">
+          <tr>
+            <th class="px-8 py-4">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-hospital text-indigo-400"></i>
+                Clinic Branch
+              </span>
+            </th>
+            <th class="px-8 py-4">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-hashtag text-slate-400"></i>
+                Case Prefix
+              </span>
+            </th>
+            <th class="px-8 py-4">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-folder-open text-emerald-400"></i>
+                Total Cases
+              </span>
+            </th>
+            <th class="px-8 py-4">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-syringe text-sky-400"></i>
+                Vaccinations
+              </span>
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for cl in clinics %}
+            <tr class="group transition-colors even:bg-slate-50/30 hover:bg-slate-100/50">
+              <td class="px-8 py-5">
+                <div class="flex flex-col">
+                  <span class="font-bold text-slate-900 group-hover:text-[#1A4D2E] transition-colors">{{ cl.name }}</span>
+                  <span class="text-xs text-slate-500">{{ cl.address|default('No address provided', true) }}</span>
+                </div>
+              </td>
+              <td class="px-8 py-5">
+                <span class="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-[11px] font-bold text-slate-600 border border-slate-200">
+                  {{ cl.branch_code }}
+                </span>
+              </td>
+              <td class="px-8 py-5">
+                <span class="text-base font-bold text-emerald-600">{{ cl.case_count }}</span>
+                <span class="ml-1 text-[10px] font-semibold uppercase text-slate-400">cases</span>
+              </td>
+              <td class="px-8 py-5">
+                <span class="text-base font-bold text-sky-600">{{ cl.vaccination_count }}</span>
+                <span class="ml-1 text-[10px] font-semibold uppercase text-slate-400">doses</span>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="4" class="px-8 py-16 text-center">
+                <div class="flex flex-col items-center">
+                  <div class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-300">
+                    <i class="fa-solid fa-hospital-user text-3xl"></i>
+                  </div>
+                  <p class="mt-4 text-sm font-medium text-slate-400">No clinics found in the system.</p>
+                  <p class="text-xs text-slate-300">Use the form above to add your first branch.</p>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}
