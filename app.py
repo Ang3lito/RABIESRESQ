@@ -62,7 +62,7 @@ CEBU_BARANGAY_NAMES: tuple[str, ...] = (
     "Basak San Nicolas",
     "Binaliw",
     "Bonbon",
-    "Budlaan",
+    "Budla-an",
     "Buhisan",
     "Bulacao",
     "Buot",
@@ -74,7 +74,7 @@ CEBU_BARANGAY_NAMES: tuple[str, ...] = (
     "Cogon Pardo",
     "Cogon Ramos",
     "Day-as",
-    "Duljo Fatima",
+    "Duljo-Fatima",
     "Ermita",
     "Guadalupe",
     "Guba",
@@ -98,7 +98,7 @@ CEBU_BARANGAY_NAMES: tuple[str, ...] = (
     "Pahina Central",
     "Pahina San Nicolas",
     "Pamutan",
-    "Pari-an",
+    "Parian",
     "Paril",
     "Pasil",
     "Pit-os",
@@ -106,7 +106,7 @@ CEBU_BARANGAY_NAMES: tuple[str, ...] = (
     "Pulangbato",
     "Pung-ol Sibugay",
     "Punta Princesa",
-    "Quiot Pardo",
+    "Quiot",
     "Sambag I",
     "Sambag II",
     "San Antonio",
@@ -130,7 +130,7 @@ CEBU_BARANGAY_NAMES: tuple[str, ...] = (
     "Tejero",
     "Tinago",
     "Tisa",
-    "To-ong",
+    "Toong",
     "Zapatera",
 )
 
@@ -974,6 +974,9 @@ _ADMIN_PAGE_BADGE_KEYS = ("patients", "appointments", "reporting", "users", "ses
 _STAFF_PAGE_BADGE_KEYS = ("cases",)
 
 
+_SUPER_PAGE_BADGE_KEYS = ("session_logs",)
+
+
 def _staff_mark_page_seen(db, staff_user_id: int, page_key: str) -> None:
     if page_key not in _STAFF_PAGE_BADGE_KEYS:
         return
@@ -1030,7 +1033,7 @@ def _staff_nav_badge_counts(db, staff_user_id: int, clinic_id: int | None) -> di
 
 
 def _admin_mark_page_seen(db, admin_user_id: int, page_key: str) -> None:
-    if page_key not in _ADMIN_PAGE_BADGE_KEYS:
+    if page_key not in _ADMIN_PAGE_BADGE_KEYS and page_key not in _SUPER_PAGE_BADGE_KEYS:
         return
     # Use CURRENT_TIMESTAMP (UTC, no timezone suffix) — same as _staff_mark_page_seen —
     # so SQLite datetime() comparisons work correctly against cases.created_at.
@@ -1187,6 +1190,50 @@ def _admin_nav_badge_counts(db, admin_user_id: int, clinic_id: int | None) -> di
                 WHERE datetime(
                       REPLACE(
                         TRIM(COALESCE(NULLIF(logged_in_at, ''), '1970-01-01 00:00:00')),
+                        'T',
+                        ' '
+                      )
+                    )
+                    > datetime(REPLACE(TRIM(?), 'T', ' '))
+                """,
+                (ls_sess,),
+            ).fetchone()["n"]
+        )
+        or 0
+    )
+
+    return counts
+
+
+def _super_nav_badge_counts(db, super_user_id: int) -> dict[str, int]:
+    counts = {key: 0 for key in _SUPER_PAGE_BADGE_KEYS}
+
+    seen_rows = db.execute(
+        """
+        SELECT page_key, last_seen_at
+        FROM admin_page_last_seen
+        WHERE admin_user_id = ?
+        """,
+        (super_user_id,),
+    ).fetchall()
+    last_seen_by_page = {
+        (row["page_key"] or "").strip(): (row["last_seen_at"] or "").strip()
+        for row in seen_rows
+    }
+    epoch = "1970-01-01 00:00:00"
+
+    ls_sess = (last_seen_by_page.get("session_logs") or epoch).strip()
+    counts["session_logs"] = int(
+        (
+            db.execute(
+                """
+                SELECT COUNT(*) AS n
+                FROM user_session_logs l
+                JOIN users u ON u.id = l.user_id
+                WHERE u.role = 'system_admin'
+                  AND datetime(
+                      REPLACE(
+                        TRIM(COALESCE(NULLIF(l.logged_in_at, ''), '1970-01-01 00:00:00')),
                         'T',
                         ' '
                       )
@@ -1663,6 +1710,35 @@ def _admin_reporting_overview_dict(db, clinic_id: int | None, date_from: str, da
             monthly_labels.append(label)
             monthly_counts.append(int(cnt_row["n"] or 0))
 
+    risk_raw = db.execute(
+        """
+        SELECT
+          COALESCE(NULLIF(TRIM(c.risk_level), ''), NULLIF(TRIM(c.category), ''), 'Unknown') AS risk_label,
+          COUNT(*) AS total
+        FROM cases c
+        WHERE c.clinic_id = ?
+          AND COALESCE(c.staff_removed, 0) = 0
+          AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
+          AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
+        GROUP BY risk_label
+        ORDER BY total DESC
+        LIMIT 12
+        """,
+        (clinic_id, date_from, date_to),
+    ).fetchall()
+    total_risk = sum(int(r["total"] or 0) for r in risk_raw)
+    risk_rows: list[dict] = []
+    for r in risk_raw:
+        cnt = int(r["total"] or 0)
+        pct = round((cnt / total_risk) * 100) if total_risk else 0
+        risk_rows.append(
+            {
+                "label": (r["risk_label"] or "Unknown").strip() or "Unknown",
+                "count": cnt,
+                "percent": pct,
+            }
+        )
+
     overview_chart_data = {
         "monthly_labels": monthly_labels,
         "monthly_counts": monthly_counts,
@@ -1676,6 +1752,7 @@ def _admin_reporting_overview_dict(db, clinic_id: int | None, date_from: str, da
         "completed_cases_period": completed_cases_period,
         "vaccination_completion_pct": vaccination_completion_pct,
         "animal_type_rows": animal_type_rows,
+        "risk_rows": risk_rows,
         "overview_chart_data": overview_chart_data,
     }
 
@@ -2006,13 +2083,23 @@ def _insights_vaccination_status_bucket(doses_completed: int, expected_doses: in
 
 
 def _insights_build_vaccination_status_counts(
-    db, clinic_id: int, date_from: str, date_to: str, filters: dict[str, str] | None
+    db, clinic_id: int | None, date_from: str, date_to: str, filters: dict[str, str] | None, is_super: bool = False
 ) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     """
     Returns (summary_rows with percent, raw case rows for optional export).
     """
     fc, fparams = _insights_filter_clause_and_params(filters)
-    base = _insights_base_from_where()
+    if is_super:
+        base = _super_insights_base_from_where(clinic_id)
+        params = []
+        if clinic_id is not None:
+            params.append(clinic_id)
+        params.extend([date_from, date_to])
+        params.extend(fparams)
+    else:
+        base = _insights_base_from_where()
+        params = [clinic_id, date_from, date_to] + list(fparams)
+
     rows = db.execute(
         f"""
         SELECT c.id,
@@ -2020,7 +2107,7 @@ def _insights_build_vaccination_status_counts(
         {base}
         {fc}
         """,
-        (clinic_id, date_from, date_to, *fparams),
+        params,
     ).fetchall()
     if not rows:
         return (
@@ -2515,6 +2602,218 @@ def _admin_reporting_insights_dict(
         "insights_filters": filters or {},
         "priority_cases": priority_cases,
         "staff_performance": staff_performance,
+    }
+
+
+def _super_insights_base_from_where(target_clinic_id: int | None = None) -> str:
+    clause = "c.clinic_id = ?" if target_clinic_id is not None else "1=1"
+    return f"""
+        FROM cases c
+        INNER JOIN patients p ON p.id = c.patient_id
+        WHERE {clause}
+          AND COALESCE(c.staff_removed, 0) = 0
+          AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
+          AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
+    """
+
+
+def _super_reporting_insights_dict(
+    db, target_clinic_id: int | None, date_from: str, date_to: str, filters: dict[str, str] | None = None
+) -> dict:
+    """Aggregated insights for Super Admin (all clinics or specific branch)."""
+    fc, fparams = _insights_filter_clause_and_params(filters)
+    base_sql = _super_insights_base_from_where(target_clinic_id)
+    
+    # Helper to build params list consistently
+    def build_p(extra_val=None, use_fparams=True):
+        p = []
+        if target_clinic_id is not None:
+            p.append(target_clinic_id)
+        p.extend([date_from, date_to])
+        if extra_val is not None:
+            p.append(extra_val)
+        if use_fparams:
+            p.extend(fparams)
+        return p
+
+    bite_cases = (
+        db.execute(
+            f"SELECT COUNT(*) AS n {base_sql} {fc}",
+            build_p()
+        ).fetchone()["n"] or 0
+    )
+
+    completed_cases_kpi = (
+        db.execute(
+            f"SELECT COUNT(*) AS n {base_sql} AND LOWER(COALESCE(c.case_status, '')) = 'completed' {fc}",
+            build_p()
+        ).fetchone()["n"] or 0
+    )
+
+    ongoing_cases = (
+        db.execute(
+            f"SELECT COUNT(*) AS n {base_sql} AND LOWER(COALESCE(c.case_status, 'pending')) = 'pending' {fc}",
+            build_p()
+        ).fetchone()["n"] or 0
+    )
+
+    kpi = {
+        "bite_cases": bite_cases,
+        "completed_cases": completed_cases_kpi,
+        "ongoing_cases": ongoing_cases,
+    }
+
+    month_keys = _admin_month_keys_in_range(date_from, date_to)
+    chart_labels, chart_cases, chart_vax = [], [], []
+    for yy, mm, lab in month_keys:
+        ym = f"{yy:04d}-{mm:02d}"
+        chart_labels.append(lab)
+        cn = (
+            db.execute(
+                f"""
+                SELECT COUNT(*) AS n
+                {base_sql}
+                  AND strftime('%Y-%m', COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) = ?
+                {fc}
+                """,
+                build_p(ym)
+            ).fetchone()["n"] or 0
+        )
+        # For vaccinations, we need a custom base because it joins vcd
+        v_clause = "c.clinic_id = ?" if target_clinic_id is not None else "1=1"
+        v_p = []
+        if target_clinic_id is not None: v_p.append(target_clinic_id)
+        v_p.extend([date_from, date_to, ym])
+        v_p.extend(fparams)
+        
+        vn = (
+            db.execute(
+                f"""
+                SELECT COUNT(*) AS n
+                FROM vaccination_card_doses vcd
+                JOIN cases c ON c.id = vcd.case_id
+                INNER JOIN patients p ON p.id = c.patient_id
+                WHERE {v_clause}
+                  AND COALESCE(c.staff_removed, 0) = 0
+                  AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
+                  AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
+                  AND NULLIF(TRIM(vcd.dose_date), '') IS NOT NULL
+                  AND strftime('%Y-%m', DATE(SUBSTR(TRIM(vcd.dose_date), 1, 10))) = ?
+                {fc}
+                """,
+                v_p
+            ).fetchone()["n"] or 0
+        )
+        chart_cases.append(int(cn))
+        chart_vax.append(int(vn))
+
+    total_cases_demo = bite_cases or 1
+    
+    # Age Distribution
+    ag_sql = _insights_sql_age_group()
+    age_raw = db.execute(
+        f"SELECT ({ag_sql}) AS ag, COUNT(*) AS n {base_sql} {fc} GROUP BY 1",
+        build_p()
+    ).fetchall()
+    age_map = {r["ag"]: int(r["n"] or 0) for r in age_raw}
+    age_distribution_rows = [
+        {"label": lab, "count": age_map.get(lab, 0), "percent": round((age_map.get(lab, 0) / total_cases_demo) * 100)}
+        for lab in _INSIGHTS_AGE_GROUP_ORDER
+    ]
+
+    # Gender
+    gender_raw = db.execute(
+        f"SELECT COALESCE(NULLIF(TRIM(p.gender), ''), 'Unknown') AS g, COUNT(*) AS n {base_sql} {fc} GROUP BY g ORDER BY n DESC",
+        build_p()
+    ).fetchall()
+    gender_distribution_rows = [
+        {"label": r["g"], "count": r["n"], "percent": round((r["n"] / total_cases_demo) * 100)}
+        for r in gender_raw
+    ]
+
+    # Animal Type
+    ab_sql = _insights_sql_animal_bucket()
+    animal_raw = db.execute(
+        f"SELECT ({ab_sql}) AS animal, COUNT(*) AS n {base_sql} {fc} GROUP BY 1 ORDER BY n DESC",
+        build_p()
+    ).fetchall()
+    animal_type_rows_insights = [
+        {"label": r["animal"], "count": r["n"], "percent": round((r["n"] / total_cases_demo) * 100)}
+        for r in animal_raw
+    ]
+
+    # Barangay Table
+    bs_sql = _insights_sql_barangay_seg()
+    bar_raw = db.execute(
+        f"SELECT ({bs_sql}) AS b, COUNT(*) AS n {base_sql} AND TRIM(COALESCE(({bs_sql}), '')) <> '' {fc} GROUP BY 1 ORDER BY n DESC LIMIT 10",
+        build_p()
+    ).fetchall()
+    barangay_table_rows = [
+        {"barangay": r["b"], "count": r["n"], "percent": round((r["n"] / total_cases_demo) * 100)}
+        for r in bar_raw
+    ]
+    barangay_max = barangay_table_rows[0]["count"] if barangay_table_rows else 1
+
+    # Bite Type
+    bite_type_raw = db.execute(
+        f"SELECT COALESCE(NULLIF(TRIM(c.type_of_exposure), ''), 'Unknown') AS bt, COUNT(*) AS n {base_sql} {fc} GROUP BY bt ORDER BY n DESC, bt ASC",
+        build_p()
+    ).fetchall()
+    bite_type_rows = [
+        {"label": (r["bt"] or "Unknown").strip() or "Unknown", "count": int(r["n"] or 0), "percent": round((int(r["n"] or 0) / total_cases_demo) * 100)}
+        for r in bite_type_raw
+    ]
+
+    # Severity
+    severity_raw = db.execute(
+        f"SELECT COALESCE(NULLIF(TRIM(c.risk_level), ''), NULLIF(TRIM(c.category), ''), 'Unknown') AS sev, COUNT(*) AS n {base_sql} {fc} GROUP BY sev ORDER BY n DESC",
+        build_p()
+    ).fetchall()
+    severity_rows = [
+        {"label": (r["sev"] or "Unknown").strip() or "Unknown", "count": int(r["n"] or 0), "percent": round((int(r["n"] or 0) / total_cases_demo) * 100)}
+        for r in severity_raw
+    ]
+
+    # WHO Category
+    who_category_raw = db.execute(
+        f"SELECT COALESCE(NULLIF(TRIM(c.who_category_final), ''), NULLIF(TRIM(c.who_category_auto), ''), NULLIF(TRIM(c.risk_level), ''), NULLIF(TRIM(c.category), ''), 'Unknown') AS wc, COUNT(*) AS n {base_sql} {fc} GROUP BY wc ORDER BY n DESC, wc ASC",
+        build_p()
+    ).fetchall()
+    who_category_rows = [
+        {"label": (r["wc"] or "Unknown").strip() or "Unknown", "count": int(r["n"] or 0), "percent": round((int(r["n"] or 0) / total_cases_demo) * 100)}
+        for r in who_category_raw
+    ]
+
+    # Case Status
+    case_status_raw = db.execute(
+        f"SELECT COALESCE(NULLIF(TRIM(c.case_status), ''), 'Unknown') AS st, COUNT(*) AS n {base_sql} {fc} GROUP BY st ORDER BY n DESC",
+        build_p()
+    ).fetchall()
+    case_status_rows = [
+        {"label": (r["st"] or "Unknown").strip() or "Unknown", "count": int(r["n"] or 0), "percent": round((int(r["n"] or 0) / total_cases_demo) * 100)}
+        for r in case_status_raw
+    ]
+
+    # Vaccination Status (SuperAdmin logic)
+    # Re-use the admin helper but adjust for super admin clinic ID semantics
+    # If target_clinic_id is None, we need to adapt _insights_build_vaccination_status_counts to accept None or we implement the logic directly
+    vaccination_status_rows, _ = _insights_build_vaccination_status_counts(
+        db, target_clinic_id, date_from, date_to, filters, is_super=True
+    )
+
+    return {
+        "kpi": kpi,
+        "chart_compare": {"labels": chart_labels, "cases": chart_cases, "vaccinations": chart_vax},
+        "age_distribution_rows": age_distribution_rows,
+        "gender_distribution_rows": gender_distribution_rows,
+        "animal_type_rows_insights": animal_type_rows_insights,
+        "barangay_table_rows": barangay_table_rows,
+        "barangay_max": barangay_max,
+        "bite_type_rows": bite_type_rows,
+        "severity_rows": severity_rows,
+        "who_category_rows": who_category_rows,
+        "case_status_rows": case_status_rows,
+        "vaccination_status_rows": vaccination_status_rows,
     }
 
 
@@ -4242,12 +4541,19 @@ def create_app():
         )
         if resolved_cp_id is None:
             return False
+
+        # If clinic_id is not provided, try to get it from clinic_personnel
+        if clinic_id is None:
+            cp_row = db.execute("SELECT clinic_id FROM clinic_personnel WHERE id = ?", (resolved_cp_id,)).fetchone()
+            if cp_row:
+                clinic_id = cp_row["clinic_id"]
+
         db.execute(
             """
             INSERT INTO medical_audit_logs (
               clinic_personnel_id, user_id, entity_type, entity_id, case_id, action,
-              field_name, old_value, new_value, change_reason
-            ) VALUES (?, ?, 'cases', ?, ?, ?, ?, ?, ?, ?)
+              field_name, old_value, new_value, change_reason, clinic_id
+            ) VALUES (?, ?, 'cases', ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 resolved_cp_id,
@@ -4259,7 +4565,12 @@ def create_app():
                 old_value,
                 new_value,
                 change_reason,
+                clinic_id,
             ),
+        )
+        db.execute(
+            "UPDATE cases SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (case_id,)
         )
         return True
 
@@ -4461,6 +4772,31 @@ def create_app():
             return {}
 
     @app.context_processor
+    def _inject_super_sidebar_identity():
+        try:
+            if session.get("role") != "super_admin":
+                return {}
+            user_id = session.get("user_id")
+            if not user_id:
+                return {}
+            db = get_db()
+            su = _super_fetch_user(db, int(user_id))
+            if su is None:
+                return {}
+            badges = dict(_super_nav_badge_counts(db, int(user_id)))
+            if (request.endpoint or "") == "super_session_logs":
+                badges["session_logs"] = 0
+            badge_sum = sum(int(badges.get(k, 0) or 0) for k in badges)
+            return {
+                "super_display_name": _super_display_name(su),
+                "super_initials": _super_initials(su),
+                "super_nav_badges": badges,
+                "play_notification_sound": badge_sum > 0,
+            }
+        except Exception:
+            return {}
+
+    @app.context_processor
     def _inject_patient_clinic_directory():
         try:
             if session.get("role") != "patient":
@@ -4589,7 +4925,8 @@ def create_app():
                   AND COALESCE(type, '') != 'Walk-in'
                   AND LOWER(TRIM(COALESCE(status, ''))) NOT IN (
                       'removed', 'cancelled', 'canceled',
-                      'expired', 'pending', 'queued'
+                      'expired', 'pending', 'queued',
+                      'no show', 'missed'
                   )
                   AND datetime(appointment_datetime) < datetime('now', 'localtime', '-2 hours')
                 ORDER BY datetime(appointment_datetime) DESC, id DESC
@@ -7683,6 +8020,37 @@ def create_app():
             return redirect(url_for("admin_dashboard"))
 
         db = get_db()
+        # Safety Check: Check if updated_at exists using a direct SELECT (most reliable)
+        has_updated_at = False
+        try:
+            db.execute("SELECT updated_at FROM cases LIMIT 0")
+            has_updated_at = True
+        except sqlite3.OperationalError:
+            try:
+                db.execute("ALTER TABLE cases ADD COLUMN updated_at TEXT")
+                db.execute("UPDATE cases SET updated_at = created_at WHERE updated_at IS NULL")
+                db.commit()
+                has_updated_at = True
+            except Exception:
+                has_updated_at = False
+
+        # Safety Check: Check if clinic_id exists in medical_audit_logs
+        if has_updated_at:
+            try:
+                db.execute("SELECT clinic_id FROM medical_audit_logs LIMIT 0")
+            except sqlite3.OperationalError:
+                try:
+                    db.execute("ALTER TABLE medical_audit_logs ADD COLUMN clinic_id INTEGER")
+                    db.execute("UPDATE medical_audit_logs SET clinic_id = (SELECT clinic_id FROM clinic_personnel WHERE clinic_personnel.id = medical_audit_logs.clinic_personnel_id) WHERE clinic_id IS NULL")
+                    db.commit()
+                except Exception:
+                    # If this fails, we might need to disable the cross-clinic sync to avoid 500s
+                    has_updated_at = False
+
+        # If the user explicitly requested to skip sync (e.g. after a failure)
+        if request.args.get("_retry_no_sync"):
+            has_updated_at = False
+
         _staff_mark_page_seen(db, session["user_id"], "cases")
         staff = db.execute(
             """
@@ -7702,11 +8070,14 @@ def create_app():
 
         staff_display_name = _staff_display_name(staff)
         maintenance = _run_case_status_maintenance(staff["clinic_id"])
+
+        all_clinics = db.execute("SELECT id, name, branch_code FROM clinics ORDER BY name ASC").fetchall()
         clinic_branch_options = [
             {
-                "id": int(staff["clinic_id"]),
-                "label": f'{staff["clinic_name"]} ({(staff["clinic_branch_code"] or "").strip() or "—"})',
+                "id": row["id"],
+                "label": f'{row["name"]} ({(row["branch_code"] or "").strip() or "—"})',
             }
+            for row in all_clinics
         ]
 
         q = request.args.to_dict(flat=True)
@@ -7741,6 +8112,12 @@ def create_app():
         batch = (q.get("batch") or "").strip()
         date_from = (q.get("date_from") or "").strip()
         date_to = (q.get("date_to") or "").strip()
+        selected_clinic_id = q.get("clinic_id") or ""
+        if selected_clinic_id and selected_clinic_id != "all":
+            try:
+                selected_clinic_id = int(selected_clinic_id)
+            except ValueError:
+                selected_clinic_id = ""
 
         try:
             page = int(request.args.get("page", "1"))
@@ -7750,11 +8127,36 @@ def create_app():
         per_page = 10
 
         where_clauses = [
-            "c.clinic_id = ?",
             _SQL_STAFF_CASE_NOT_REMOVED,
             "LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('archived', 'queued', 'scheduled')",
         ]
-        params: list[object] = [staff["clinic_id"]]
+        params: list[object] = []
+
+        # Logic for branch filtering vs global search/filter
+        # 1. If explicit clinic_id filter is set, use it.
+        # 2. If search is active and clinic_id is NOT set, show all branches.
+        # 3. Otherwise, default to current clinic + updated cases from other clinics that were synced.
+        if selected_clinic_id and selected_clinic_id != "all":
+            where_clauses.append("c.clinic_id = ?")
+            params.append(selected_clinic_id)
+        elif not search and (not selected_clinic_id or selected_clinic_id != "all"):
+            # Default state: only current clinic + synced updated cases from other clinics (if column exists)
+            if has_updated_at:
+                where_clauses.append("""
+                    (c.clinic_id = ? OR (
+                        c.clinic_id != ? AND 
+                        COALESCE(c.updated_at, c.created_at) > c.created_at AND
+                        EXISTS (
+                            SELECT 1 FROM medical_audit_logs mal
+                            WHERE mal.case_id = c.id AND mal.clinic_id = ?
+                        )
+                    ))
+                """)
+                params.extend([staff["clinic_id"], staff["clinic_id"], staff["clinic_id"]])
+            else:
+                where_clauses.append("c.clinic_id = ?")
+                params.append(staff["clinic_id"])
+        # else: show all branches (search is active or clinic_id='all')
 
         if category != "all":
             where_clauses.append("LOWER(COALESCE(c.risk_level, c.category, '')) = ?")
@@ -7886,11 +8288,19 @@ def create_app():
             LEFT JOIN users u ON u.id = p.user_id
             LEFT JOIN pre_screening_details psd ON psd.case_id = c.id
             LEFT JOIN vaccination_card vc ON vc.case_id = c.id
+            LEFT JOIN clinics cl ON cl.id = c.clinic_id
             WHERE
             """
             + where_sql
         )
-        total = db.execute(count_sql, params).fetchone()["total"]
+        try:
+            total_row = db.execute(count_sql, params).fetchone()
+            total = total_row["total"] if total_row else 0
+        except sqlite3.OperationalError as e:
+            if "no such column: c.updated_at" in str(e).lower():
+                # One-time redirect to clear the error if it still persisted despite checks
+                return redirect(url_for('staff_patients', _retry_no_sync=1))
+            raise e
 
         pages = max((total + per_page - 1) // per_page, 1)
         if page > pages:
@@ -7928,12 +8338,16 @@ def create_app():
                     WHERE vcd.case_id = c.id
                       AND NULLIF(TRIM(vcd.dose_date), '') IS NOT NULL
                       AND DATE(vcd.dose_date) >= DATE('now', 'localtime')
-                ) AS next_dose_date
+                ) AS next_dose_date,
+                cl.name AS clinic_name,
+                cl.branch_code AS clinic_branch_code,
+                c.clinic_id
             FROM cases c
             JOIN patients p ON p.id = c.patient_id
             LEFT JOIN users u ON u.id = p.user_id
             LEFT JOIN pre_screening_details psd ON psd.case_id = c.id
             LEFT JOIN vaccination_card vc ON vc.case_id = c.id
+            LEFT JOIN clinics cl ON cl.id = c.clinic_id
             WHERE
             """
             + where_sql
@@ -8022,6 +8436,9 @@ def create_app():
                     "category": row["category"],
                     "case_status": row["case_status"],
                     "schedule_next_dose": schedule_or_next_dose,
+                    "clinic_name": row["clinic_name"],
+                    "clinic_branch_code": row["clinic_branch_code"],
+                    "clinic_id": row["clinic_id"],
                 }
             )
 
@@ -8039,7 +8456,7 @@ def create_app():
             staff_display_name=staff_display_name,
             cases=cases,
             clinic_branch_options=clinic_branch_options,
-            selected_clinic_branch=int(staff["clinic_id"]),
+            selected_clinic_id=selected_clinic_id,
             selected_category=category,
             selected_status=case_status,
             search=search,
@@ -8220,6 +8637,36 @@ def create_app():
     @role_required("clinic_personnel", "system_admin")
     def staff_cases_export_csv():
         db = get_db()
+        # Safety Check: Check if updated_at exists
+        has_updated_at = False
+        try:
+            cursor = db.execute("PRAGMA table_info(cases)")
+            columns = [row["name"] for row in cursor.fetchall()]
+            has_updated_at = "updated_at" in columns
+        except Exception:
+            has_updated_at = False
+
+        if not has_updated_at:
+            try:
+                db.execute("ALTER TABLE cases ADD COLUMN updated_at TEXT")
+                db.execute("UPDATE cases SET updated_at = created_at WHERE updated_at IS NULL")
+                db.commit()
+                has_updated_at = True
+            except Exception:
+                pass
+
+        # Safety Check: Check if clinic_id exists in medical_audit_logs
+        if has_updated_at:
+            try:
+                db.execute("SELECT clinic_id FROM medical_audit_logs LIMIT 0")
+            except sqlite3.OperationalError:
+                try:
+                    db.execute("ALTER TABLE medical_audit_logs ADD COLUMN clinic_id INTEGER")
+                    db.execute("UPDATE medical_audit_logs SET clinic_id = (SELECT clinic_id FROM clinic_personnel WHERE clinic_personnel.id = medical_audit_logs.clinic_personnel_id) WHERE clinic_id IS NULL")
+                    db.commit()
+                except Exception:
+                    has_updated_at = False
+
         role = session.get("role")
         clinic_id = None
         clinic_name = "Clinic"
@@ -8282,11 +8729,38 @@ def create_app():
         date_to = (q.get("date_to") or "").strip()
 
         where_clauses = [
-            "c.clinic_id = ?",
             _SQL_STAFF_CASE_NOT_REMOVED,
             "LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('archived', 'queued', 'scheduled')",
         ]
-        params: list[object] = [clinic_id]
+        params: list[object] = []
+
+        selected_clinic_id = q.get("clinic_id") or ""
+        if selected_clinic_id and selected_clinic_id != "all":
+            try:
+                selected_clinic_id = int(selected_clinic_id)
+            except ValueError:
+                selected_clinic_id = ""
+
+        if selected_clinic_id and selected_clinic_id != "all":
+            where_clauses.append("c.clinic_id = ?")
+            params.append(selected_clinic_id)
+        elif not search and (not selected_clinic_id or selected_clinic_id != "all"):
+            if has_updated_at:
+                where_clauses.append("""
+                    (c.clinic_id = ? OR (
+                        c.clinic_id != ? AND 
+                        COALESCE(c.updated_at, c.created_at) > c.created_at AND
+                        EXISTS (
+                            SELECT 1 FROM medical_audit_logs mal
+                            WHERE mal.case_id = c.id AND mal.clinic_id = ?
+                        )
+                    ))
+                """)
+                params.extend([clinic_id, clinic_id, clinic_id])
+            else:
+                where_clauses.append("c.clinic_id = ?")
+                params.append(clinic_id)
+        # else: show all if search is active or clinic_id='all'
         if category != "all":
             where_clauses.append("LOWER(COALESCE(c.risk_level, c.category, '')) = ?")
             params.append(category)
@@ -8399,6 +8873,8 @@ def create_app():
             SELECT
               c.id AS case_id,
               c.case_ref,
+              cl.name AS clinic_name,
+              cl.branch_code AS clinic_branch_code,
               COALESCE(NULLIF(TRIM(p.first_name), ''), '') AS first_name,
               COALESCE(NULLIF(TRIM(p.last_name), ''), '') AS last_name,
               COALESCE(
@@ -8453,6 +8929,7 @@ def create_app():
             LEFT JOIN users u ON u.id = p.user_id
             LEFT JOIN pre_screening_details psd ON psd.case_id = c.id
             LEFT JOIN vaccination_card vc ON vc.case_id = c.id
+            LEFT JOIN clinics cl ON cl.id = c.clinic_id
             WHERE
             """
             + where_sql
@@ -8492,6 +8969,8 @@ def create_app():
             [
                 "case_id",
                 "case_code",
+                "clinic",
+                "branch_code",
                 "patient_name",
                 "first_name",
                 "last_name",
@@ -8540,6 +9019,8 @@ def create_app():
                 [
                     cid,
                     public_case_code(r, case_id_key="case_id"),
+                    r["clinic_name"],
+                    r["clinic_branch_code"] or "",
                     r["patient_name"],
                     r["first_name"] or "",
                     r["last_name"] or "",
@@ -8598,6 +9079,23 @@ def create_app():
             return redirect(url_for("staff_patients"))
 
         db = get_db()
+        # Safety Check: Check if updated_at exists
+        has_updated_at = False
+        try:
+            cursor = db.execute("PRAGMA table_info(cases)")
+            columns = [row["name"] for row in cursor.fetchall()]
+            has_updated_at = "updated_at" in columns
+        except Exception:
+            has_updated_at = False
+
+        if not has_updated_at:
+            try:
+                db.execute("ALTER TABLE cases ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP")
+                db.commit()
+                has_updated_at = True
+            except Exception:
+                pass
+
         role = session.get("role")
         clinic_id = None
         clinic_name = "Clinic"
@@ -8665,11 +9163,38 @@ def create_app():
         date_to = (q.get("date_to") or "").strip()
 
         where_clauses = [
-            "c.clinic_id = ?",
             _SQL_STAFF_CASE_NOT_REMOVED,
             "LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('archived', 'queued', 'scheduled')",
         ]
-        params: list[object] = [clinic_id]
+        params: list[object] = []
+
+        selected_clinic_id = q.get("clinic_id") or ""
+        if selected_clinic_id and selected_clinic_id != "all":
+            try:
+                selected_clinic_id = int(selected_clinic_id)
+            except ValueError:
+                selected_clinic_id = ""
+
+        if selected_clinic_id and selected_clinic_id != "all":
+            where_clauses.append("c.clinic_id = ?")
+            params.append(selected_clinic_id)
+        elif not search and (not selected_clinic_id or selected_clinic_id != "all"):
+            if has_updated_at:
+                where_clauses.append("""
+                    (c.clinic_id = ? OR (
+                        c.clinic_id != ? AND 
+                        COALESCE(c.updated_at, c.created_at) > c.created_at AND
+                        EXISTS (
+                            SELECT 1 FROM medical_audit_logs mal
+                            WHERE mal.case_id = c.id AND mal.clinic_id = ?
+                        )
+                    ))
+                """)
+                params.extend([clinic_id, clinic_id, clinic_id])
+            else:
+                where_clauses.append("c.clinic_id = ?")
+                params.append(clinic_id)
+
         if category != "all":
             where_clauses.append("LOWER(COALESCE(c.risk_level, c.category, '')) = ?")
             params.append(category)
@@ -8783,6 +9308,8 @@ def create_app():
             SELECT
               c.id AS case_id,
               c.case_ref,
+              cl.name AS clinic_name,
+              cl.branch_code AS clinic_branch_code,
               COALESCE(
                 NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''),
                 u.username,
@@ -8835,6 +9362,7 @@ def create_app():
             LEFT JOIN users u ON u.id = p.user_id
             LEFT JOIN pre_screening_details psd ON psd.case_id = c.id
             LEFT JOIN vaccination_card vc ON vc.case_id = c.id
+            LEFT JOIN clinics cl ON cl.id = c.clinic_id
             WHERE
             """
             + where_sql
@@ -10537,10 +11065,9 @@ def create_app():
             LEFT JOIN pre_screening_details psd ON psd.case_id = c.id
             JOIN clinics cl ON cl.id = c.clinic_id
             WHERE c.id = ?
-              AND c.clinic_id = ?
               AND COALESCE(c.staff_removed, 0) = 0
             """,
-            (case_id, staff["clinic_id"]),
+            (case_id,),
         ).fetchone()
 
         if case_row is None:
@@ -10798,6 +11325,34 @@ def create_app():
             flash("Case not found.", "error")
             return redirect(url_for("staff_patients"))
 
+        # Synchronization Logic: 
+        # If this case is from another clinic, log a VIEW audit for our clinic.
+        # This "synchronizes" the case to our clinic's list if it has been updated.
+        case_data = context["case"]
+        db = get_db()
+        staff = db.execute("SELECT id, clinic_id FROM clinic_personnel WHERE user_id = ?", (session["user_id"],)).fetchone()
+        if staff and case_data["clinic_id"] != staff["clinic_id"]:
+            # Check if we already have a log to avoid spamming, but the visibility logic 
+            # only needs one log to exist.
+            existing_log = db.execute(
+                "SELECT 1 FROM medical_audit_logs WHERE case_id = ? AND clinic_id = ? LIMIT 1",
+                (case_id, staff["clinic_id"])
+            ).fetchone()
+            if not existing_log:
+                _insert_medical_audit_log(
+                    db,
+                    case_id=case_id,
+                    action="VIEW",
+                    field_name="case_record",
+                    old_value=None,
+                    new_value=None,
+                    change_reason="Cross-clinic case synchronization",
+                    user_id=session["user_id"],
+                    clinic_personnel_id=staff["id"],
+                    clinic_id=staff["clinic_id"]
+                )
+                db.commit()
+
         return render_template(
             "staff_patient_view.html",
             active_page="cases",
@@ -10841,10 +11396,10 @@ def create_app():
             """
             SELECT id, who_category_auto, who_category_final
             FROM cases
-            WHERE id = ? AND clinic_id = ?
+            WHERE id = ?
               AND COALESCE(staff_removed, 0) = 0
             """,
-            (case_id, staff["clinic_id"]),
+            (case_id,),
         ).fetchone()
         if case_row is None:
             flash("Case not found.", "error")
@@ -10862,10 +11417,13 @@ def create_app():
                 SET who_category_final = ?,
                     who_category_overridden_by_user_id = ?,
                     who_category_overridden_at = CURRENT_TIMESTAMP,
-                    who_category_override_reason = ?
-                WHERE id = ? AND clinic_id = ?
+                    who_category_override_reason = ?,
+                    updated_at = CURRENT_TIMESTAMP,
+                    case_status = CASE WHEN LOWER(TRIM(COALESCE(case_status, 'pending'))) = 'no show' 
+                                       THEN 'Pending' ELSE case_status END
+                WHERE id = ?
                 """,
-                (new_final, session["user_id"], override_reason, case_id, staff["clinic_id"]),
+                (new_final, session["user_id"], override_reason, case_id),
             )
             _insert_medical_audit_log(
                 db,
@@ -10911,10 +11469,10 @@ def create_app():
             """
             SELECT id
             FROM cases
-            WHERE id = ? AND clinic_id = ?
+            WHERE id = ?
               AND COALESCE(staff_removed, 0) = 0
             """,
-            (case_id, staff["clinic_id"]),
+            (case_id,),
         ).fetchone()
         if case_row is None:
             flash("Case not found.", "error")
@@ -10934,6 +11492,16 @@ def create_app():
             VALUES (?, ?, ?)
             """,
             (case_id, session["user_id"], note_content),
+        )
+        db.execute(
+            """
+            UPDATE cases 
+            SET updated_at = CURRENT_TIMESTAMP,
+                case_status = CASE WHEN LOWER(TRIM(COALESCE(case_status, 'pending'))) = 'no show' 
+                                   THEN 'Pending' ELSE case_status END
+            WHERE id = ?
+            """,
+            (case_id,),
         )
         db.commit()
 
@@ -10964,9 +11532,9 @@ def create_app():
             """
             SELECT id, COALESCE(staff_removed, 0) AS staff_removed
             FROM cases
-            WHERE id = ? AND clinic_id = ?
+            WHERE id = ?
             """,
-            (case_id, staff["clinic_id"]),
+            (case_id,),
         ).fetchone()
         if case_row is None:
             flash("Case not found.", "error")
@@ -10981,10 +11549,11 @@ def create_app():
             UPDATE cases
             SET staff_removed = 1,
                 staff_removed_at = ?,
-                staff_removed_by_user_id = ?
-            WHERE id = ? AND clinic_id = ?
+                staff_removed_by_user_id = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
             """,
-            (removed_at, session["user_id"], case_id, staff["clinic_id"]),
+            (removed_at, session["user_id"], case_id),
         )
         _insert_medical_audit_log(
             db,
@@ -11009,6 +11578,24 @@ def create_app():
             return redirect(url_for("admin_dashboard"))
 
         db = get_db()
+        # Safety Check: Check if updated_at exists
+        has_updated_at = False
+        try:
+            cursor = db.execute("PRAGMA table_info(cases)")
+            columns = [row["name"] for row in cursor.fetchall()]
+            has_updated_at = "updated_at" in columns
+        except Exception:
+            has_updated_at = False
+
+        if not has_updated_at:
+            try:
+                db.execute("ALTER TABLE cases ADD COLUMN updated_at TEXT")
+                db.execute("UPDATE cases SET updated_at = created_at WHERE updated_at IS NULL")
+                db.commit()
+                has_updated_at = True
+            except Exception:
+                pass
+
         staff = db.execute(
             """
             SELECT clinic_id
@@ -11026,24 +11613,36 @@ def create_app():
             """
             SELECT id, COALESCE(case_status, 'Pending') AS case_status
             FROM cases
-            WHERE id = ? AND clinic_id = ?
+            WHERE id = ?
             """,
-            (case_id, staff["clinic_id"]),
+            (case_id,),
         ).fetchone()
         if case_row is None:
             flash("Case not found.", "error")
             return redirect(url_for("staff_patients"))
 
         marked_at = datetime.now().isoformat(timespec="seconds")
-        db.execute(
-            """
-            UPDATE cases
-            SET case_status = 'Completed',
-                staff_completed_at = COALESCE(staff_completed_at, ?)
-            WHERE id = ? AND clinic_id = ?
-            """,
-            (marked_at, case_id, staff["clinic_id"]),
-        )
+        if has_updated_at:
+            db.execute(
+                """
+                UPDATE cases
+                SET case_status = 'Completed',
+                    staff_completed_at = COALESCE(staff_completed_at, ?),
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (marked_at, case_id),
+            )
+        else:
+            db.execute(
+                """
+                UPDATE cases
+                SET case_status = 'Completed',
+                    staff_completed_at = COALESCE(staff_completed_at, ?)
+                WHERE id = ?
+                """,
+                (marked_at, case_id),
+            )
         db.execute(
             """
             UPDATE appointments
@@ -11056,7 +11655,7 @@ def create_app():
                 LIMIT 1
             )
             """,
-            (case_id, staff["clinic_id"]),
+            (case_id,),
         )
         _insert_medical_audit_log(
             db,
@@ -11082,6 +11681,17 @@ def create_app():
             return redirect(url_for("admin_dashboard"))
 
         db = get_db()
+        # Safety Check: Ensure updated_at exists (migration fallback)
+        try:
+            db.execute("SELECT updated_at FROM cases LIMIT 1")
+        except sqlite3.OperationalError:
+            try:
+                db.execute("ALTER TABLE cases ADD COLUMN updated_at TEXT")
+                db.execute("UPDATE cases SET updated_at = created_at WHERE updated_at IS NULL")
+                db.commit()
+            except Exception:
+                pass
+
         staff = db.execute(
             """
             SELECT cp.*, cp.id AS clinic_personnel_id, u.username
@@ -11134,10 +11744,9 @@ def create_app():
             LEFT JOIN users u ON u.id = p.user_id
             LEFT JOIN pre_screening_details psd ON psd.case_id = c.id
             WHERE c.id = ?
-              AND c.clinic_id = ?
               AND COALESCE(c.staff_removed, 0) = 0
             """,
-            (case_id, staff["clinic_id"]),
+            (case_id,),
         ).fetchone()
         if case_row is None:
             flash("Case not found.", "error")
@@ -11325,8 +11934,9 @@ def create_app():
                     who_category_version = ?,
                     who_category_overridden_by_user_id = ?,
                     who_category_overridden_at = ?,
-                    who_category_override_reason = ?
-                WHERE id = ? AND clinic_id = ?
+                    who_category_override_reason = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
                 """,
                 (
                     exposure_date if exposure_date else case_patient["exposure_date"],
@@ -11342,7 +11952,6 @@ def create_app():
                     o_at,
                     o_reason,
                     case_id,
-                    staff["clinic_id"],
                 ),
             )
 
@@ -11560,6 +12169,36 @@ def create_app():
                 clinic_id=staff["clinic_id"],
             )
 
+            # Safety Check: Check if updated_at exists before updating it
+            has_updated_at = False
+            try:
+                db.execute("SELECT updated_at FROM cases LIMIT 0")
+                has_updated_at = True
+            except sqlite3.OperationalError:
+                has_updated_at = False
+
+            if has_updated_at:
+                db.execute(
+                    """
+                    UPDATE cases 
+                    SET updated_at = CURRENT_TIMESTAMP,
+                        case_status = CASE WHEN LOWER(TRIM(COALESCE(case_status, 'pending'))) = 'no show' 
+                                           THEN 'Pending' ELSE case_status END
+                    WHERE id = ?
+                    """,
+                    (case_id,),
+                )
+            else:
+                db.execute(
+                    """
+                    UPDATE cases 
+                    SET case_status = CASE WHEN LOWER(TRIM(COALESCE(case_status, 'pending'))) = 'no show' 
+                                           THEN 'Pending' ELSE case_status END
+                    WHERE id = ?
+                    """,
+                    (case_id,),
+                )
+
             db.commit()
 
             flash("Case information updated.", "success")
@@ -11610,7 +12249,7 @@ def create_app():
             WHERE cp.clinic_id = ?
             ORDER BY cp.title, cp.first_name, cp.last_name, u.username
             """,
-            (case_patient["clinic_id"],),
+            (staff["clinic_id"],),
         ).fetchall()
         personnel_options = []
         seen_personnel = set()
@@ -12351,10 +12990,12 @@ def create_app():
               u.role AS actor_role,
               cp.title AS actor_title,
               cp.first_name AS actor_first_name,
-              cp.last_name AS actor_last_name
+              cp.last_name AS actor_last_name,
+              cl.name AS clinic_name
             FROM medical_audit_logs mal
             LEFT JOIN users u ON u.id = mal.user_id
             LEFT JOIN clinic_personnel cp ON cp.id = mal.clinic_personnel_id
+            LEFT JOIN clinics cl ON cl.id = cp.clinic_id
             WHERE mal.case_id = ?
             ORDER BY datetime(mal.changed_at) DESC, mal.id DESC
             """,
@@ -12390,6 +13031,7 @@ def create_app():
                 "changed_at": _history_time_label(hr["changed_at"]),
                 "action": (hr["change_reason"] or hr["action"] or "Updated").strip(),
                 "changed_by": _history_actor_label(hr),
+                "clinic_name": (hr["clinic_name"] or "—").strip(),
             }
             for hr in history_rows
         ]
@@ -12590,7 +13232,7 @@ def create_app():
         _admin_mark_page_seen(db, session["user_id"], "reporting")
 
         raw_tab = (request.args.get("tab") or "overview").strip().lower()
-        if raw_tab not in ("overview", "clinic", "insights"):
+        if raw_tab not in ("overview", "insights"):
             raw_tab = "overview"
         tab = raw_tab
 
@@ -13250,7 +13892,28 @@ def create_app():
             page = 1
         per_page = 10
 
-        total_row = db.execute("SELECT COUNT(*) AS n FROM user_session_logs").fetchone()
+        clinic = _get_admin_clinic_row(db, session["user_id"])
+        clinic_id = clinic["id"] if clinic else -1
+
+        total_row = db.execute(
+            """
+            SELECT COUNT(*) AS n
+            FROM user_session_logs l
+            JOIN users u ON u.id = l.user_id
+            WHERE (
+              (l.role_at_login = 'patient' AND EXISTS (
+                  SELECT 1 FROM cases c JOIN patients p ON p.id = c.patient_id 
+                  WHERE p.user_id = u.id AND c.clinic_id = ?
+              ))
+              OR
+              (l.role_at_login = 'clinic_personnel' AND EXISTS (
+                  SELECT 1 FROM clinic_personnel cp 
+                  WHERE cp.user_id = u.id AND cp.clinic_id = ?
+              ))
+            )
+            """,
+            (clinic_id, clinic_id),
+        ).fetchone()
         total = int(total_row["n"] or 0)
 
         offset = (page - 1) * per_page
@@ -13259,10 +13922,21 @@ def create_app():
             SELECT l.id, l.user_id, l.role_at_login, l.logged_in_at, l.logged_out_at, u.username
             FROM user_session_logs l
             JOIN users u ON u.id = l.user_id
+            WHERE (
+              (l.role_at_login = 'patient' AND EXISTS (
+                  SELECT 1 FROM cases c JOIN patients p ON p.id = c.patient_id 
+                  WHERE p.user_id = u.id AND c.clinic_id = ?
+              ))
+              OR
+              (l.role_at_login = 'clinic_personnel' AND EXISTS (
+                  SELECT 1 FROM clinic_personnel cp 
+                  WHERE cp.user_id = u.id AND cp.clinic_id = ?
+              ))
+            )
             ORDER BY datetime(l.logged_in_at) DESC
             LIMIT ? OFFSET ?
             """,
-            (per_page, offset),
+            (clinic_id, clinic_id, per_page, offset),
         ).fetchall()
 
         log_items = []
@@ -13284,7 +13958,6 @@ def create_app():
                 }
             )
 
-        clinic = _get_admin_clinic_row(db, session["user_id"])
         pagination = SimplePagination(log_items, page=page, per_page=per_page, total=total)
 
         breadcrumbs = [
@@ -13311,33 +13984,7 @@ def create_app():
     @app.get("/super/")
     @role_required("super_admin")
     def super_dashboard():
-        db = get_db()
-        su = _super_fetch_user(db, session["user_id"])
-        if su is None:
-            session.clear()
-            flash("Super Admin profile missing.", "error")
-            return redirect(url_for("auth.login"))
-        stats = {
-            "clinics": int(db.execute("SELECT COUNT(*) AS n FROM clinics").fetchone()["n"] or 0),
-            "cases": int(db.execute("SELECT COUNT(*) AS n FROM cases").fetchone()["n"] or 0),
-            "vaccinations": int(
-                db.execute("SELECT COUNT(*) AS n FROM vaccination_records").fetchone()["n"] or 0
-            ),
-            "admins": int(
-                db.execute(
-                    "SELECT COUNT(*) AS n FROM users WHERE role = 'system_admin'"
-                ).fetchone()["n"]
-                or 0
-            ),
-        }
-        return render_template(
-            "super_dashboard.html",
-            super_user=su,
-            super_display_name=_super_display_name(su),
-            super_initials=_super_initials(su),
-            stats=stats,
-            active_page="dashboard",
-        )
+        return redirect(url_for("super_reporting"))
 
     @app.route("/super/clinics", methods=["GET", "POST"])
     @role_required("super_admin")
@@ -13398,6 +14045,73 @@ def create_app():
             active_page="clinics",
         )
 
+    @app.post("/super/clinics/edit/<int:clinic_id>")
+    @role_required("super_admin")
+    def super_clinic_edit(clinic_id: int):
+        db = get_db()
+        name = normalize_name_case(request.form.get("name") or "")
+        address = normalize_optional(request.form.get("address"))
+        bc_raw = (request.form.get("branch_code") or "").strip()
+        bc = normalize_branch_code(bc_raw) if bc_raw else ""
+
+        if not name or not bc:
+            flash("Name and branch code are required.", "error")
+            return redirect(url_for("super_clinics"))
+
+        if not validate_branch_code(bc):
+            flash("Invalid branch code format.", "error")
+            return redirect(url_for("super_clinics"))
+
+        if db.execute(
+            "SELECT 1 FROM clinics WHERE branch_code = ? AND id != ? LIMIT 1",
+            (bc, clinic_id),
+        ).fetchone():
+            flash("Branch code already in use.", "error")
+            return redirect(url_for("super_clinics"))
+
+        try:
+            db.execute(
+                "UPDATE clinics SET name = ?, address = ?, branch_code = ? WHERE id = ?",
+                (name, address, bc, clinic_id),
+            )
+            db.commit()
+            flash("Clinic updated successfully.", "success")
+        except Exception:
+            db.rollback()
+            flash("Could not update clinic.", "error")
+
+        return redirect(url_for("super_clinics"))
+
+    @app.post("/super/clinics/delete/<int:clinic_id>")
+    @role_required("super_admin")
+    def super_clinic_delete(clinic_id: int):
+        db = get_db()
+        # Check for cases (vaccinations are child of cases, so this covers both)
+        if db.execute(
+            "SELECT 1 FROM cases WHERE clinic_id = ? LIMIT 1", (clinic_id,)
+        ).fetchone():
+            flash("Cannot delete clinic with existing cases or vaccinations.", "error")
+            return redirect(url_for("super_clinics"))
+
+        # Check for registered staff or admins
+        if db.execute(
+            "SELECT 1 FROM clinic_personnel WHERE clinic_id = ? LIMIT 1", (clinic_id,)
+        ).fetchone() or db.execute(
+            "SELECT 1 FROM system_admins WHERE clinic_id = ? LIMIT 1", (clinic_id,)
+        ).fetchone():
+            flash("Cannot delete clinic with registered personnel or administrators.", "error")
+            return redirect(url_for("super_clinics"))
+
+        try:
+            db.execute("DELETE FROM clinics WHERE id = ?", (clinic_id,))
+            db.commit()
+            flash("Clinic branch deleted.", "success")
+        except Exception:
+            db.rollback()
+            flash("Could not delete clinic.", "error")
+
+        return redirect(url_for("super_clinics"))
+
     @app.get("/super/users")
     @role_required("super_admin")
     def super_users():
@@ -13443,7 +14157,6 @@ def create_app():
         username = (request.form.get("username") or "").strip()
         email = (request.form.get("email") or "").strip().lower()
         clinic_id_raw = (request.form.get("clinic_id") or "").strip()
-        employee_id = (request.form.get("employee_id") or "").strip()
         first_name = normalize_optional(request.form.get("first_name"))
         last_name = normalize_optional(request.form.get("last_name"))
         errors: list[str] = []
@@ -13451,8 +14164,6 @@ def create_app():
             errors.append("Username is required.")
         if not email or "@" not in email:
             errors.append("Valid email is required.")
-        if not employee_id:
-            errors.append("Employee ID is required.")
         try:
             clinic_id = int(clinic_id_raw)
         except ValueError:
@@ -13471,12 +14182,6 @@ def create_app():
         ).fetchone():
             flash("Username or email already exists.", "error")
             return redirect(url_for("super_users"))
-        if db.execute(
-            "SELECT 1 FROM system_admins WHERE employee_id = ? LIMIT 1",
-            (employee_id,),
-        ).fetchone():
-            flash("Employee ID already exists.", "error")
-            return redirect(url_for("super_users"))
 
         pw = _generate_strong_password(14)
         try:
@@ -13490,10 +14195,10 @@ def create_app():
             uid = cur.lastrowid
             db.execute(
                 """
-                INSERT INTO system_admins (user_id, clinic_id, first_name, last_name, employee_id)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO system_admins (user_id, clinic_id, first_name, last_name)
+                VALUES (?, ?, ?, ?)
                 """,
-                (uid, clinic_id, first_name, last_name, employee_id),
+                (uid, clinic_id, first_name, last_name),
             )
             db.commit()
         except Exception:
@@ -13776,6 +14481,8 @@ def create_app():
         if su is None:
             session.clear()
             return redirect(url_for("auth.login"))
+
+        _admin_mark_page_seen(db, session["user_id"], "session_logs")
         page = request.args.get("page", 1, type=int) or 1
         page = max(page, 1)
         per_page = 10
@@ -13840,26 +14547,82 @@ def create_app():
         if su is None:
             session.clear()
             return redirect(url_for("auth.login"))
-        rows = db.execute(
-            """
-            SELECT c.id,
-                   c.branch_code,
-                   c.name,
-                   (SELECT COUNT(*) FROM cases cs WHERE cs.clinic_id = c.id) AS case_total,
-                   (SELECT COUNT(*) FROM vaccination_records vr
-                     JOIN cases cs ON cs.id = vr.case_id WHERE cs.clinic_id = c.id) AS vaccination_total
-            FROM clinics c
-            ORDER BY c.name ASC
-            """
-        ).fetchall()
-        return render_template(
-            "super_reporting.html",
-            super_user=su,
-            super_display_name=_super_display_name(su),
-            super_initials=_super_initials(su),
-            clinic_summary=rows,
-            active_page="reporting",
-        )
+
+        period, date_from, date_to, yearly_year = _admin_resolve_period_dates()
+
+        ctx = {
+            "super_user": su,
+            "super_display_name": _super_display_name(su),
+            "super_initials": _super_initials(su),
+            "active_page": "reporting",
+            "period": period,
+            "date_from": date_from,
+            "date_to": date_to,
+            "yearly_year": yearly_year,
+            "admin_year_options": _admin_year_dropdown_options(),
+        }
+
+        # Program Insights
+        target_clinic_id = request.args.get("insights_clinic_id")
+        if target_clinic_id and str(target_clinic_id).strip():
+            try:
+                target_clinic_id = int(target_clinic_id)
+            except ValueError:
+                target_clinic_id = None
+        else:
+            target_clinic_id = None
+
+        insights_filters = _admin_insights_filters_from_request(request.args)
+        ctx.update({
+            "insights_filters": insights_filters,
+            "insights_filter_query_js": _insights_filters_query_string(insights_filters),
+            "target_clinic_id": target_clinic_id,
+            "clinics": db.execute("SELECT id, name FROM clinics ORDER BY name ASC").fetchall(),
+            "insights_barangay_options": CEBU_BARANGAY_NAMES,
+            "insights_animal_options": ["Dogs", "Cats", "Bats", "Other"],
+            "insights_bite_options": ["Category I", "Category II", "Category III"],
+            "insights_gender_options": ["Male", "Female"],
+            "insights_age_options": list(_INSIGHTS_AGE_GROUP_ORDER),
+        })
+        ctx.update(_super_reporting_insights_dict(db, target_clinic_id, date_from, date_to, insights_filters))
+
+        return render_template("super_reporting.html", **ctx)
+
+    @app.get("/super/reporting/export.csv")
+    @role_required("super_admin")
+    def super_reporting_export_csv():
+        db = get_db()
+        su = _super_fetch_user(db, session["user_id"])
+        if su is None:
+            session.clear()
+            return redirect(url_for("auth.login"))
+
+        period, date_from, date_to, yearly_year = _admin_resolve_period_dates()
+        target_clinic_id = request.args.get("insights_clinic_id")
+        if target_clinic_id and str(target_clinic_id).strip():
+            try:
+                target_clinic_id = int(target_clinic_id)
+            except ValueError:
+                target_clinic_id = None
+        else:
+            target_clinic_id = None
+
+        filters = _admin_insights_filters_from_request(request.args)
+        dataset = (request.args.get("dataset") or "bite_cases").strip()
+        
+        data = _super_reporting_insights_dict(db, target_clinic_id, date_from, date_to, filters)
+        
+        # Reuse existing CSV body builder
+        body, fn = _admin_insights_export_csv_body(dataset, data)
+        
+        if body is None or fn is None:
+            flash("Unknown or missing export dataset.", "error")
+            return redirect(url_for("super_reporting", **request.args))
+
+        response = make_response(body)
+        response.headers["Content-Type"] = "text/csv"
+        response.headers["Content-Disposition"] = f'attachment; filename="super-{fn}"'
+        return response
 
     # =========================
     # Admin-only account creation (CLI)

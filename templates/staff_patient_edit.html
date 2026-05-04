@@ -1,5 +1,6 @@
 {% extends "staff_base.html" %}
 {% from '_vc_dose_dropdown.html' import vc_dose_dropdown %}
+{% from '_vc_personnel_dropdown.html' import vc_personnel_dropdown %}
 
 {% block title %}Edit Information - RabiesResQ{% endblock %}
 
@@ -21,7 +22,7 @@
 {% block main_content %}
   <section class="mt-6">
             <h1 class="text-2xl font-bold text-[#1A4D2E] sm:text-4xl lg:text-5xl">Edit Information</h1>
-            <p class="mt-1 text-slate-500">Update pre-screening forms for RRQ-{{ case.case_id }}.</p>
+            <p class="mt-1 text-slate-500">Case ID: {{ case.case_ref }} | Update patient pre-screening forms.</p>
           </section>
 
           <form
@@ -296,6 +297,7 @@
 
             <article class="rounded-[2rem] border border-slate-200 bg-white p-5">
               <h2 class="text-xl font-semibold text-[#1A4D2E] sm:text-2xl lg:text-3xl">WHO category (decision-support override)</h2>
+              <p class="mt-1 text-sm text-slate-500">Case ID: {{ case.case_ref }}</p>
               <p class="mt-1 text-sm text-slate-600">
                 Adjust the final WHO exposure category when it differs from the system suggestion. This does not replace clinical judgment. Use Save Changes at the bottom of the page to persist all edits.
               </p>
@@ -482,7 +484,7 @@
                                 </div>
                               </div>
                             </td>
-                            <td class="px-2 py-1"><input name="vc_pre_{{ day }}_given_by" type="text" list="clinic-personnel-options" value="{{ row.given_by if row and row.given_by else '' }}" class="w-full min-w-[8rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
+                            <td class="px-2 py-1">{{ vc_personnel_dropdown('vc_pre', day, row.given_by if row and row.given_by else '', personnel_options) }}</td>
                           </tr>
                         {% endfor %}
                       </tbody>
@@ -550,7 +552,7 @@
                                 </div>
                               </div>
                             </td>
-                            <td class="px-2 py-1"><input name="vc_post_{{ day }}_given_by" type="text" list="clinic-personnel-options" value="{{ row.given_by if row and row.given_by else '' }}" class="w-full min-w-[8rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
+                            <td class="px-2 py-1">{{ vc_personnel_dropdown('vc_post', day, row.given_by if row and row.given_by else '', personnel_options) }}</td>
                           </tr>
                         {% endfor %}
                       </tbody>
@@ -614,7 +616,7 @@
                                 </div>
                               </div>
                             </td>
-                            <td class="px-2 py-1"><input name="vc_booster_{{ day }}_given_by" type="text" list="clinic-personnel-options" value="{{ row.given_by if row and row.given_by else '' }}" class="w-full min-w-[8rem] rounded border border-slate-300 px-2 py-1 text-sm" /></td>
+                            <td class="px-2 py-1">{{ vc_personnel_dropdown('vc_booster', day, row.given_by if row and row.given_by else '', personnel_options) }}</td>
                           </tr>
                         {% endfor %}
                       </tbody>
@@ -629,11 +631,7 @@
               </div>
             </article>
 
-            <datalist id="clinic-personnel-options">
-              {% for option in personnel_options %}
-                <option value="{{ option }}"></option>
-              {% endfor %}
-            </datalist>
+
 
             <div class="fixed inset-x-4 bottom-4 z-50 rounded-[2rem] border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur sm:inset-x-auto sm:bottom-5 sm:right-5">
               <div class="flex items-center justify-end gap-3">
@@ -1019,6 +1017,16 @@
           }
           positionVcFixedDropdown(trigger, panel);
         });
+        root.querySelectorAll("[data-vc-personnel-widget]").forEach(function(w) {
+          var panel = w.querySelector("[data-vc-personnel-panel]");
+          var trigger = w.querySelector("[data-vc-personnel-trigger]");
+          if (!panel || !trigger || panel.classList.contains("hidden")) return;
+          if (!_vcTriggerIsVisible(trigger)) {
+            closePersonnelPanel(w);
+            return;
+          }
+          positionVcFixedDropdown(trigger, panel);
+        });
       }
 
       var _vcRepositionQueued = false;
@@ -1147,6 +1155,7 @@
           if (ev.key !== "Escape") return;
           document.querySelectorAll("[data-vc-route-site-widget]").forEach(closeRouteSitePanel);
           document.querySelectorAll("[data-vc-dose-widget]").forEach(closeDosePanel);
+          document.querySelectorAll("[data-vc-personnel-widget]").forEach(closePersonnelPanel);
         });
         window.addEventListener("resize", function() { scheduleVcReposition(); });
         window.addEventListener("scroll", function() { scheduleVcReposition(); }, true);
@@ -1155,8 +1164,76 @@
         });
       }
 
+      function wirePersonnelDropdowns(scopeRoot) {
+        var root = scopeRoot || document;
+        root.querySelectorAll("[data-vc-personnel-widget]").forEach(function(widget) {
+          var hidden = widget.querySelector("input[data-vc-personnel-val]");
+          var trigger = widget.querySelector("[data-vc-personnel-trigger]");
+          var panel = widget.querySelector("[data-vc-personnel-panel]");
+          var chevron = widget.querySelector("[data-vc-personnel-chevron]");
+          var triggerText = widget.querySelector("[data-vc-personnel-trigger-text]");
+          if (!hidden || !trigger || !panel) return;
+
+          function syncLabel() {
+            var v = (hidden.value || "").trim();
+            if (triggerText) triggerText.textContent = v ? v : "Select staff…";
+          }
+          function selectValue(val) {
+            hidden.value = val;
+            syncLabel();
+            closePersonnelPanel(widget);
+          }
+
+          widget.querySelectorAll("[data-vc-personnel-option]").forEach(function(btn) {
+            btn.addEventListener("click", function(e) {
+              e.stopPropagation();
+              selectValue(btn.getAttribute("value") || "");
+            });
+          });
+          trigger.addEventListener("click", function(e) {
+            e.stopPropagation();
+            var open = panel.classList.contains("hidden");
+            root.querySelectorAll("[data-vc-route-site-widget]").forEach(closeRouteSitePanel);
+            root.querySelectorAll("[data-vc-dose-widget]").forEach(closeDosePanel);
+            root.querySelectorAll("[data-vc-personnel-widget]").forEach(function(w) {
+              if (w !== widget) closePersonnelPanel(w);
+            });
+            if (open) {
+              positionVcFixedDropdown(trigger, panel);
+              panel.classList.remove("hidden");
+              trigger.setAttribute("aria-expanded", "true");
+              if (chevron) chevron.classList.add("rotate-180");
+            } else {
+              closePersonnelPanel(widget);
+            }
+          });
+          syncLabel();
+        });
+        document.addEventListener("click", function(ev) {
+          root.querySelectorAll("[data-vc-personnel-widget]").forEach(function(w) {
+            var p = w.querySelector("[data-vc-personnel-panel]");
+            if (!p || p.classList.contains("hidden")) return;
+            if (!w.contains(ev.target)) closePersonnelPanel(w);
+          });
+        });
+      }
+
+      function closePersonnelPanel(widget) {
+        if (!widget) return;
+        var panel = widget.querySelector("[data-vc-personnel-panel]");
+        var trigger = widget.querySelector("[data-vc-personnel-trigger]");
+        var chevron = widget.querySelector("[data-vc-personnel-chevron]");
+        if (panel) {
+          panel.classList.add("hidden");
+          resetVcFixedDropdownPosition(panel);
+        }
+        if (trigger) trigger.setAttribute("aria-expanded", "false");
+        if (chevron) chevron.classList.remove("rotate-180");
+      }
+
       wireDoseDropdowns();
       wireRouteSiteChecklists();
+      wirePersonnelDropdowns();
 
       const schedules = [
         { prefix: "vc_pre", days: [0, 7, 28] },

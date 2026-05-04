@@ -74,7 +74,8 @@
         'bio': selected_bio,
         'batch': selected_batch,
         'date_from': selected_date_from,
-        'date_to': selected_date_to
+        'date_to': selected_date_to,
+        'clinic_id': selected_clinic_id
       } %}
       <div class="relative" id="cases-export-menu">
         <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" onclick="toggleCasesExportMenu()">
@@ -118,6 +119,7 @@
       <input type="hidden" name="batch" value="{{ selected_batch }}" />
       <input type="hidden" name="date_from" value="{{ selected_date_from }}" />
       <input type="hidden" name="date_to" value="{{ selected_date_to }}" />
+      <input type="hidden" name="clinic_id" value="{{ selected_clinic_id }}" />
       <label class="sr-only" for="staff-case-search">Search by name or case ID</label>
       <div class="flex flex-col gap-2 sm:flex-row sm:items-stretch">
         <div class="relative min-w-0 flex-1">
@@ -150,6 +152,7 @@
       or (selected_batch and (selected_batch|string)|trim != '')
       or (selected_date_from and (selected_date_from|string)|trim != '')
       or (selected_date_to and (selected_date_to|string)|trim != '')
+      or (selected_clinic_id and (selected_clinic_id|string|trim|lower) != 'all' and (selected_clinic_id|int) != (staff.clinic_id|int))
     %}
     <form action="{{ url_for('staff_patients') }}" method="get" class="space-y-4">
       <input type="hidden" name="page" value="1" />
@@ -181,14 +184,18 @@
         role="region"
         aria-labelledby="staff-refine-toggle"
       >
-      {% if clinic_branch_options %}
-      <div class="rounded-xl border border-slate-200 bg-slate-50/90 px-4 py-3">
-        <p class="text-xs font-medium text-slate-600">Clinic branch</p>
-        <p class="mt-1 text-sm font-semibold text-[#1A4D2E]">{{ clinic_branch_options[0].label }}</p>
-        <p class="mt-1 text-xs text-slate-500">Staff accounts only see cases for this branch.</p>
-      </div>
-      {% endif %}
       <div class="grid grid-cols-1 gap-3 lg:grid-cols-4">
+        <div class="min-w-0">
+          <label class="mb-1 block text-xs font-medium text-slate-600" for="clinic_id">Clinic branch</label>
+          <select id="clinic_id" name="clinic_id" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring">
+            <option value="all" {{ "selected" if selected_clinic_id == "all" else "" }}>All branches</option>
+            {% for opt in clinic_branch_options %}
+              <option value="{{ opt.id }}" {{ "selected" if (selected_clinic_id|string) == (opt.id|string) or (not selected_clinic_id and (opt.id|int) == (staff.clinic_id|int)) else "" }}>
+                {{ opt.label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
         <div class="min-w-0">
           <label class="mb-1 block text-xs font-medium text-slate-600" for="gender">Gender</label>
           <select id="gender" name="gender" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring">
@@ -322,6 +329,7 @@
           <th class="whitespace-nowrap px-4 py-3">Patient Name</th>
           <th class="whitespace-nowrap px-4 py-3">Date of Exposure</th>
           <th class="whitespace-nowrap px-4 py-3 min-w-[6.5rem]">Category</th>
+          <th class="whitespace-nowrap px-4 py-3">Clinic Branch</th>
           <th class="whitespace-nowrap px-4 py-3">Status</th>
           <th class="whitespace-nowrap px-4 py-3">Schedule / Next Dose</th>
         </tr>
@@ -352,6 +360,17 @@
                 {% endif %}
               </td>
               <td class="px-4 py-3">
+                  <div class="flex items-center gap-1.5 text-sm font-medium text-slate-700">
+                    {{ case.clinic_name }}
+                    {% if case.clinic_id|int != staff.clinic_id|int %}
+                      <span class="inline-flex items-center rounded-full bg-[#1A4D2E]/10 px-2 py-0.5 text-[10px] font-bold text-[#1A4D2E] ring-1 ring-[#1A4D2E]/20">
+                        <i class="fa-solid fa-rotate mr-0.5 text-[8px]"></i>SYNCED
+                      </span>
+                    {% endif %}
+                  </div>
+                  <div class="text-xs text-slate-400">{{ case.clinic_branch_code or '—' }}</div>
+                </td>
+                <td class="px-4 py-3">
                 {% set status_lower = (case.case_status or '')|lower %}
                 {% if status_lower == 'pending' %}
                   <span class="rounded-full bg-[#1A4D2E]/10 px-2.5 py-1 text-xs font-semibold text-[#1A4D2E]">Pending</span>
@@ -370,7 +389,7 @@
           {% endfor %}
         {% else %}
           <tr>
-            <td colspan="6" class="px-4 py-8 text-center text-slate-500">No case records found for the current filters.</td>
+            <td colspan="7" class="px-4 py-8 text-center text-slate-500">No case records found for the current filters.</td>
           </tr>
         {% endif %}
       </tbody>
@@ -381,21 +400,21 @@
     <p>Showing {{ cases.first }} to {{ cases.last }} of {{ cases.total }} results</p>
     <div class="flex items-center gap-2">
       <a
-        href="{{ url_for('staff_patients', search=search, category=selected_category, status=selected_status, gender=selected_gender, age_min=selected_age_min, age_max=selected_age_max, barangay=selected_barangay, site=selected_site, animal_type=selected_animal_type, animal_status=selected_animal_status, animal_vaccination=selected_animal_vaccination, bio=selected_bio, batch=selected_batch, date_from=selected_date_from, date_to=selected_date_to, page=cases.prev_num or 1) }}"
+        href="{{ url_for('staff_patients', search=search, clinic_id=selected_clinic_id, category=selected_category, status=selected_status, gender=selected_gender, age_min=selected_age_min, age_max=selected_age_max, barangay=selected_barangay, site=selected_site, animal_type=selected_animal_type, animal_status=selected_animal_status, animal_vaccination=selected_animal_vaccination, bio=selected_bio, batch=selected_batch, date_from=selected_date_from, date_to=selected_date_to, page=cases.prev_num or 1) }}"
         class="rounded-lg px-2 py-1 {{ 'text-slate-400 pointer-events-none' if not cases.has_prev else 'hover:bg-slate-100 text-slate-700' }}"
       >
         <i class="fa-solid fa-chevron-left"></i>
       </a>
       {% for p in cases.iter_pages() %}
         <a
-          href="{{ url_for('staff_patients', search=search, category=selected_category, status=selected_status, gender=selected_gender, age_min=selected_age_min, age_max=selected_age_max, barangay=selected_barangay, site=selected_site, animal_type=selected_animal_type, animal_status=selected_animal_status, animal_vaccination=selected_animal_vaccination, bio=selected_bio, batch=selected_batch, date_from=selected_date_from, date_to=selected_date_to, page=p) }}"
+          href="{{ url_for('staff_patients', search=search, clinic_id=selected_clinic_id, category=selected_category, status=selected_status, gender=selected_gender, age_min=selected_age_min, age_max=selected_age_max, barangay=selected_barangay, site=selected_site, animal_type=selected_animal_type, animal_status=selected_animal_status, animal_vaccination=selected_animal_vaccination, bio=selected_bio, batch=selected_batch, date_from=selected_date_from, date_to=selected_date_to, page=p) }}"
           class="rounded-lg px-3 py-1 {{ 'bg-[#1A4D2E] text-white' if p == cases.page else 'text-slate-700 hover:bg-slate-100' }}"
         >
           {{ p }}
         </a>
       {% endfor %}
       <a
-        href="{{ url_for('staff_patients', search=search, category=selected_category, status=selected_status, gender=selected_gender, age_min=selected_age_min, age_max=selected_age_max, barangay=selected_barangay, site=selected_site, animal_type=selected_animal_type, animal_status=selected_animal_status, animal_vaccination=selected_animal_vaccination, bio=selected_bio, batch=selected_batch, date_from=selected_date_from, date_to=selected_date_to, page=cases.next_num or cases.pages) }}"
+        href="{{ url_for('staff_patients', search=search, clinic_id=selected_clinic_id, category=selected_category, status=selected_status, gender=selected_gender, age_min=selected_age_min, age_max=selected_age_max, barangay=selected_barangay, site=selected_site, animal_type=selected_animal_type, animal_status=selected_animal_status, animal_vaccination=selected_animal_vaccination, bio=selected_bio, batch=selected_batch, date_from=selected_date_from, date_to=selected_date_to, page=cases.next_num or cases.pages) }}"
         class="rounded-lg px-2 py-1 {{ 'text-slate-400 pointer-events-none' if not cases.has_next else 'hover:bg-slate-100 text-slate-700' }}"
       >
         <i class="fa-solid fa-chevron-right"></i>

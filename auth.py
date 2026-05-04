@@ -277,7 +277,7 @@ def login_post():
     if user["role"] == "system_admin":
         return redirect(url_for("admin_analytics", tab="overview", period="30d"))
     if user["role"] == "super_admin":
-        return redirect(url_for("super_dashboard"))
+        return redirect(url_for("super_reporting"))
 
     session.clear()
     flash("Account role is invalid, contact admin.", "error")
