@@ -100,6 +100,7 @@
                 Vaccinations
               </span>
             </th>
+            <th class="px-8 py-4 text-right">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
@@ -124,10 +125,34 @@
                 <span class="text-base font-bold text-sky-600">{{ cl.vaccination_count }}</span>
                 <span class="ml-1 text-[10px] font-semibold uppercase text-slate-400">doses</span>
               </td>
+              <td class="px-8 py-5 text-right">
+                <div class="flex items-center justify-end gap-2">
+
+                  <button type="button" 
+                    data-id="{{ cl.id }}"
+                    data-name="{{ cl.name }}"
+                    data-code="{{ cl.branch_code or '' }}"
+                    data-address="{{ cl.address or '' }}"
+                    onclick="openEditClinicModalFromBtn(this)"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-all hover:border-[#1A4D2E] hover:bg-[#1A4D2E]/5 hover:text-[#1A4D2E]"
+                    title="Edit clinic branch">
+                    <i class="fa-solid fa-pen-to-square text-[11px]"></i>
+                  </button>
+                  <form method="post" action="{{ url_for('super_clinic_delete', clinic_id=cl.id) }}" class="inline">
+                    <button type="submit" 
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-all hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                      data-confirm="Delete this clinic branch? This action cannot be undone and will fail if the clinic has active records."
+                      data-confirm-variant="danger"
+                      title="Delete clinic branch">
+                      <i class="fa-solid fa-trash-can text-[11px]"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
             </tr>
           {% else %}
             <tr>
-              <td colspan="4" class="px-8 py-16 text-center">
+              <td colspan="5" class="px-8 py-16 text-center">
                 <div class="flex flex-col items-center">
                   <div class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-300">
                     <i class="fa-solid fa-hospital-user text-3xl"></i>
@@ -142,4 +167,111 @@
       </table>
     </div>
   </section>
+{% endblock %}
+
+{% block modals %}
+  <!-- Edit Clinic Modal -->
+  <div id="edit-clinic-modal" class="hidden fixed inset-0 z-[100] overflow-y-auto">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeEditClinicModal()"></div>
+    <div class="flex min-h-full items-center justify-center p-4">
+      <div class="relative w-full max-w-xl transform overflow-hidden rounded-[2rem] bg-white shadow-2xl transition-all">
+        <div class="border-b border-slate-100 bg-slate-50/50 px-8 py-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xl font-bold text-[#1A4D2E]">Edit Clinic Branch</h2>
+              <p class="mt-1 text-sm text-slate-500">Update the details for this branch.</p>
+            </div>
+            <button type="button" onclick="closeEditClinicModal()" class="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+              <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+          </div>
+        </div>
+
+        <form id="edit-clinic-form" method="post" class="p-8">
+          <div class="grid grid-cols-1 gap-6">
+            <div>
+              <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500" for="edit-branch-name">
+                Clinic Name
+              </label>
+              <div class="relative">
+                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                  <i class="fa-solid fa-hospital-user text-xs"></i>
+                </div>
+                <input id="edit-branch-name" name="name" required 
+                  class="w-full rounded-xl border border-slate-200 bg-slate-50/30 py-2.5 pl-10 pr-4 text-sm transition-focus focus:border-[#1A4D2E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]/10" />
+              </div>
+            </div>
+
+            <div>
+              <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500" for="edit-branch-code">
+                Branch Code
+              </label>
+              <div class="relative">
+                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                  <i class="fa-solid fa-hashtag text-xs"></i>
+                </div>
+                <input id="edit-branch-code" name="branch_code" required 
+                  class="w-full rounded-xl border border-slate-200 bg-slate-50/30 py-2.5 pl-10 pr-4 font-mono text-sm uppercase transition-focus focus:border-[#1A4D2E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]/10" />
+              </div>
+            </div>
+
+            <div>
+              <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500" for="edit-branch-address">
+                Address <span class="font-normal normal-case text-slate-400">(Optional)</span>
+              </label>
+              <div class="relative">
+                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                  <i class="fa-solid fa-location-dot text-xs"></i>
+                </div>
+                <input id="edit-branch-address" name="address" 
+                  class="w-full rounded-xl border border-slate-200 bg-slate-50/30 py-2.5 pl-10 pr-4 text-sm transition-focus focus:border-[#1A4D2E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]/10" />
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6">
+            <button type="button" onclick="closeEditClinicModal()" class="rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-bold text-slate-600 transition-all hover:bg-slate-50 active:scale-[0.98]">
+              Cancel
+            </button>
+            <button type="submit" class="rounded-xl bg-[#1A4D2E] px-8 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#1A4D2E]/20 transition-all hover:bg-[#163f27] active:scale-[0.98]">
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function openEditClinicModalFromBtn(btn) {
+  const ds = btn.dataset;
+  openEditClinicModal(ds.id, ds.name, ds.code, ds.address);
+}
+
+function openEditClinicModal(id, name, code, address) {
+  const modal = document.getElementById('edit-clinic-modal');
+  const form = document.getElementById('edit-clinic-form');
+  const nameInput = document.getElementById('edit-branch-name');
+  const codeInput = document.getElementById('edit-branch-code');
+  const addressInput = document.getElementById('edit-branch-address');
+  
+  if (!modal || !form) return;
+  
+  form.action = `/super/clinics/${id}/edit`;
+  nameInput.value = name;
+  codeInput.value = code;
+  addressInput.value = address;
+  
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeEditClinicModal() {
+  const modal = document.getElementById('edit-clinic-modal');
+  if (modal) modal.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+</script>
 {% endblock %}

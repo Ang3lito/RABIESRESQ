@@ -6147,7 +6147,7 @@ def create_app():
             return redirect(url_for("patient_dashboard"))
 
         form_type = pdata["form_type"]
-        if form_type == "appointment" and pdata["form_clinic_id"]:
+        if pdata["form_clinic_id"]:
             try:
                 fid = int(pdata["form_clinic_id"])
                 row = db.execute("SELECT id FROM clinics WHERE id = ?", (fid,)).fetchone()
@@ -7704,9 +7704,10 @@ def create_app():
         maintenance = _run_case_status_maintenance(staff["clinic_id"])
         clinic_branch_options = [
             {
-                "id": int(staff["clinic_id"]),
-                "label": f'{staff["clinic_name"]} ({(staff["clinic_branch_code"] or "").strip() or "—"})',
+                "id": int(c["id"]),
+                "label": f'{c["name"]} ({(c["branch_code"] or "").strip() or "—"})',
             }
+            for c in db.execute("SELECT id, name, branch_code FROM clinics ORDER BY name ASC").fetchall()
         ]
 
         q = request.args.to_dict(flat=True)
@@ -7742,6 +7743,14 @@ def create_app():
         date_from = (q.get("date_from") or "").strip()
         date_to = (q.get("date_to") or "").strip()
 
+        cb_raw = (q.get("clinic_branch") or "").strip()
+        selected_clinic_branch = int(staff["clinic_id"])
+        if cb_raw:
+            try:
+                selected_clinic_branch = int(cb_raw)
+            except ValueError:
+                selected_clinic_branch = int(staff["clinic_id"])
+
         try:
             page = int(request.args.get("page", "1"))
         except ValueError:
@@ -7754,7 +7763,16 @@ def create_app():
             _SQL_STAFF_CASE_NOT_REMOVED,
             "LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('archived', 'queued', 'scheduled')",
         ]
-        params: list[object] = [staff["clinic_id"]]
+        # Role-based restriction: Staff/Admin only see their assigned branch
+        target_clinic_id = int(staff["clinic_id"])
+        if session.get("role") == "super_admin":
+            target_clinic_id = selected_clinic_branch
+        else:
+            # Force to their assigned clinic
+            target_clinic_id = int(staff["clinic_id"])
+            selected_clinic_branch = target_clinic_id
+            
+        params: list[object] = [target_clinic_id]
 
         if category != "all":
             where_clauses.append("LOWER(COALESCE(c.risk_level, c.category, '')) = ?")
@@ -8039,7 +8057,7 @@ def create_app():
             staff_display_name=staff_display_name,
             cases=cases,
             clinic_branch_options=clinic_branch_options,
-            selected_clinic_branch=int(staff["clinic_id"]),
+            selected_clinic_branch=selected_clinic_branch,
             selected_category=category,
             selected_status=case_status,
             search=search,
@@ -12054,6 +12072,14 @@ def create_app():
         if case_status not in {"all", "pending", "completed", "no show"}:
             case_status = "all"
 
+        cb_raw = (request.args.get("clinic_branch") or "").strip()
+        selected_clinic_branch = int(clinic["id"])
+        if cb_raw:
+            try:
+                selected_clinic_branch = int(cb_raw)
+            except ValueError:
+                selected_clinic_branch = int(clinic["id"])
+
         # Dynamic Stats
         pending_count = db.execute(
             "SELECT COUNT(*) AS n FROM cases WHERE clinic_id = ? AND LOWER(COALESCE(case_status, 'pending')) = 'pending'",
@@ -12075,7 +12101,16 @@ def create_app():
             "c.clinic_id = ?",
             "LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('archived', 'queued', 'scheduled')",
         ]
-        params: list[object] = [clinic_id]
+        # Role-based restriction
+        target_clinic_id = int(clinic["id"])
+        if session.get("role") == "super_admin":
+            target_clinic_id = selected_clinic_branch
+        else:
+            # Force to their assigned clinic
+            target_clinic_id = int(clinic["id"])
+            selected_clinic_branch = target_clinic_id
+            
+        params: list[object] = [target_clinic_id]
 
         if category != "all":
             where_clauses.append("LOWER(COALESCE(c.risk_level, c.category, '')) = ?")
@@ -12168,9 +12203,10 @@ def create_app():
 
         clinic_branch_options = [
             {
-                "id": int(clinic["id"]),
-                "label": f'{clinic["name"]} ({(clinic["branch_code"] or "").strip() or "—"})',
+                "id": int(c["id"]),
+                "label": f'{c["name"]} ({(c["branch_code"] or "").strip() or "—"})',
             }
+            for c in db.execute("SELECT id, name, branch_code FROM clinics ORDER BY name ASC").fetchall()
         ]
 
         return render_template(
@@ -12181,7 +12217,7 @@ def create_app():
             clinic=clinic,
             cases=cases,
             clinic_branch_options=clinic_branch_options,
-            selected_clinic_branch=int(clinic["id"]),
+            selected_clinic_branch=selected_clinic_branch,
             search=search,
             selected_category=category,
             selected_status=case_status,
@@ -13398,6 +13434,63 @@ def create_app():
             active_page="clinics",
         )
 
+    @app.post("/super/clinics/<int:clinic_id>/edit")
+    @role_required("super_admin")
+    def super_clinic_edit(clinic_id: int):
+        db = get_db()
+        name = normalize_name_case(request.form.get("name") or "")
+        address = normalize_optional(request.form.get("address"))
+        bc_raw = (request.form.get("branch_code") or "").strip()
+        bc = normalize_branch_code(bc_raw) if bc_raw else ""
+
+        if not name or not bc:
+            flash("Name and Branch Code are required.", "error")
+            return redirect(url_for("super_clinics"))
+
+        if not validate_branch_code(bc):
+            flash("Branch code format is invalid.", "error")
+            return redirect(url_for("super_clinics"))
+
+        # Check if branch code is taken by another clinic
+        existing = db.execute("SELECT id FROM clinics WHERE branch_code = ? AND id != ?", (bc, clinic_id)).fetchone()
+        if existing:
+            flash("That branch code is already in use by another clinic.", "error")
+            return redirect(url_for("super_clinics"))
+
+        try:
+            db.execute(
+                "UPDATE clinics SET name = ?, address = ?, branch_code = ? WHERE id = ?",
+                (name, address, bc, clinic_id)
+            )
+            db.commit()
+            flash("Clinic branch updated.", "success")
+        except Exception:
+            db.rollback()
+            flash("Could not update clinic.", "error")
+        return redirect(url_for("super_clinics"))
+
+    @app.post("/super/clinics/<int:clinic_id>/delete")
+    @role_required("super_admin")
+    def super_clinic_delete(clinic_id: int):
+        db = get_db()
+        # Safety checks: check for active cases or users
+        has_cases = db.execute("SELECT 1 FROM cases WHERE clinic_id = ? LIMIT 1", (clinic_id,)).fetchone()
+        has_personnel = db.execute("SELECT 1 FROM clinic_personnel WHERE clinic_id = ? LIMIT 1", (clinic_id,)).fetchone()
+        has_admins = db.execute("SELECT 1 FROM system_admins WHERE clinic_id = ? LIMIT 1", (clinic_id,)).fetchone()
+
+        if has_cases or has_personnel or has_admins:
+            flash("Cannot delete clinic branch: it has associated cases, staff, or administrators. Reassign or delete them first.", "error")
+            return redirect(url_for("super_clinics"))
+
+        try:
+            db.execute("DELETE FROM clinics WHERE id = ?", (clinic_id,))
+            db.commit()
+            flash("Clinic branch deleted.", "success")
+        except Exception:
+            db.rollback()
+            flash("Could not delete clinic.", "error")
+        return redirect(url_for("super_clinics"))
+
     @app.get("/super/users")
     @role_required("super_admin")
     def super_users():
@@ -13546,6 +13639,88 @@ def create_app():
         except Exception:
             db.rollback()
             flash("Could not update account.", "error")
+        return redirect(url_for("super_users"))
+
+    @app.post("/super/users/<int:user_id>/edit")
+    @role_required("super_admin")
+    def super_user_edit(user_id: int):
+        db = get_db()
+        username = (request.form.get("username") or "").strip()
+        email = (request.form.get("email") or "").strip().lower()
+        clinic_id_raw = (request.form.get("clinic_id") or "").strip()
+        employee_id = (request.form.get("employee_id") or "").strip()
+        first_name = normalize_optional(request.form.get("first_name"))
+        last_name = normalize_optional(request.form.get("last_name"))
+
+        errors: list[str] = []
+        if not username or not email or not employee_id:
+            errors.append("Username, Email, and Employee ID are required.")
+
+        try:
+            clinic_id = int(clinic_id_raw)
+        except ValueError:
+            clinic_id = 0
+
+        if not db.execute("SELECT 1 FROM clinics WHERE id = ?", (clinic_id,)).fetchone():
+            errors.append("Select a valid clinic branch.")
+
+        if errors:
+            for e in errors: flash(e, "error")
+            return redirect(url_for("super_users"))
+
+        # Check for duplicates excluding this user
+        dup = db.execute(
+            "SELECT 1 FROM users WHERE (username = ? OR email = ?) AND id != ? LIMIT 1",
+            (username, email, user_id)
+        ).fetchone()
+        if dup:
+            flash("Username or email already exists.", "error")
+            return redirect(url_for("super_users"))
+
+        dup_emp = db.execute(
+            "SELECT 1 FROM system_admins WHERE employee_id = ? AND user_id != ? LIMIT 1",
+            (employee_id, user_id)
+        ).fetchone()
+        if dup_emp:
+            flash("Employee ID already exists.", "error")
+            return redirect(url_for("super_users"))
+
+        try:
+            db.execute(
+                "UPDATE users SET username = ?, email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (username, email, user_id)
+            )
+            db.execute(
+                """
+                UPDATE system_admins
+                SET clinic_id = ?, first_name = ?, last_name = ?, employee_id = ?
+                WHERE user_id = ?
+                """,
+                (clinic_id, first_name, last_name, employee_id, user_id)
+            )
+            db.commit()
+            flash("Administrator account updated.", "success")
+        except Exception:
+            db.rollback()
+            flash("Could not update account.", "error")
+        return redirect(url_for("super_users"))
+
+    @app.post("/super/users/<int:user_id>/delete")
+    @role_required("super_admin")
+    def super_user_delete(user_id: int):
+        db = get_db()
+        if user_id == session["user_id"]:
+            flash("You cannot delete your own account.", "error")
+            return redirect(url_for("super_users"))
+
+        try:
+            db.execute("DELETE FROM system_admins WHERE user_id = ?", (user_id,))
+            db.execute("DELETE FROM users WHERE id = ?", (user_id,))
+            db.commit()
+            flash("Administrator account deleted.", "success")
+        except Exception:
+            db.rollback()
+            flash("Could not delete account.", "error")
         return redirect(url_for("super_users"))
 
     @app.get("/super/cases")
@@ -13860,6 +14035,7 @@ def create_app():
             clinic_summary=rows,
             active_page="reporting",
         )
+
 
     # =========================
     # Admin-only account creation (CLI)

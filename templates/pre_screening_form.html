@@ -1,4 +1,69 @@
 {% set _ps_emb = pre_screening_embedded|default(false) %}
+<style>
+  .premium-input-container {
+    position: relative;
+    width: 100%;
+  }
+  .premium-input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94A3B8;
+    pointer-events: none;
+    transition: color 0.2s ease;
+    z-index: 10;
+  }
+  .premium-input {
+    width: 100%;
+    border-radius: 0.85rem;
+    border: 1px solid #E2E8F0;
+    background-color: #F8FAFC;
+    padding: 0.65rem 1rem 0.65rem 2.75rem;
+    font-size: 0.875rem;
+    color: #1A4D2E;
+    outline: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    appearance: none;
+  }
+  .premium-input:focus {
+    border-color: #1A4D2E;
+    background-color: #FFFFFF;
+    box-shadow: 0 0 0 4px rgba(26, 77, 46, 0.08);
+  }
+  .premium-input:focus + .premium-input-icon {
+    color: #1A4D2E;
+  }
+  /* Custom Select Arrow */
+  .premium-select-wrapper {
+    position: relative;
+  }
+  .premium-select-wrapper::after {
+    content: '\f078';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94A3B8;
+    pointer-events: none;
+    font-size: 0.75rem;
+  }
+  /* Hide default date/time icons in some browsers while keeping functionality */
+  .premium-input::-webkit-calendar-picker-indicator {
+    background: transparent;
+    bottom: 0;
+    color: transparent;
+    cursor: pointer;
+    height: auto;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: auto;
+  }
+</style>
 {# This template is included site-wide (via base_patient.html). Not all pages pass patient/clinics. #}
 {% set patient = patient|default({}) %}
 {% set clinics = clinics|default([]) %}
@@ -49,6 +114,7 @@
       <!-- Form Content -->
       <form id="pre-screening-form" method="post" action="{{ pre_screening_form_action|default(url_for('pre_screening_submit')) }}" class="px-6 py-6" onsubmit="collectAllFormData()" data-confirm="Submit this pre-screening form?" data-confirm-variant="primary">
         <input type="hidden" name="form_type" id="form-type" value="case">
+        <input type="hidden" name="clinic_id" id="clinic_id_hidden" value="{{ clinics[0].id if clinics else '' }}" />
         
         <!-- Step 1: Victim Information -->
         <div id="step-1" class="step-content">
@@ -58,17 +124,34 @@
           </div>
 
           <div class="space-y-6">
+            {% if clinics %}
+            <div>
+              <label for="clinic_select" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Clinic Branch <span class="text-red-600">*</span></label>
+              <div class="premium-select-wrapper">
+                <i class="fa-solid fa-hospital premium-input-icon"></i>
+                <select id="clinic_select" name="clinic_id_select" onchange="document.getElementById('clinic_id_hidden').value = this.value; if(typeof buildCalendar === 'function' && isAppointmentFlow) buildCalendar();" class="premium-input pr-10" required>
+                  {% for c in clinics %}
+                  <option value="{{ c.id }}" {% if loop.first %}selected{% endif %}>{{ c.name }}{% if c.branch_code %} — {{ c.branch_code }}{% endif %}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <p class="mt-1 text-xs text-slate-500">Please select the clinic branch where you intend to receive treatment.</p>
+            </div>
+            {% endif %}
             <div>
               <label for="relationship_to_user" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Relationship to Account User</label>
-              <select
-                id="relationship_to_user"
-                name="relationship_to_user"
-                class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
-              >
-                <option value="Self" selected>Self</option>
-                <option value="Child">Child</option>
-                <option value="Relative">Relative</option>
-              </select>
+              <div class="premium-select-wrapper">
+                <i class="fa-solid fa-users premium-input-icon"></i>
+                <select
+                  id="relationship_to_user"
+                  name="relationship_to_user"
+                  class="premium-input pr-10"
+                >
+                  <option value="Self" selected>Self</option>
+                  <option value="Child">Child</option>
+                  <option value="Relative">Relative</option>
+                </select>
+              </div>
             </div>
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -89,15 +172,21 @@
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
                 <label for="date_of_birth" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Birthday</label>
-                <input type="date" id="date_of_birth" name="date_of_birth" value="{{ patient.date_of_birth or '' }}" data-self-value="{{ patient.date_of_birth or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
+                <div class="premium-input-container">
+                  <i class="fa-solid fa-cake-candles premium-input-icon"></i>
+                  <input type="date" id="date_of_birth" name="date_of_birth" value="{{ patient.date_of_birth or '' }}" data-self-value="{{ patient.date_of_birth or '' }}" required class="premium-input">
+                </div>
               </div>
               <div>
                 <label for="gender" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Gender</label>
-                <select id="gender" name="gender" data-self-value="{{ patient.gender or '' }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
-                  <option value="" disabled {% if not patient.gender %}selected{% endif %}>Select gender...</option>
-                  <option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
-                  <option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
-                </select>
+                <div class="premium-select-wrapper">
+                  <i class="fa-solid fa-venus-mars premium-input-icon"></i>
+                  <select id="gender" name="gender" data-self-value="{{ patient.gender or '' }}" required class="premium-input pr-10">
+                    <option value="" disabled {% if not patient.gender %}selected{% endif %}>Select gender...</option>
+                    <option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
+                    <option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
+                  </select>
+                </div>
               </div>
               <div>
                 <label for="age" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Age</label>
@@ -112,10 +201,13 @@
                 {% set _parts = _addr.split(',') %}
                 {% set _legacy_barangay = _parts[0].strip() if _parts else '' %}
                 {% set selected_barangay = patient.barangay or _legacy_barangay %}
-                <select id="barangay" name="barangay" data-self-value="{{ selected_barangay }}" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
-                  <option value="">Select barangay...</option>
-                  {% include "_barangay_options.html" %}
-                </select>
+                <div class="premium-select-wrapper">
+                  <i class="fa-solid fa-map-location-dot premium-input-icon"></i>
+                  <select id="barangay" name="barangay" data-self-value="{{ selected_barangay }}" required class="premium-input pr-10">
+                    <option value="">Select barangay...</option>
+                    {% include "_barangay_options.html" %}
+                  </select>
+                </div>
               </div>
               <div>
                 <label for="contact_number" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Contact Number</label>
@@ -187,12 +279,18 @@
           <!-- Date and Time Exposed -->
           <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label for="exposure_date" class="mb-2 block cursor-pointer text-sm font-semibold text-[#1A4D2E]" onclick="document.getElementById('exposure_date').showPicker?.(); document.getElementById('exposure_date').focus();">DATE EXPOSED</label>
-              <input type="date" id="exposure_date" name="exposure_date" required class="w-full cursor-pointer rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" onclick="this.showPicker?.()">
+              <label for="exposure_date" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Date Exposed <span class="text-red-600">*</span></label>
+              <div class="premium-input-container">
+                <i class="fa-solid fa-calendar-day premium-input-icon"></i>
+                <input type="date" id="exposure_date" name="exposure_date" required class="premium-input" onclick="this.showPicker?.()">
+              </div>
             </div>
             <div>
-              <label for="exposure_time" class="mb-2 block cursor-pointer text-sm font-semibold text-[#1A4D2E]" onclick="document.getElementById('exposure_time').showPicker?.(); document.getElementById('exposure_time').focus();">TIME EXPOSED</label>
-              <input type="time" id="exposure_time" name="exposure_time" required class="w-full cursor-pointer rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" onclick="this.showPicker?.()">
+              <label for="exposure_time" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Time Exposed <span class="text-red-600">*</span></label>
+              <div class="premium-input-container">
+                <i class="fa-solid fa-clock premium-input-icon"></i>
+                <input type="time" id="exposure_time" name="exposure_time" required class="premium-input" onclick="this.showPicker?.()">
+              </div>
             </div>
           </div>
 
@@ -200,20 +298,23 @@
           <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label for="place_of_exposure" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">PLACE OF EXPOSURE</label>
-              <select id="place_of_exposure" name="place_of_exposure" required class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]">
-                <option value="">Select...</option>
-                <option value="Inside home">Inside home</option>
-                <option value="Outside home">Outside home</option>
-                <option value="Workplace">Workplace</option>
-                <option value="School">School</option>
-                <option value="Street/Road">Street/Road</option>
-                <option value="Park">Park</option>
-                <option value="Market/Mall">Market/Mall</option>
-                <option value="Farm">Farm</option>
-                <option value="Neighbor's house">Neighbor's house</option>
-                <option value="Public transport">Public transport</option>
-                <option value="Other">Other</option>
-              </select>
+              <div class="premium-select-wrapper">
+                <i class="fa-solid fa-location-crosshairs premium-input-icon"></i>
+                <select id="place_of_exposure" name="place_of_exposure" required class="premium-input pr-10">
+                  <option value="">Select...</option>
+                  <option value="Inside home">Inside home</option>
+                  <option value="Outside home">Outside home</option>
+                  <option value="Workplace">Workplace</option>
+                  <option value="School">School</option>
+                  <option value="Street/Road">Street/Road</option>
+                  <option value="Park">Park</option>
+                  <option value="Market/Mall">Market/Mall</option>
+                  <option value="Farm">Farm</option>
+                  <option value="Neighbor's house">Neighbor's house</option>
+                  <option value="Public transport">Public transport</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
               <div id="place-of-exposure-other-container" class="mt-3 hidden">
                 <label for="place_of_exposure_other" class="mb-2 block text-sm font-medium text-slate-700">Specify other place of exposure</label>
                 <input type="text" id="place_of_exposure_other" name="place_of_exposure_other" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="Specify...">
@@ -536,18 +637,6 @@
           </div>
           <input type="hidden" name="appointment_slot_id" id="appointment_slot_id" value="" />
           <input type="hidden" name="appointment_datetime" id="appointment_datetime" value="" />
-          <input type="hidden" name="clinic_id" id="clinic_id_slot" value="{{ clinics[0].id if clinics else '' }}" />
-          {% if clinics %}
-          <div class="mb-4">
-            <label for="clinic_select" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Clinic branch <span class="text-red-600">*</span></label>
-            <select id="clinic_select" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" title="Choose which clinic branch this appointment is for">
-              {% for c in clinics %}
-              <option value="{{ c.id }}" {% if loop.first %}selected{% endif %}>{{ c.name }}{% if c.branch_code %} — {{ c.branch_code }}{% endif %}</option>
-              {% endfor %}
-            </select>
-            <p class="mt-1 text-xs text-slate-500">Availability and scheduling apply to the branch you select.</p>
-          </div>
-          {% endif %}
           <div class="mb-4">
             <label class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Select date</label>
             <div class="mb-2 flex items-center justify-between">
@@ -780,7 +869,7 @@ function openPreScreeningModal(formType = 'case') {
   var slotDtEl = document.getElementById('appointment_datetime');
   if (slotIdEl) slotIdEl.value = '';
   if (slotDtEl) slotDtEl.value = '';
-  var clinicSlot = document.getElementById('clinic_id_slot');
+  var clinicSlot = document.getElementById('clinic_id_hidden');
   if (clinicSlot && document.getElementById('clinic_select')) {
     clinicSlot.value = document.getElementById('clinic_select').value;
   }

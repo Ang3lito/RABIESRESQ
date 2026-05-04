@@ -181,13 +181,15 @@
         role="region"
         aria-labelledby="staff-refine-toggle"
       >
-      {% if clinic_branch_options %}
-      <div class="rounded-xl border border-slate-200 bg-slate-50/90 px-4 py-3">
-        <p class="text-xs font-medium text-slate-600">Clinic branch</p>
-        <p class="mt-1 text-sm font-semibold text-[#1A4D2E]">{{ clinic_branch_options[0].label }}</p>
-        <p class="mt-1 text-xs text-slate-500">Staff accounts only see cases for this branch.</p>
+      <div class="min-w-0">
+        <label class="mb-1 block text-xs font-medium text-slate-600" for="staff-case-clinic-branch">Clinic branch</label>
+        <select id="staff-case-clinic-branch" name="clinic_branch" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#1A4D2E]/30 focus:ring">
+          {% for cl in clinic_branch_options %}
+            <option value="{{ cl.id }}" {{ "selected" if selected_clinic_branch == cl.id else "" }}>{{ cl.label }}</option>
+          {% endfor %}
+        </select>
+        <p class="mt-1 text-[10px] text-slate-500 italic">Staff accounts only see cases for their assigned branch.</p>
       </div>
-      {% endif %}
       <div class="grid grid-cols-1 gap-3 lg:grid-cols-4">
         <div class="min-w-0">
           <label class="mb-1 block text-xs font-medium text-slate-600" for="gender">Gender</label>
