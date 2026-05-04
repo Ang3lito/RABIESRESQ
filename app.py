@@ -14080,6 +14080,9 @@ def create_app():
         bc = normalize_branch_code(bc_raw) if bc_raw else ""
 
         if not name or not bc:
+            flash("Name and branch code are required.", "error")
+            return redirect(url_for("super_clinics"))
+
         if db.execute(
             "SELECT 1 FROM clinics WHERE branch_code = ? AND id != ? LIMIT 1",
             (bc, clinic_id),
