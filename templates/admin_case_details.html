@@ -124,16 +124,22 @@
         <table class="min-w-full divide-y divide-slate-200 text-sm">
           <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-500">
             <tr>
-              <th class="px-4 py-3">Date &amp; Time</th>
-              <th class="px-4 py-3">Action</th>
-              <th class="px-4 py-3">Changed By</th>
+              <th class="px-4 py-3 text-left">Date &amp; Time</th>
+              <th class="px-4 py-3 text-left">Action</th>
+              <th class="px-4 py-3 text-left">Clinic</th>
+              <th class="px-4 py-3 text-left">Changed By</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 bg-white">
             {% for entry in case_history %}
-              <tr>
-                <td class="px-4 py-3 font-medium text-slate-700">{{ entry.changed_at }}</td>
+              <tr class="hover:bg-slate-50/50">
+                <td class="whitespace-nowrap px-4 py-3 font-medium text-slate-700">{{ entry.changed_at }}</td>
                 <td class="px-4 py-3 text-slate-700">{{ entry.action }}</td>
+                <td class="px-4 py-3">
+                  <span class="inline-flex items-center gap-1.5 rounded-md bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/20">
+                    {{ entry.clinic_name }}
+                  </span>
+                </td>
                 <td class="px-4 py-3 text-slate-600">{{ entry.changed_by }}</td>
               </tr>
             {% endfor %}

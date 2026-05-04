@@ -146,6 +146,7 @@ CREATE TABLE IF NOT EXISTS cases (
   staff_removed_at TEXT,
   staff_removed_by_user_id INTEGER,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE RESTRICT,
   FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE RESTRICT
 );
@@ -286,7 +287,7 @@ CREATE TABLE IF NOT EXISTS medical_audit_logs (
   entity_type TEXT NOT NULL,
   entity_id INTEGER NOT NULL,
   case_id INTEGER,
-  action TEXT NOT NULL CHECK(action IN ('INSERT','UPDATE','DELETE')),
+  action TEXT NOT NULL CHECK(action IN ('INSERT','UPDATE','DELETE','VIEW')),
   field_name TEXT,
   old_value TEXT,
   new_value TEXT,

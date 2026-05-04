@@ -37,7 +37,7 @@
         aria-hidden="true"
       >
         <div class="flex h-full flex-col p-6">
-          <a href="{{ url_for('super_dashboard') }}" class="flex items-center gap-3 text-2xl font-bold text-[#1A4D2E]">
+          <a href="{{ url_for('super_reporting') }}" class="flex items-center gap-3 text-2xl font-bold text-[#1A4D2E]">
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1A4D2E] text-white shadow-lg shadow-[#1A4D2E]/20">
               <i class="fa-solid fa-shield-halved text-lg"></i>
             </div>
@@ -58,11 +58,11 @@
 
           <nav class="mt-6 space-y-1 text-sm">
             <a
-              href="{{ url_for('super_dashboard') }}"
-              class="flex items-center gap-3 rounded-md px-4 py-3.5 sidebar-link-transition nav-link-hover {{ 'bg-[#1A4D2E] font-medium text-white shadow-lg shadow-[#1A4D2E]/20' if (active_page|default('')) == 'dashboard' else 'text-slate-500 hover:bg-slate-100' }}"
+              href="{{ url_for('super_reporting') }}"
+              class="flex items-center gap-3 rounded-md px-4 py-3.5 sidebar-link-transition nav-link-hover {{ 'bg-[#1A4D2E] font-medium text-white shadow-lg shadow-[#1A4D2E]/20' if (active_page|default('')) == 'reporting' else 'text-slate-500 hover:bg-slate-100' }}"
             >
-              <i class="fa-solid fa-gauge-high w-5 text-center"></i>
-              <span>Dashboard</span>
+              <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+              <span>Reporting</span>
             </a>
             <a
               href="{{ url_for('super_clinics') }}"
@@ -85,13 +85,11 @@
             >
               <i class="fa-solid fa-clipboard-list w-5 text-center"></i>
               <span>Session Logs</span>
-            </a>
-            <a
-              href="{{ url_for('super_reporting') }}"
-              class="flex items-center gap-3 rounded-md px-4 py-3.5 sidebar-link-transition nav-link-hover {{ 'bg-[#1A4D2E] font-medium text-white shadow-lg shadow-[#1A4D2E]/20' if (active_page|default('')) == 'reporting' else 'text-slate-500 hover:bg-slate-100' }}"
-            >
-              <i class="fa-solid fa-chart-pie w-5 text-center"></i>
-              <span>Reporting</span>
+              {% if super_nav_badges and super_nav_badges.session_logs %}
+                <span class="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm shadow-red-500/20">
+                  {{ super_nav_badges.session_logs if super_nav_badges.session_logs < 100 else '99+' }}
+                </span>
+              {% endif %}
             </a>
           </nav>
 

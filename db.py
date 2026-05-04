@@ -127,11 +127,24 @@ def init_app(app):
         _ensure_cases_animal_vaccination_column(conn)
 
         _ensure_clinics_operating_hours_column(conn)
+        _ensure_cases_updated_at_column(conn)
+        _ensure_medical_audit_logs_clinic_id_column(conn)
         _ensure_user_session_logs_table(conn)
         _ensure_default_clinic(conn)
         _run_multi_clinic_and_super_admin_migrations(conn)
     finally:
         conn.close()
+
+
+def _ensure_medical_audit_logs_clinic_id_column(conn: sqlite3.Connection) -> None:
+    try:
+        conn.execute("SELECT clinic_id FROM medical_audit_logs LIMIT 1")
+    except sqlite3.OperationalError:
+        try:
+            conn.execute("ALTER TABLE medical_audit_logs ADD COLUMN clinic_id INTEGER REFERENCES clinics(id)")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass
 
 
 def _ensure_cases_animal_vaccination_column(conn: sqlite3.Connection) -> None:
@@ -140,6 +153,20 @@ def _ensure_cases_animal_vaccination_column(conn: sqlite3.Connection) -> None:
     except sqlite3.OperationalError:
         try:
             conn.execute("ALTER TABLE cases ADD COLUMN animal_vaccination TEXT")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass
+
+
+def _ensure_cases_updated_at_column(conn: sqlite3.Connection) -> None:
+    try:
+        conn.execute("SELECT updated_at FROM cases LIMIT 1")
+    except sqlite3.OperationalError:
+        try:
+            # SQLite restriction: Cannot add a column with non-constant default (like CURRENT_TIMESTAMP)
+            # We add it as NULL first, then optionally fill it.
+            conn.execute("ALTER TABLE cases ADD COLUMN updated_at TEXT")
+            conn.execute("UPDATE cases SET updated_at = created_at WHERE updated_at IS NULL")
             conn.commit()
         except sqlite3.OperationalError:
             pass

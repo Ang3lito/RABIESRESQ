@@ -1,41 +1,382 @@
 {% extends "super_admin_base.html" %}
-
+{% import "_insights_macros.html" as imacros with context %}
 {% block title %}Reporting — Super Admin — RabiesResQ{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
 
 {% block header_left %}
   <div>
-    <h1 class="text-2xl font-bold text-[#1A4D2E] sm:text-3xl">Per-clinic reporting</h1>
-    <p class="mt-1 text-sm text-slate-500">Totals across all branches.</p>
+    <h1 class="text-2xl font-bold text-[#1A4D2E] sm:text-3xl">System-wide Reporting</h1>
+    <p class="mt-1 text-sm text-slate-500">Analytics and oversight across all clinic branches.</p>
   </div>
 {% endblock %}
 
 {% block main_content %}
-  <section class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-    <div class="overflow-x-auto">
-      <table class="min-w-full text-left text-sm">
-        <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500">
-          <tr>
-            <th class="px-5 py-3">Clinic</th>
-            <th class="px-5 py-3">Branch code</th>
-            <th class="px-5 py-3">Total cases</th>
-            <th class="px-5 py-3">Vaccination rows</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          {% for r in clinic_summary %}
-            <tr class="hover:bg-slate-50/80">
-              <td class="px-5 py-3 font-semibold text-slate-800">{{ r.name }}</td>
-              <td class="px-5 py-3 font-mono text-xs">{{ r.branch_code }}</td>
-              <td class="px-5 py-3 text-slate-700">{{ r.case_total }}</td>
-              <td class="px-5 py-3 text-slate-700">{{ r.vaccination_total }}</td>
-            </tr>
-          {% else %}
-            <tr>
-              <td colspan="4" class="px-5 py-10 text-center text-slate-500">No clinic data.</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  <!-- Program Insights (System-wide) -->
+  <form method="get" action="{{ url_for('super_reporting') }}"
+    class="mb-6 grid grid-cols-1 gap-4 rounded-[2rem] border border-slate-200 bg-slate-50/80 p-6 sm:grid-cols-2 lg:grid-cols-4">
+    
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Clinic Branch</label>
+      <select name="insights_clinic_id"
+        class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 focus:ring">
+        <option value="">All Clinics</option>
+        {% for c in clinics %}
+        <option value="{{ c.id }}" {% if target_clinic_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Period</label>
+      <select name="period" id="period-select"
+        class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 focus:ring"
+        onchange="toggleDateRange(this.value)">
+        <option value="30d" {% if period == '30d' %}selected{% endif %}>Last 30 Days</option>
+        <option value="yearly" {% if period == 'yearly' %}selected{% endif %}>Yearly</option>
+        <option value="custom" {% if period == 'custom' %}selected{% endif %}>Custom Range</option>
+      </select>
+    </div>
+
+    <div id="year-select-div" class="flex flex-col gap-1 {{ 'hidden' if period != 'yearly' }}">
+      <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Year</label>
+      <select name="year"
+        class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 focus:ring">
+        {% for y in admin_year_options %}
+        <option value="{{ y }}" {% if yearly_year == y %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div id="date-range-div" class="flex flex-col gap-1 col-span-1 lg:col-span-2 {{ 'hidden' if period != 'custom' }}">
+      <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Custom Dates</label>
+      <div class="flex items-center gap-2">
+        <input type="date" name="date_from" value="{{ date_from }}"
+          class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
+        <span class="text-slate-400">to</span>
+        <input type="date" name="date_to" value="{{ date_to }}"
+          class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Barangay</label>
+      <select name="insights_barangay"
+        class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 focus:ring">
+        <option value="">All Barangays</option>
+        {% for b in insights_barangay_options %}
+        <option value="{{ b }}" {% if insights_filters.get('barangay') == b %}selected{% endif %}>{{ b }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Animal Type</label>
+      <select name="insights_animal"
+        class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 focus:ring">
+        <option value="">All Animals</option>
+        {% for a in insights_animal_options %}
+        <option value="{{ a }}" {% if insights_filters.get('animal') == a %}selected{% endif %}>{{ a }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Bite Category</label>
+      <select name="insights_bite"
+        class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 focus:ring">
+        <option value="">All Categories</option>
+        {% for bt in insights_bite_options %}
+        <option value="{{ bt }}" {% if insights_filters.get('bite_type') == bt %}selected{% endif %}>{{ bt }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="flex flex-col gap-2 lg:col-span-1 lg:flex-row lg:items-end">
+      <button type="submit"
+        class="flex-1 rounded-xl bg-[#1A4D2E] px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#1A4D2E]/20 transition hover:bg-[#1A4D2E]/90">
+        Apply Filters
+      </button>
+      
+      <div class="relative flex-none" id="export-dropdown-root">
+        <button type="button" onclick="toggleExportDropdown()"
+          class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 shadow-sm hover:bg-slate-50">
+          <i class="fa-solid fa-download text-xs"></i>
+          Export
+          <i class="fa-solid fa-chevron-down text-[10px] opacity-50"></i>
+        </button>
+        
+        <div id="export-dropdown" class="absolute right-0 top-full z-[60] mt-2 hidden w-48 origin-top-right rounded-2xl border border-slate-200 bg-white p-2 shadow-xl ring-1 ring-black/5">
+          <div class="mb-1 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Data Formats</div>
+          <button type="button" onclick="exportData('csv')" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-[#1A4D2E]">
+            <i class="fa-solid fa-file-csv w-4 text-emerald-600"></i>
+            <span>Export CSV</span>
+          </button>
+          <button type="button" onclick="window.print()" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-[#1A4D2E]">
+            <i class="fa-solid fa-file-pdf w-4 text-red-500"></i>
+            <span>Export PDF</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <section class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Bite Cases</p>
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1A4D2E]/10 text-[#1A4D2E]">
+          <i class="fa-solid fa-notes-medical"></i>
+        </span>
+      </div>
+      <p class="mt-4 text-3xl font-bold text-[#1A4D2E]">{{ kpi.bite_cases }}</p>
+    </article>
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Completed Cases</p>
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+          <i class="fa-solid fa-circle-check"></i>
+        </span>
+      </div>
+      <p class="mt-4 text-3xl font-bold text-sky-600">{{ kpi.completed_cases }}</p>
+    </article>
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Ongoing Cases</p>
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+          <i class="fa-solid fa-hourglass-half"></i>
+        </span>
+      </div>
+      <p class="mt-4 text-3xl font-bold text-amber-600">{{ kpi.ongoing_cases }}</p>
+    </article>
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Branches</p>
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+          <i class="fa-solid fa-hospital"></i>
+        </span>
+      </div>
+      <p class="mt-4 text-3xl font-bold text-indigo-600">{{ clinics|length }}</p>
+    </article>
+  </section>
+
+  <section class="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 class="text-lg font-bold text-[#1A4D2E]">Monthly Trends</h2>
+      <p class="text-xs text-slate-500">Bite cases vs recorded vaccinations</p>
+      <div class="mt-6 h-64">
+        <canvas id="superChartTrends"></canvas>
+      </div>
+    </article>
+
+    <div class="mt-4 grid grid-cols-1 gap-4 xl:col-span-2 md:grid-cols-2">
+      {{ imacros.insights_card("Victim age groups", None, "victim_age", "chart-victim-age", "bar", "num-victim-age", "Age group", age_distribution_rows, period, date_from, date_to, yearly_year, is_super=True, super_clinic_id=target_clinic_id) }}
+      {{ imacros.insights_card("Gender", None, "victim_gender", "chart-gender", "pie", "num-gender", "Gender", gender_distribution_rows, period, date_from, date_to, yearly_year, is_super=True, super_clinic_id=target_clinic_id) }}
+      {{ imacros.insights_card("Bite type", None, "bite_type", "chart-bite-type", "bar", "num-bite-type", "Type", bite_type_rows, period, date_from, date_to, yearly_year, is_super=True, super_clinic_id=target_clinic_id) }}
+      {{ imacros.insights_card("Animal type (inferred)", None, "animal_type", "chart-animal-type", "pie", "num-animal-type", "Animal", animal_type_rows_insights, period, date_from, date_to, yearly_year, is_super=True, super_clinic_id=target_clinic_id) }}
+      {{ imacros.insights_card("Severity (risk / category)", None, "severity", "chart-severity", "bar", "num-severity", "Label", severity_rows, period, date_from, date_to, yearly_year, is_super=True, super_clinic_id=target_clinic_id) }}
+      {{ imacros.insights_card("WHO category (AI decision-support)", "Uses stored final override when present; otherwise stored auto category.", "who_category", "chart-who-category", "pie", "num-who-category", "Category", who_category_rows, period, date_from, date_to, yearly_year, is_super=True, super_clinic_id=target_clinic_id) }}
+      {{ imacros.insights_card("Case status", None, "case_status", "chart-case-status", "pie", "num-case-status", "Status", case_status_rows, period, date_from, date_to, yearly_year, is_super=True, super_clinic_id=target_clinic_id) }}
+      {{ imacros.insights_card("Vaccination status (protocol course)", "Buckets from vaccine-card dose completion; risk category drives expected doses.", "vaccination_status", "chart-vaccination-status", "bar", "num-vaccination-status", "Status", vaccination_status_rows, period, date_from, date_to, yearly_year, is_super=True, super_clinic_id=target_clinic_id, is_col2=True) }}
     </div>
   </section>
+
+  <section class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <article class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm xl:col-span-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-bold text-[#1A4D2E]">Top Barangays</h2>
+        <a href="{{ imacros.insights_export_url('barangay', period, date_from, date_to, yearly_year, True, target_clinic_id) }}" class="rounded-xl border border-[#1A4D2E]/20 bg-[#1A4D2E]/5 px-3 py-1.5 text-xs font-semibold text-[#1A4D2E] hover:bg-[#1A4D2E]/10">Export CSV</a>
+      </div>
+      <div class="mt-6 space-y-4">
+        {% for row in barangay_table_rows[:10] %}
+        <div>
+          <div class="mb-1 flex items-center justify-between text-sm">
+            <span class="font-medium text-slate-700">{{ row.barangay }}</span>
+            <span class="text-slate-500">{{ row.count }} cases</span>
+          </div>
+          <div class="h-2 w-full rounded-full bg-slate-100">
+            <div class="h-full rounded-full bg-sky-500" style="width: {{ (row.count / barangay_max * 100) if barangay_max else 0 }}%"></div>
+          </div>
+        </div>
+        {% else %}
+        <p class="text-sm text-slate-500">No data.</p>
+        {% endfor %}
+      </div>
+    </article>
+  </section>
+
+  <script type="application/json" id="super-insights-chart-data">{{ chart_compare|tojson }}</script>
+  <script>
+    function toggleExportDropdown() {
+      const dd = document.getElementById('export-dropdown');
+      dd.classList.toggle('hidden');
+    }
+
+    document.addEventListener('click', function(e) {
+      const root = document.getElementById('export-dropdown-root');
+      const dd = document.getElementById('export-dropdown');
+      if (root && !root.contains(e.target)) {
+        dd.classList.add('hidden');
+      }
+    });
+
+    function exportData(format) {
+      if (format === 'csv') {
+        const form = document.querySelector('form');
+        const params = new URLSearchParams(new FormData(form));
+        // We'll export the primary bite cases dataset by default
+        params.set('dataset', 'animal_type'); 
+        window.location.href = "{{ url_for('super_reporting_export_csv') }}?" + params.toString();
+      }
+    }
+
+    function toggleDateRange(val) {
+      document.getElementById('year-select-div').classList.toggle('hidden', val !== 'yearly');
+      document.getElementById('date-range-div').classList.toggle('hidden', val !== 'custom');
+    }
+
+    (function() {
+      const dataEl = document.getElementById('super-insights-chart-data');
+      if (!dataEl) return;
+      const data = JSON.parse(dataEl.textContent || '{}');
+      const ctx = document.getElementById('superChartTrends');
+      if (!ctx || !data.labels) return;
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.labels,
+          datasets: [
+            {
+              label: 'Bite Cases',
+              data: data.cases,
+              borderColor: '#1A4D2E',
+              backgroundColor: 'rgba(26, 77, 46, 0.1)',
+              fill: true,
+              tension: 0.4
+            },
+            {
+              label: 'Vaccinations',
+              data: data.vaccinations,
+              borderColor: '#0284c7',
+              backgroundColor: 'rgba(2, 132, 199, 0.1)',
+              fill: true,
+              tension: 0.4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' }
+          },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+      
+      // Initialize all dynamic insights charts
+      document.querySelectorAll('.js-insight-chart').forEach(function(canvas) {
+        var rowsStr = canvas.getAttribute('data-rows');
+        if (!rowsStr) return;
+        var rows = JSON.parse(rowsStr);
+        var type = canvas.getAttribute('data-type'); // 'bar' or 'pie'
+        
+        var labels = rows.map(function(r) { return r.label; });
+        var dataPoints = rows.map(function(r) { return r.count; });
+        
+        var baseColors = [
+          'rgb(26, 77, 46)', 'rgb(2, 132, 199)', 'rgb(245, 158, 11)', 
+          'rgb(16, 185, 129)', 'rgb(99, 102, 241)', 'rgb(236, 72, 153)',
+          'rgb(100, 116, 139)', 'rgb(20, 184, 166)'
+        ];
+        
+        // Pad colors if more data points
+        var bgColors = dataPoints.map(function(_, i) { return baseColors[i % baseColors.length]; });
+        
+        new Chart(canvas, {
+          type: type,
+          data: {
+            labels: labels,
+            datasets: [{
+              data: dataPoints,
+              backgroundColor: type === 'pie' ? bgColors : 'rgb(26, 77, 46)',
+              borderRadius: type === 'bar' ? 4 : 0,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: type === 'pie',
+                position: 'right',
+                labels: { boxWidth: 12, font: { size: 11 } }
+              }
+            },
+            scales: {
+              x: { display: type === 'bar', grid: { display: false } },
+              y: { display: type === 'bar', beginAtZero: true, grid: { color: '#f1f5f9' } }
+            }
+          }
+        });
+      });
+      
+      // Setup toggle buttons for tables
+      document.querySelectorAll('.js-toggle-numeric').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var targetId = btn.getAttribute('data-target');
+          if (!targetId) return;
+          var panel = document.getElementById(targetId);
+          if (!panel) return;
+
+          var isHidden = panel.classList.contains('hidden');
+          if (isHidden) {
+            panel.classList.remove('hidden');
+            btn.setAttribute('aria-expanded', 'true');
+            var chevOpen = btn.querySelector('.js-chevron');
+            if (chevOpen) chevOpen.classList.add('rotate-180');
+          } else {
+            panel.classList.add('hidden');
+            btn.setAttribute('aria-expanded', 'false');
+            var chevClose = btn.querySelector('.js-chevron');
+            if (chevClose) chevClose.classList.remove('rotate-180');
+          }
+        });
+      });
+    })();
+  </script>
+  
+  <style>
+    @media print {
+      #super-sidebar, #super-sidebar-overlay, .lg\:ml-64 { 
+        margin-left: 0 !important;
+        width: 100% !important;
+      }
+      #super-sidebar, #super-sidebar-overlay, header, nav, form, #export-dropdown-root {
+        display: none !important;
+      }
+      main {
+        margin-left: 0 !important;
+        padding: 0 !important;
+      }
+      .rounded-\[2rem\] {
+        border-radius: 0.5rem !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: none !important;
+      }
+      canvas {
+        max-width: 100% !important;
+        height: auto !important;
+      }
+      body {
+        background: white !important;
+      }
+    }
+  </style>
 {% endblock %}
