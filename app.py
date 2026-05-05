@@ -954,6 +954,14 @@ def _admin_user_manageable_in_clinic(db, clinic_id: int, target_user_id: int) ->
         is not None
     ):
         return True
+    # Allow management of any user with the 'patient' role globally
+    patient_check = db.execute(
+        "SELECT 1 FROM users WHERE id = ? AND role = 'patient' LIMIT 1",
+        (target_user_id,)
+    ).fetchone()
+    if patient_check:
+        return True
+
     return (
         db.execute(
             """
@@ -1019,11 +1027,9 @@ def _staff_nav_badge_counts(db, staff_user_id: int, clinic_id: int | None) -> di
                 FROM cases c
                 WHERE c.clinic_id = ?
                   AND {_SQL_STAFF_CASE_NOT_REMOVED}
-                  AND LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('archived', 'queued', 'scheduled')
-                  AND datetime(COALESCE(NULLIF(c.created_at, ''), '1970-01-01 00:00:00'))
-                      > datetime(?)
+                  AND LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('completed', 'archived', 'cancelled')
                 """,
-                (clinic_id, last_seen_by_page.get("cases") or epoch),
+                (clinic_id,),
             ).fetchone()["n"]
         )
         or 0
@@ -1631,14 +1637,9 @@ def _admin_reporting_overview_dict(db, clinic_id: int | None, date_from: str, da
     if clinic_id is not None:
         total_users = (
             db.execute(
-                f"""
-                SELECT COUNT(DISTINCT c.patient_id) AS n FROM cases c
-                WHERE c.clinic_id = ?
-                {staff_visible_case_filter_sql}
-                  AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) >= DATE(?)
-                  AND DATE(COALESCE(NULLIF(c.created_at, ''), c.exposure_date)) <= DATE(?)
-                """,
-                (clinic_id, date_from, date_to),
+                """
+                SELECT COUNT(DISTINCT id) AS n FROM patients
+                """
             ).fetchone()["n"]
             or 0
         )
@@ -4055,6 +4056,28 @@ def create_app():
             (patient_id, notif_type, source_id, message, created_at),
         )
 
+    def _insert_patient_notification_if_absent(
+        patient_id: int, notif_type: str, source_id: int | None, message: str
+    ) -> bool:
+        """Insert a notification only if an identical unread one doesn't already exist. Returns True if inserted."""
+        db = get_db()
+        exists = db.execute(
+            """
+            SELECT 1 FROM patient_notifications
+            WHERE patient_id = ?
+              AND type = ?
+              AND COALESCE(source_id, -1) = COALESCE(?, -1)
+              AND COALESCE(message, '') = ?
+              AND is_read = 0
+            LIMIT 1
+            """,
+            (patient_id, notif_type, source_id, message),
+        ).fetchone()
+        if exists:
+            return False
+        _insert_patient_notification(patient_id, notif_type, source_id, message)
+        return True
+
     def _notify_patients_clinic_schedule_updated(clinic_id: int) -> None:
         """Alert patients with future appointments at this clinic that availability changed."""
         db = get_db()
@@ -4243,7 +4266,8 @@ def create_app():
         placeholders = ",".join(["?"] * len(patient_ids))
         rows = db.execute(
             f"""
-            SELECT type, COUNT(*) AS n
+            SELECT type,
+                   COUNT(DISTINCT COALESCE(source_id, id)) AS n
             FROM patient_notifications
             WHERE patient_id IN ({placeholders})
               AND is_read = 0
@@ -4638,6 +4662,18 @@ def create_app():
                 + int(uc.get("vaccination", 0))
                 + int(uc.get("schedule", 0))
             )
+            
+            db = get_db()
+            # Badge logic: Only show if patient has actual records to notify about
+            has_any_appts = db.execute(
+                "SELECT 1 FROM appointments a JOIN patients p ON p.id = a.patient_id WHERE p.user_id = ? LIMIT 1",
+                (user_id,)
+            ).fetchone() is not None
+            has_any_cases = db.execute(
+                "SELECT 1 FROM cases c JOIN patients p ON p.id = c.patient_id WHERE p.user_id = ? LIMIT 1",
+                (user_id,)
+            ).fetchone() is not None
+
             return {
                 "patient_display_name": display,
                 "patient_initials": initials,
@@ -4645,6 +4681,8 @@ def create_app():
                 "unread_appointments_count": uc.get("appointment", 0),
                 "unread_vaccinations_count": uc.get("vaccination", 0),
                 "unread_schedule_count": uc.get("schedule", 0),
+                "has_any_appointments": has_any_appts,
+                "has_any_cases": has_any_cases,
                 "play_notification_sound": unread_total > 0,
             }
         except Exception:
@@ -5451,6 +5489,7 @@ def create_app():
         has_any_appointments = len(all_appointments_rows) > 0
 
         _mark_patient_notifications_read(session["user_id"], "schedule")
+        _mark_patient_notifications_read(session["user_id"], "appointment")
         unread_counts = _get_patient_unread_counts(session["user_id"])
 
         return render_template(
@@ -5674,6 +5713,9 @@ def create_app():
                     "pre_screening_vaccination_note": pre_screening_vaccination_note,
                 }
             )
+        
+        _mark_patient_notifications_read(session["user_id"], "vaccination")
+        unread_counts = _get_patient_unread_counts(session["user_id"])
 
         return render_template(
             "patient_vaccinations.html",
@@ -5697,7 +5739,7 @@ def create_app():
         # Ensure the appointment belongs to any patient under this user (self or dependents)
         appt = db.execute(
             """
-            SELECT a.id, a.status, a.type, a.case_id
+            SELECT a.id, a.patient_id, a.status, a.type, a.case_id
             FROM appointments a
             JOIN patients p ON p.id = a.patient_id
             WHERE a.id = ? AND p.user_id = ?
@@ -5726,6 +5768,15 @@ def create_app():
             """,
             ("Cancelled", appointment_id),
         )
+        
+        # Add patient notification for self-cancellation
+        _insert_patient_notification(
+            patient_id=appt["patient_id"],
+            notif_type="appointment",
+            source_id=appointment_id,
+            message="You have cancelled your appointment.",
+        )
+        
         db.commit()
         flash("Appointment cancelled.", "success")
         return redirect(url_for("patient_dashboard"))
@@ -5812,11 +5863,8 @@ def create_app():
         _mark_appointment_notifications_read_for_appointment(
             session["user_id"], appointment_id
         )
-        # When a patient opens a case appointment, also clear case-level vaccination highlights
-        # so the dashboard card highlight disappears after it has been viewed once.
-        _mark_vaccination_notifications_read_for_case(
-            session["user_id"], int(appt["case_id"])
-        )
+        # NOTE: Do NOT clear vaccination notifications here — those should only
+        # be cleared when the patient explicitly visits the Vaccinations page.
 
         # Compute human-friendly appointment number for this patient (all non-hidden appointments up to this one)
         count_row = db.execute(
@@ -5896,12 +5944,35 @@ def create_app():
         status_metrics = _compute_vaccination_status_for_case(
             card_doses_by_type, appt["risk_level"]
         )
+        
+        # Refine next_appointment_display using real appointments if available
+        next_appt_row = db.execute(
+            """
+            SELECT appointment_datetime 
+            FROM appointments 
+            WHERE case_id = ? 
+              AND datetime(appointment_datetime) > datetime('now', 'localtime')
+              AND LOWER(COALESCE(status, '')) NOT IN ('cancelled', 'canceled', 'removed', 'completed')
+            ORDER BY appointment_datetime ASC 
+            LIMIT 1
+            """,
+            (case_id,)
+        ).fetchone()
+        
+        if next_appt_row:
+            try:
+                ndt = datetime.fromisoformat(next_appt_row["appointment_datetime"])
+                next_appointment_display = ndt.strftime("%B %d, %Y @ %I:%M %p")
+            except ValueError:
+                next_appointment_display = status_metrics["next_appointment_display"]
+        else:
+            next_appointment_display = status_metrics["next_appointment_display"]
+
         active_record_type = status_metrics["display_course"]
         dose_type_label = status_metrics["dose_type_label"]
         doses_completed = status_metrics["doses_completed"]
         expected_doses = status_metrics["expected_doses"]
         progress_pct = status_metrics["progress_pct"]
-        next_appointment_display = status_metrics["next_appointment_display"]
 
         return render_template(
             "patient_appointment_view.html",
@@ -6369,6 +6440,15 @@ def create_app():
             """,
             (slot_datetime, "Rescheduled", appointment_id),
         )
+        
+        # Add patient notification for self-reschedule
+        _insert_patient_notification(
+            patient_id=appt["patient_id"],
+            notif_type="appointment",
+            source_id=appointment_id,
+            message=f"You successfully rescheduled your appointment to {datetime.fromisoformat(slot_datetime).strftime('%b %d, %Y @ %I:%M %p')}.",
+        )
+        
         db.commit()
 
         flash("Appointment rescheduled.", "success")
@@ -6966,11 +7046,12 @@ def create_app():
         """
 
         total_patients = db.execute(
-            f"""
-            SELECT COUNT(DISTINCT c.patient_id) AS total
+            """
+            SELECT COUNT(DISTINCT patient_id) AS total
             FROM cases c
             WHERE c.clinic_id = ?
-            {staff_visible_case_filter_sql}
+              AND COALESCE(c.staff_removed, 0) = 0
+              AND LOWER(COALESCE(c.case_status, 'pending')) NOT IN ('archived', 'queued', 'scheduled')
             """,
             (clinic_id,),
         ).fetchone()["total"]
@@ -8070,6 +8151,9 @@ def create_app():
 
         staff_display_name = _staff_display_name(staff)
         maintenance = _run_case_status_maintenance(staff["clinic_id"])
+        
+        all_clinics = db.execute("SELECT id, name, branch_code FROM clinics ORDER BY name ASC").fetchall()
+
 
         clinic_branch_options = [
             {
@@ -10928,10 +11012,24 @@ def create_app():
             flash("Account profile missing, contact admin.", "error")
             return redirect(url_for("auth.login"))
 
+        # Fetch appointment details first to notify the patient
+        appt = db.execute(
+            "SELECT patient_id FROM appointments WHERE id = ?", (appointment_id,)
+        ).fetchone()
+
         db.execute(
             "UPDATE appointments SET status = ? WHERE id = ? AND clinic_id = ?",
             ("Removed", appointment_id, staff["clinic_id"]),
         )
+        
+        if appt:
+            _insert_patient_notification(
+                patient_id=appt["patient_id"],
+                notif_type="appointment",
+                source_id=appointment_id,
+                message="Your appointment request has been removed by the clinic.",
+            )
+            
         db.commit()
 
 
@@ -11024,6 +11122,14 @@ def create_app():
             WHERE id = ? AND clinic_id = ?
             """,
             (slot_datetime, "Rescheduled", appointment_id, staff["clinic_id"]),
+        )
+        
+        # Notify the patient about the reschedule
+        _insert_patient_notification(
+            patient_id=appt["patient_id"],
+            notif_type="appointment",
+            source_id=appointment_id,
+            message="Your appointment has been rescheduled by the clinic.",
         )
         db.commit()
 
@@ -11443,6 +11549,17 @@ def create_app():
                 user_id=session["user_id"],
                 clinic_personnel_id=staff["clinic_personnel_id"],
             )
+            
+            # Fetch patient_id for notification
+            case_pat = db.execute("SELECT patient_id FROM cases WHERE id = ?", (case_id,)).fetchone()
+            if case_pat:
+                _insert_patient_notification(
+                    patient_id=case_pat["patient_id"],
+                    notif_type="vaccination",
+                    source_id=case_id,
+                    message=f"Your case assessment has been updated by the clinic to {new_final}.",
+                )
+                
             db.commit()
         except Exception:
             db.rollback()
@@ -11455,35 +11572,11 @@ def create_app():
     @app.post("/staff/cases/<int:case_id>/notes")
     @role_required("clinic_personnel", "system_admin")
     def add_case_note(case_id: int):
-        if session.get("role") == "system_admin":
-            return redirect(url_for("admin_dashboard"))
-
         db = get_db()
-        staff = db.execute(
-            """
-            SELECT clinic_id
-            FROM clinic_personnel
-            WHERE user_id = ?
-            """,
-            (session["user_id"],),
-        ).fetchone()
-        if staff is None:
-            session.clear()
-            flash("Account profile missing, contact admin.", "error")
-            return redirect(url_for("auth.login"))
-
-        case_row = db.execute(
-            """
-            SELECT id
-            FROM cases
-            WHERE id = ?
-              AND COALESCE(staff_removed, 0) = 0
-            """,
-            (case_id,),
-        ).fetchone()
-        if case_row is None:
-            flash("Case not found.", "error")
-            return redirect(url_for("staff_patients"))
+        staff = _staff_fetch_personnel(db, session["user_id"])
+        if not staff:
+            flash("Staff profile not found.", "error")
+            return redirect(url_for("view_patient_case", case_id=case_id))
 
         note_content = (request.form.get("note_content") or "").strip()
         if not note_content:
@@ -11493,24 +11586,58 @@ def create_app():
             flash("Note is too long. Maximum is 1000 characters.", "error")
             return redirect(url_for("view_patient_case", case_id=case_id))
 
-        db.execute(
-            """
-            INSERT INTO case_notes (case_id, user_id, note_content)
-            VALUES (?, ?, ?)
-            """,
-            (case_id, session["user_id"], note_content),
-        )
-        db.execute(
-            """
-            UPDATE cases 
-            SET updated_at = CURRENT_TIMESTAMP,
-                case_status = CASE WHEN LOWER(TRIM(COALESCE(case_status, 'pending'))) = 'no show' 
-                                   THEN 'Pending' ELSE case_status END
-            WHERE id = ?
-            """,
-            (case_id,),
-        )
-        db.commit()
+        try:
+            db.execute(
+                """
+                INSERT INTO medical_audit_logs (
+                    case_id, action, field_name, old_value, new_value, change_reason, user_id, clinic_personnel_id, clinic_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    case_id,
+                    "NOTE",
+                    "case_note",
+                    None,
+                    note_content,
+                    "Added case note",
+                    session["user_id"],
+                    staff["clinic_personnel_id"],
+                    staff["clinic_id"],
+                ),
+            )
+            
+            # Notify the patient about the new note
+            case_pat = db.execute("SELECT patient_id FROM cases WHERE id = ?", (case_id,)).fetchone()
+            if case_pat:
+                _insert_patient_notification(
+                    patient_id=case_pat["patient_id"],
+                    notif_type="vaccination", 
+                    source_id=case_id,
+                    message="A new note has been added to your case record by the clinic.",
+                )
+
+            db.execute(
+                """
+                INSERT INTO case_notes (case_id, user_id, note_content)
+                VALUES (?, ?, ?)
+                """,
+                (case_id, session["user_id"], note_content),
+            )
+            db.execute(
+                """
+                UPDATE cases 
+                SET updated_at = CURRENT_TIMESTAMP,
+                    case_status = CASE WHEN LOWER(TRIM(COALESCE(case_status, 'pending'))) = 'no show' 
+                                       THEN 'Pending' ELSE case_status END
+                WHERE id = ?
+                """,
+                (case_id,),
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
+            flash("Failed to add note.", "error")
+            return redirect(url_for("view_patient_case", case_id=case_id))
 
         flash("Note added.", "success")
         return redirect(url_for("view_patient_case", case_id=case_id))
@@ -12156,12 +12283,12 @@ def create_app():
                             ),
                         )
 
-            # Notify the patient that the vaccination record for this case was updated.
-            _insert_patient_notification(
+            # Notify the patient that the case record was updated (once per unread cycle).
+            _insert_patient_notification_if_absent(
                 patient_id=case_patient["patient_id"],
                 notif_type="vaccination",
                 source_id=case_id,
-                message="Your vaccination record has been updated by the clinic.",
+                message="Your patient/case record has been updated by the clinic.",
             )
             _insert_medical_audit_log(
                 db,
@@ -13525,19 +13652,14 @@ def create_app():
         active_users_total = 0
         if clinic is not None:
             clinic_id = clinic["id"]
-            # Match clinic-staff Total Patients semantics:
-            # count distinct patient records linked to visible clinic cases,
-            # including multiple patients under the same user account.
+            # Total Patients regardless of clinic branch:
             patient_total = int(
                 (
                     db.execute(
                         """
-                        SELECT COUNT(DISTINCT c.patient_id) AS total
-                        FROM cases c
-                        WHERE c.clinic_id = ?
-                          AND COALESCE(c.staff_removed, 0) = 0
-                        """,
-                        (clinic_id,),
+                        SELECT COUNT(DISTINCT id) AS total
+                        FROM patients
+                        """
                     ).fetchone()["total"]
                 )
                 or 0
@@ -13548,9 +13670,7 @@ def create_app():
                   TRIM(COALESCE(cp.title, '') || ' ' || COALESCE(cp.first_name, '') || ' ' || COALESCE(cp.last_name, '')) AS display_name
                 FROM users u
                 JOIN clinic_personnel cp ON cp.user_id = u.id
-                WHERE cp.clinic_id = ?
-                """,
-                (clinic_id,),
+                """
             ).fetchall()
             for sr in staff_rows:
                 merged.append(
@@ -13570,13 +13690,7 @@ def create_app():
                 SELECT DISTINCT u.id, u.username, u.email, u.role, u.created_at, u.must_change_password, u.is_active
                 FROM users u
                 WHERE u.role = 'patient'
-                  AND EXISTS (
-                    SELECT 1 FROM patients p
-                    INNER JOIN cases c ON c.patient_id = p.id
-                    WHERE p.user_id = u.id AND c.clinic_id = ?
-                  )
-                """,
-                (clinic_id,),
+                """
             ).fetchall()
             for pr in patient_rows:
                 nm_row = db.execute(
@@ -13920,48 +14034,36 @@ def create_app():
         clinic = _get_admin_clinic_row(db, session["user_id"])
         clinic_id = clinic["id"] if clinic else -1
 
+        where_clause = """
+            (l.role_at_login = 'clinic_personnel' AND EXISTS (SELECT 1 FROM clinic_personnel cp WHERE cp.user_id = l.user_id AND cp.clinic_id = ?))
+            OR
+            (l.role_at_login = 'system_admin' AND EXISTS (SELECT 1 FROM system_admins sa WHERE sa.user_id = l.user_id AND sa.clinic_id = ?))
+            OR
+            (l.role_at_login = 'patient' AND EXISTS (SELECT 1 FROM cases c JOIN patients p ON p.id = c.patient_id WHERE p.user_id = l.user_id AND c.clinic_id = ?))
+        """
+
         total_row = db.execute(
-            """
+            f"""
             SELECT COUNT(*) AS n
             FROM user_session_logs l
             JOIN users u ON u.id = l.user_id
-            WHERE (
-              (l.role_at_login = 'patient' AND EXISTS (
-                  SELECT 1 FROM cases c JOIN patients p ON p.id = c.patient_id 
-                  WHERE p.user_id = u.id AND c.clinic_id = ?
-              ))
-              OR
-              (l.role_at_login = 'clinic_personnel' AND EXISTS (
-                  SELECT 1 FROM clinic_personnel cp 
-                  WHERE cp.user_id = u.id AND cp.clinic_id = ?
-              ))
-            )
+            WHERE {where_clause}
             """,
-            (clinic_id, clinic_id),
+            (clinic_id, clinic_id, clinic_id),
         ).fetchone()
         total = int(total_row["n"] or 0)
 
         offset = (page - 1) * per_page
         rows = db.execute(
-            """
+            f"""
             SELECT l.id, l.user_id, l.role_at_login, l.logged_in_at, l.logged_out_at, u.username
             FROM user_session_logs l
             JOIN users u ON u.id = l.user_id
-            WHERE (
-              (l.role_at_login = 'patient' AND EXISTS (
-                  SELECT 1 FROM cases c JOIN patients p ON p.id = c.patient_id 
-                  WHERE p.user_id = u.id AND c.clinic_id = ?
-              ))
-              OR
-              (l.role_at_login = 'clinic_personnel' AND EXISTS (
-                  SELECT 1 FROM clinic_personnel cp 
-                  WHERE cp.user_id = u.id AND cp.clinic_id = ?
-              ))
-            )
+            WHERE {where_clause}
             ORDER BY datetime(l.logged_in_at) DESC
             LIMIT ? OFFSET ?
             """,
-            (clinic_id, clinic_id, per_page, offset),
+            (clinic_id, clinic_id, clinic_id, per_page, offset),
         ).fetchall()
 
         log_items = []
@@ -14010,6 +14112,119 @@ def create_app():
     @role_required("super_admin")
     def super_dashboard():
         return redirect(url_for("super_reporting"))
+
+    @app.route("/super/profile", methods=["GET", "POST"])
+    @role_required("super_admin")
+    def super_profile():
+        db = get_db()
+        su = _super_fetch_user(db, session["user_id"])
+        if su is None:
+            session.clear()
+            flash("Super Admin profile missing.", "error")
+            return redirect(url_for("auth.login"))
+
+        if request.method == "POST":
+            section = (request.form.get("update_section") or "").strip()
+
+            if section == "personal":
+                first_name = normalize_optional(request.form.get("first_name"))
+                last_name = normalize_optional(request.form.get("last_name"))
+                try:
+                    db.execute(
+                        """
+                        UPDATE super_admins
+                        SET first_name = ?, last_name = ?
+                        WHERE user_id = ?
+                        """,
+                        (first_name, last_name, session["user_id"]),
+                    )
+                    db.commit()
+                except Exception:
+                    db.rollback()
+                    flash("Failed to update profile.", "error")
+                else:
+                    flash("Profile updated.", "success")
+                    return redirect(url_for("super_profile", highlight="personal"))
+
+            elif section == "account":
+                username = (request.form.get("username") or "").strip()
+                email = (request.form.get("email") or "").strip().lower()
+                new_password = request.form.get("new_password")
+                confirm_password = request.form.get("confirm_password")
+
+                errors = []
+                if not username:
+                    errors.append("Username is required.")
+                if not email or "@" not in email or "." not in email.split("@")[-1]:
+                    errors.append("A valid email is required.")
+                
+                if new_password:
+                    if len(new_password) < 8:
+                        errors.append("Password must be at least 8 characters.")
+                    if new_password != confirm_password:
+                        errors.append("Passwords do not match.")
+
+                if not errors:
+                    dup = db.execute(
+                        """
+                        SELECT 1 FROM users
+                        WHERE (username = ? OR email = ?)
+                          AND id != ?
+                        LIMIT 1
+                        """,
+                        (username, email, session["user_id"]),
+                    ).fetchone()
+                    if dup:
+                        errors.append("Username or email is already in use.")
+                
+                if errors:
+                    for msg in errors:
+                        flash(msg, "error")
+                else:
+                    try:
+                        if new_password:
+                            hashed = generate_password_hash(new_password)
+                            db.execute(
+                                """
+                                UPDATE users
+                                SET username = ?, email = ?, password_hash = ?
+                                WHERE id = ?
+                                """,
+                                (username, email, hashed, session["user_id"]),
+                            )
+                        else:
+                            db.execute(
+                                """
+                                UPDATE users
+                                SET username = ?, email = ?
+                                WHERE id = ?
+                                """,
+                                (username, email, session["user_id"]),
+                            )
+                        db.commit()
+                    except Exception:
+                        db.rollback()
+                        flash("Failed to update account security.", "error")
+                    else:
+                        session["username"] = username
+                        session["email"] = email
+                        flash("Account security updated.", "success")
+                        return redirect(url_for("super_profile", highlight="account"))
+
+            else:
+                flash("Invalid update request.", "error")
+
+            su = _super_fetch_user(db, session["user_id"])
+
+        highlight_section = (request.args.get("highlight") or "").strip()
+        return render_template(
+            "super_profile.html",
+            super_user=su,
+            super_display_name=_super_display_name(su),
+            super_initials=_super_initials(su),
+            highlight_section=highlight_section,
+            active_page="profile",
+        )
 
     @app.route("/super/clinics", methods=["GET", "POST"])
     @role_required("super_admin")
@@ -14074,6 +14289,7 @@ def create_app():
     @role_required("super_admin")
     def super_clinic_edit(clinic_id: int):
         db = get_db()
+        print("DEBUG FORM:", request.form, flush=True)
         name = normalize_name_case(request.form.get("name") or "")
         address = normalize_optional(request.form.get("address"))
         bc_raw = (request.form.get("branch_code") or "").strip()
@@ -14285,8 +14501,8 @@ def create_app():
         last_name = normalize_optional(request.form.get("last_name"))
 
         errors: list[str] = []
-        if not username or not email or not employee_id:
-            errors.append("Username, Email, and Employee ID are required.")
+        if not username or not email:
+            errors.append("Username and Email are required.")
 
         try:
             clinic_id = int(clinic_id_raw)
@@ -14309,13 +14525,7 @@ def create_app():
             flash("Username or email already exists.", "error")
             return redirect(url_for("super_users"))
 
-        dup_emp = db.execute(
-            "SELECT 1 FROM system_admins WHERE employee_id = ? AND user_id != ? LIMIT 1",
-            (employee_id, user_id)
-        ).fetchone()
-        if dup_emp:
-            flash("Employee ID already exists.", "error")
-            return redirect(url_for("super_users"))
+
 
         try:
             db.execute(
@@ -14325,10 +14535,10 @@ def create_app():
             db.execute(
                 """
                 UPDATE system_admins
-                SET clinic_id = ?, first_name = ?, last_name = ?, employee_id = ?
+                SET clinic_id = ?, first_name = ?, last_name = ?
                 WHERE user_id = ?
                 """,
-                (clinic_id, first_name, last_name, employee_id, user_id)
+                (clinic_id, first_name, last_name, user_id)
             )
             db.commit()
             flash("Administrator account updated.", "success")
@@ -14595,7 +14805,7 @@ def create_app():
                 SELECT COUNT(*) AS n
                 FROM user_session_logs l
                 JOIN users u ON u.id = l.user_id
-                WHERE u.role = 'system_admin'
+                WHERE u.role IN ('system_admin', 'super_admin')
                 """
             ).fetchone()["n"]
             or 0
@@ -14606,7 +14816,7 @@ def create_app():
             SELECT l.id, l.user_id, l.role_at_login, l.logged_in_at, l.logged_out_at, u.username
             FROM user_session_logs l
             JOIN users u ON u.id = l.user_id
-            WHERE u.role = 'system_admin'
+            WHERE u.role IN ('system_admin', 'super_admin')
             ORDER BY datetime(l.logged_in_at) DESC
             LIMIT ? OFFSET ?
             """,

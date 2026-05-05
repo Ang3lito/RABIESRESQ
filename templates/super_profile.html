@@ -1,0 +1,238 @@
+{% extends "super_admin_base.html" %}
+
+{% block title %}Profile Management - RabiesResQ{% endblock %}
+
+{% block header_left %}
+  <nav class="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+    <a href="{{ url_for('super_dashboard') }}" class="hover:text-slate-700">Home</a>
+    <span>/</span>
+    <span class="font-bold text-[#1A4D2E]">Profile</span>
+  </nav>
+{% endblock %}
+
+{% block main_content %}
+  <div class="mb-6 border-b border-slate-200 pb-4">
+    <h1 class="text-2xl font-bold text-[#1A4D2E]">Profile Management</h1>
+    <p class="mt-1 text-sm text-slate-500">
+      Super administrator account.
+    </p>
+  </div>
+
+  <div id="super-profile-sections" class="space-y-6">
+    <section id="section-personal" class="admin-profile-section relative rounded-lg border border-slate-200 bg-slate-50 p-5">
+      <div class="mb-4">
+        <h2 class="text-lg font-bold text-[#1A4D2E]">Personal Information</h2>
+      </div>
+      <form
+        method="post"
+        id="form-personal"
+        action="{{ url_for('super_profile') }}"
+        class="space-y-4"
+        data-confirm="Save changes to your personal information?"
+        data-confirm-variant="primary"
+      >
+        <input type="hidden" name="update_section" value="personal" />
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">First Name</label>
+            <input
+              type="text"
+              name="first_name"
+              value="{{ super_user.first_name or '' }}"
+              autocomplete="given-name"
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
+            />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Last Name</label>
+            <input
+              type="text"
+              name="last_name"
+              value="{{ super_user.last_name or '' }}"
+              autocomplete="family-name"
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
+            />
+          </div>
+          <div class="md:col-span-2">
+            <label class="mb-1 block text-sm font-medium text-slate-700">Employee ID</label>
+            <input
+              type="text"
+              value="{{ super_user.employee_id or 'N/A' }}"
+              disabled
+              class="w-full cursor-not-allowed rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-slate-500"
+            />
+            <p class="mt-1 text-xs text-slate-500">Employee ID is managed by the system.</p>
+          </div>
+        </div>
+        <div class="admin-section-save {% if highlight_section|default('') != 'personal' %}hidden{% endif %} mt-6 flex justify-end border-t border-slate-200 pt-4">
+          <button type="submit" class="rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A4D2E]">
+            Save changes
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section id="section-account" class="admin-profile-section relative rounded-lg border border-slate-200 bg-slate-50 p-5">
+      <div class="mb-4">
+        <h2 class="text-lg font-bold text-[#1A4D2E]">Account Security</h2>
+      </div>
+      <form
+        method="post"
+        id="form-account"
+        action="{{ url_for('super_profile') }}"
+        class="space-y-4"
+        data-confirm="Save changes to your account security settings?"
+        data-confirm-variant="primary"
+      >
+        <input type="hidden" name="update_section" value="account" />
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Username</label>
+            <input
+              type="text"
+              name="username"
+              value="{{ super_user.username }}"
+              required
+              autocomplete="username"
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
+            />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Email</label>
+            <input
+              type="email"
+              name="email"
+              value="{{ super_user.email }}"
+              required
+              autocomplete="email"
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
+            />
+          </div>
+
+          <div class="md:col-span-2">
+            <div class="flex items-center justify-between">
+              <label class="mb-1 block text-sm font-medium text-slate-700">Password</label>
+              <button type="button" onclick="togglePasswordFields()" class="text-sm font-semibold text-[#1A4D2E] hover:underline">
+                Change password
+              </button>
+            </div>
+            <input
+              type="password"
+              value="********"
+              disabled
+              class="w-full cursor-not-allowed rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-slate-500"
+            />
+          </div>
+
+          <div id="password-change-fields" class="hidden md:col-span-2">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div class="relative">
+                <label class="mb-1 block text-sm font-medium text-slate-700">New Password</label>
+                <div class="relative">
+                  <input
+                    type="password"
+                    name="new_password"
+                    id="new_password"
+                    placeholder="Leave empty to keep current password"
+                    class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 pr-10 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
+                  />
+                  <button type="button" onclick="togglePasswordVisibility('new_password')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-eye-slash" id="eye-new_password"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="relative">
+                <label class="mb-1 block text-sm font-medium text-slate-700">Confirm Password</label>
+                <div class="relative">
+                  <input
+                    type="password"
+                    name="confirm_password"
+                    id="confirm_password"
+                    placeholder="Confirm new password"
+                    class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 pr-10 text-[#1A4D2E] focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]"
+                  />
+                  <button type="button" onclick="togglePasswordVisibility('confirm_password')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-eye-slash" id="eye-confirm_password"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="admin-section-save {% if highlight_section|default('') != 'account' %}hidden{% endif %} mt-6 flex justify-end gap-2 border-t border-slate-200 pt-4">
+          <button type="button" onclick="window.location.reload()" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            Cancel
+          </button>
+          <button type="submit" class="rounded-lg bg-[#1A4D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A4D2E]">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </section>
+
+  <script>
+    function togglePasswordFields() {
+      const fields = document.getElementById('password-change-fields');
+      fields.classList.toggle('hidden');
+    }
+
+    function togglePasswordVisibility(id) {
+      const input = document.getElementById(id);
+      const eye = document.getElementById('eye-' + id);
+      if (input.type === 'password') {
+        input.type = 'text';
+        eye.classList.remove('fa-eye-slash');
+        eye.classList.add('fa-eye');
+      } else {
+        input.type = 'password';
+        eye.classList.remove('fa-eye');
+        eye.classList.add('fa-eye-slash');
+      }
+    }
+  </script>
+  </div>
+
+  <script>
+    (function () {
+      var root = document.getElementById("super-profile-sections");
+      if (!root) return;
+
+      function showSaveForSection(sectionEl) {
+        if (!sectionEl) return;
+        root.querySelectorAll(".admin-profile-section").forEach(function (s) {
+          var bar = s.querySelector(".admin-section-save");
+          if (!bar) return;
+          if (s === sectionEl) {
+            bar.classList.remove("hidden");
+          } else {
+            bar.classList.add("hidden");
+          }
+        });
+      }
+
+      function sectionFromTarget(el) {
+        return el && el.closest ? el.closest(".admin-profile-section") : null;
+      }
+
+      root.addEventListener(
+        "focusin",
+        function (e) {
+          var t = e.target;
+          if (t && t.closest && t.closest(".admin-section-save")) return;
+          var sec = sectionFromTarget(t);
+          if (sec) showSaveForSection(sec);
+        },
+        true
+      );
+
+      root.addEventListener(
+        "input",
+        function (e) {
+          var sec = sectionFromTarget(e.target);
+          if (sec) showSaveForSection(sec);
+        },
+        true
+      );
+    })();
+  </script>
+{% endblock %}

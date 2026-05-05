@@ -86,79 +86,79 @@
       </a>
     </div>
 
-    <form action="{{ url_for('admin_patients') }}" method="get" class="flex flex-col gap-6 lg:flex-row lg:items-end">
+    <form action="{{ url_for('admin_patients') }}" method="get" class="grid grid-cols-1 gap-4 lg:grid-cols-12 items-end">
       <input type="hidden" name="page" value="1" />
       
-      <div class="flex-1 min-w-0 space-y-4 lg:space-y-0 lg:flex lg:gap-4">
-        <!-- Search -->
-        <div class="flex-1 min-w-0">
-          <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500" for="admin-case-search">Case ID</label>
-          <div class="relative">
-            <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input
-              id="admin-case-search"
-              type="text"
-              name="search"
-              value="{{ search }}"
-              placeholder="Search by case ID…"
-              class="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-800 outline-none ring-[#1A4D2E]/20 transition-all placeholder:text-slate-400 focus:border-[#1A4D2E] focus:ring-4"
-            />
-          </div>
-        </div>
-
-        <!-- Category -->
-        <div class="w-full lg:w-48 xl:w-56">
-          <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500" for="admin-case-category">Risk Category</label>
-          <select
-            id="admin-case-category"
-            name="category"
-            class="w-full appearance-none rounded-2xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-medium text-slate-800 outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4"
-            style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394A3B8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 1rem top 50%; background-size: 0.65rem auto;"
-          >
-            <option value="all" {{ "selected" if selected_category == "all" else "" }}>All Categories</option>
-            <option value="category i" {{ "selected" if selected_category == "category i" else "" }}>Category I</option>
-            <option value="category ii" {{ "selected" if selected_category == "category ii" else "" }}>Category II</option>
-            <option value="category iii" {{ "selected" if selected_category == "category iii" else "" }}>Category III</option>
-          </select>
-        </div>
-
-        <!-- Status -->
-        <div class="w-full lg:w-48 xl:w-56">
-          <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500" for="admin-case-status">Case Status</label>
-          <select
-            id="admin-case-status"
-            name="status"
-            class="w-full appearance-none rounded-2xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-medium text-slate-800 outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4"
-            style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394A3B8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 1rem top 50%; background-size: 0.65rem auto;"
-          >
-            <option value="all" {{ "selected" if selected_status == "all" else "" }}>All Statuses</option>
-            <option value="pending" {{ "selected" if selected_status == "pending" else "" }}>Pending</option>
-            <option value="completed" {{ "selected" if selected_status == "completed" else "" }}>Completed</option>
-            <option value="no show" {{ "selected" if selected_status == "no show" else "" }}>No Show</option>
-          </select>
-        </div>
-
-        <!-- Clinic branch (assigned clinic only; not a cross-branch filter) -->
-        <div class="w-full lg:w-56 xl:w-64">
-          <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500" for="admin-case-clinic-branch">Clinic branch</label>
-          <select
-            id="admin-case-clinic-branch"
-            name="clinic_branch"
-            class="w-full appearance-none rounded-2xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-medium text-slate-800 outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4"
-            style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394A3B8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 1rem top 50%; background-size: 0.65rem auto;"
-            aria-label="Clinic branch filter"
-          >
-            {% for opt in clinic_branch_options %}
-              <option value="{{ opt.id }}" {{ "selected" if selected_clinic_branch == opt.id else "" }}>{{ opt.label }}</option>
-            {% endfor %}
-          </select>
-          <p class="mt-1 text-xs text-slate-500">Cases are limited to your assigned branch.</p>
+      <!-- Search -->
+      <div class="lg:col-span-3">
+        <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500" for="admin-case-search">Case ID</label>
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input
+            id="admin-case-search"
+            type="text"
+            name="search"
+            value="{{ search }}"
+            placeholder="Search by case ID…"
+            class="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-800 outline-none ring-[#1A4D2E]/20 transition-all placeholder:text-slate-400 focus:border-[#1A4D2E] focus:ring-4"
+          />
         </div>
       </div>
 
-      <button type="submit" class="w-full shrink-0 rounded-2xl bg-[#1A4D2E] px-8 py-3 text-sm font-bold text-white shadow-lg shadow-[#1A4D2E]/20 transition-all hover:scale-[1.02] hover:bg-opacity-90 lg:w-auto">
-        Apply Filters
-      </button>
+      <!-- Category -->
+      <div class="lg:col-span-2">
+        <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500" for="admin-case-category">Risk Category</label>
+        <select
+          id="admin-case-category"
+          name="category"
+          class="w-full appearance-none rounded-2xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-medium text-slate-800 outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4"
+          style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394A3B8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 1rem top 50%; background-size: 0.65rem auto;"
+        >
+          <option value="all" {{ "selected" if selected_category == "all" else "" }}>All Categories</option>
+          <option value="category i" {{ "selected" if selected_category == "category i" else "" }}>Category I</option>
+          <option value="category ii" {{ "selected" if selected_category == "category ii" else "" }}>Category II</option>
+          <option value="category iii" {{ "selected" if selected_category == "category iii" else "" }}>Category III</option>
+        </select>
+      </div>
+
+      <!-- Status -->
+      <div class="lg:col-span-2">
+        <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500" for="admin-case-status">Case Status</label>
+        <select
+          id="admin-case-status"
+          name="status"
+          class="w-full appearance-none rounded-2xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-medium text-slate-800 outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4"
+          style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394A3B8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 1rem top 50%; background-size: 0.65rem auto;"
+        >
+          <option value="all" {{ "selected" if selected_status == "all" else "" }}>All Statuses</option>
+          <option value="pending" {{ "selected" if selected_status == "pending" else "" }}>Pending</option>
+          <option value="completed" {{ "selected" if selected_status == "completed" else "" }}>Completed</option>
+          <option value="no show" {{ "selected" if selected_status == "no show" else "" }}>No Show</option>
+        </select>
+      </div>
+
+      <!-- Clinic branch -->
+      <div class="lg:col-span-3">
+        <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500" for="admin-case-clinic-branch">Clinic branch</label>
+        <select
+          id="admin-case-clinic-branch"
+          name="clinic_branch"
+          class="w-full appearance-none rounded-2xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-medium text-slate-800 outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4"
+          style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394A3B8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 1rem top 50%; background-size: 0.65rem auto;"
+          aria-label="Clinic branch filter"
+        >
+          {% for opt in clinic_branch_options %}
+            <option value="{{ opt.id }}" {{ "selected" if selected_clinic_branch == opt.id else "" }}>{{ opt.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Apply Button -->
+      <div class="lg:col-span-2">
+        <button type="submit" class="w-full rounded-2xl bg-[#1A4D2E] py-3 text-sm font-bold text-white shadow-lg shadow-[#1A4D2E]/20 transition-all hover:scale-[1.02] hover:bg-opacity-90">
+          Apply Filters
+        </button>
+      </div>
     </form>
   </section>
 

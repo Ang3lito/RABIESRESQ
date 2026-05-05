@@ -124,20 +124,6 @@
           </div>
 
           <div class="space-y-6">
-            {% if clinics %}
-            <div>
-              <label for="clinic_select" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Clinic Branch <span class="text-red-600">*</span></label>
-              <div class="premium-select-wrapper">
-                <i class="fa-solid fa-hospital premium-input-icon"></i>
-                <select id="clinic_select" name="clinic_id_select" onchange="document.getElementById('clinic_id_hidden').value = this.value; if(typeof buildCalendar === 'function' && isAppointmentFlow) buildCalendar();" class="premium-input pr-10" required>
-                  {% for c in clinics %}
-                  <option value="{{ c.id }}" {% if loop.first %}selected{% endif %}>{{ c.name }}{% if c.branch_code %} — {{ c.branch_code }}{% endif %}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <p class="mt-1 text-xs text-slate-500">Please select the clinic branch where you intend to receive treatment.</p>
-            </div>
-            {% endif %}
             <div>
               <label for="relationship_to_user" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Relationship to Account User</label>
               <div class="premium-select-wrapper">
@@ -637,6 +623,22 @@
           </div>
           <input type="hidden" name="appointment_slot_id" id="appointment_slot_id" value="" />
           <input type="hidden" name="appointment_datetime" id="appointment_datetime" value="" />
+
+          {% if clinics %}
+          <div class="mb-6">
+            <label for="clinic_select" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Clinic Branch <span class="text-red-600">*</span></label>
+            <div class="premium-select-wrapper">
+              <i class="fa-solid fa-hospital premium-input-icon"></i>
+              <select id="clinic_select" name="clinic_id_select" onchange="document.getElementById('clinic_id_hidden').value = this.value; if(typeof buildCalendar === 'function' && isAppointmentFlow) buildCalendar();" class="premium-input pr-10" required>
+                {% for c in clinics %}
+                <option value="{{ c.id }}" {% if loop.first %}selected{% endif %}>{{ c.name }}{% if c.branch_code %} — {{ c.branch_code }}{% endif %}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <p class="mt-1 text-xs text-slate-500">Please select the clinic branch where you intend to receive treatment.</p>
+          </div>
+          {% endif %}
+
           <div class="mb-4">
             <label class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Select date</label>
             <div class="mb-2 flex items-center justify-between">
@@ -971,7 +973,7 @@ function showStep(step) {
   }
   if (isAppointmentFlow && step === 3) {
     var sel = document.getElementById('clinic_select');
-    if (sel) document.getElementById('clinic_id_slot').value = sel.value;
+    if (sel) document.getElementById('clinic_id_hidden').value = sel.value;
   }
 
   // Ensure each step starts at the top (modal vs embedded page)
@@ -1140,7 +1142,7 @@ function collectAllFormData() {
   collectStepData(2);
   if (isAppointmentFlow) {
     var cs = document.getElementById('clinic_select');
-    if (cs) document.getElementById('clinic_id_slot').value = cs.value;
+    if (cs) document.getElementById('clinic_id_hidden').value = cs.value;
   }
   const form = document.getElementById('pre-screening-form');
   const allInputs = form.querySelectorAll('input, select, textarea');
@@ -1286,14 +1288,24 @@ function populateSummary() {
 
   var appointmentBlock = '';
   if (isAppointmentFlow && formData.appointment_datetime) {
+    var clinicSel = document.getElementById('clinic_select');
+    var clinicName = clinicSel ? clinicSel.options[clinicSel.selectedIndex].text : 'N/A';
     appointmentBlock = `
     <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div class="mb-4 flex items-center justify-between">
         <h4 class="text-base font-bold text-[#1A4D2E]">Appointment</h4>
         <button type="button" onclick="goToStep(3)" class="text-sm font-medium text-[#1A4D2E] hover:text-[#1A4D2E]">Edit</button>
       </div>
-      <p class="text-xs text-slate-500">Date &amp; time</p>
-      <p class="font-semibold text-[#1A4D2E]">${formatAppointmentDisplay(formData.appointment_datetime)}</p>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <p class="text-xs text-slate-500">Clinic Branch</p>
+          <p class="font-semibold text-[#1A4D2E]">${clinicName}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Date &amp; time</p>
+          <p class="font-semibold text-[#1A4D2E]">${formatAppointmentDisplay(formData.appointment_datetime)}</p>
+        </div>
+      </div>
     </div>
     `;
   }
@@ -1306,7 +1318,7 @@ function populateSummary() {
     <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div class="mb-4 flex items-center justify-between">
         <h4 class="text-base font-bold text-[#1A4D2E]">Patient Information</h4>
-        <button type="button" onclick="goToStep(2)" class="text-sm font-medium text-[#1A4D2E] hover:text-[#1A4D2E]">Edit</button>
+        <button type="button" onclick="goToStep(1)" class="text-sm font-medium text-[#1A4D2E] hover:text-[#1A4D2E]">Edit</button>
       </div>
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
@@ -1347,7 +1359,7 @@ function populateSummary() {
     <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div class="mb-4 flex items-center justify-between">
         <h4 class="text-base font-bold text-[#1A4D2E]">Bite Details</h4>
-        <button type="button" onclick="goToStep(1)" class="text-sm font-medium text-[#1A4D2E] hover:text-[#1A4D2E]">Edit</button>
+        <button type="button" onclick="goToStep(2)" class="text-sm font-medium text-[#1A4D2E] hover:text-[#1A4D2E]">Edit</button>
       </div>
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div class="md:col-span-2">
@@ -1462,7 +1474,7 @@ var slotsByDate = {};
 function getClinicIdForAvailability() {
   var sel = document.getElementById('clinic_select');
   if (sel) return sel.value;
-  var hid = document.getElementById('clinic_id_slot');
+  var hid = document.getElementById('clinic_id_hidden');
   return hid ? hid.value : '';
 }
 
@@ -1638,7 +1650,7 @@ document.addEventListener('DOMContentLoaded', function() {
   var clinicSelect = document.getElementById('clinic_select');
   if (clinicSelect) {
     clinicSelect.addEventListener('change', function() {
-      document.getElementById('clinic_id_slot').value = this.value;
+      document.getElementById('clinic_id_hidden').value = this.value;
       if (typeof buildCalendar === 'function') buildCalendar();
     });
   }

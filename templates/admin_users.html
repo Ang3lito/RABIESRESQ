@@ -120,9 +120,15 @@
                 </td>
                 <td class="px-6 py-4">
                   {% if row.is_active %}
-                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20"><span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-emerald-600"></span>Active</span>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 border border-emerald-100">
+                      <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                      Active
+                    </span>
                   {% else %}
-                    <span class="inline-flex items-center rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20"><span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-rose-600"></span>Deactivated</span>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-rose-700 border border-rose-100">
+                      <span class="h-1.5 w-1.5 rounded-full bg-rose-400"></span>
+                      Inactive
+                    </span>
                   {% endif %}
                 </td>
                 <td class="px-6 py-4 font-medium text-slate-600">{{ row.date_joined }}</td>
@@ -137,9 +143,10 @@
                         data-confirm-variant="danger"
                       >
                         <input type="hidden" name="active" value="0" />
-                        <button type="submit" class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-rose-600 shadow-sm ring-1 ring-inset ring-rose-500/20 transition-all hover:bg-rose-50">
-                          <i class="fa-solid fa-ban opacity-70"></i>
-                          Deactivate
+                        <button type="submit" 
+                          class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-all hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600" 
+                          title="Deactivate account">
+                          <i class="fa-solid fa-user-minus text-[11px]"></i>
                         </button>
                       </form>
                     {% else %}
@@ -151,12 +158,10 @@
                         data-confirm-variant="primary"
                       >
                         <input type="hidden" name="active" value="1" />
-                        <button
-                          type="submit"
-                          class="inline-flex items-center gap-1.5 rounded-xl bg-[#1A4D2E]/10 px-3 py-1.5 text-xs font-bold text-[#1A4D2E] transition-all hover:bg-[#1A4D2E] hover:text-white"
-                        >
-                          <i class="fa-solid fa-check opacity-70"></i>
-                          Activate
+                        <button type="submit" 
+                          class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#1A4D2E] text-white shadow-sm transition-all hover:bg-[#163f27] hover:shadow-md" 
+                          title="Activate account">
+                          <i class="fa-solid fa-user-check text-[11px]"></i>
                         </button>
                       </form>
                     {% endif %}

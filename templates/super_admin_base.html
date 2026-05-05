@@ -4,8 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}Super Admin - RabiesResQ{% endblock %}</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}?v=4" />
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}?v=4" />
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v=4" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link
       rel="stylesheet"
@@ -25,6 +24,12 @@
       .nav-link-hover:not(.bg-\[\#1A4D2E\]):not(.bg-red-500):hover {
         background-color: rgba(26, 77, 46, 0.08);
       }
+      .nav-link-hover:hover i, .nav-link-hover:hover svg {
+        transform: scale(1.15) rotate(-5deg);
+      }
+      .nav-link-hover i, .nav-link-hover svg {
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
     </style>
   </head>
   <body class="min-h-screen bg-slate-100 text-[#1A4D2E]">
@@ -38,14 +43,17 @@
       >
         <div class="flex h-full flex-col p-6">
           <a href="{{ url_for('super_reporting') }}" class="flex items-center gap-3 text-2xl font-bold text-[#1A4D2E]">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1A4D2E] text-white shadow-lg shadow-[#1A4D2E]/20">
-              <i class="fa-solid fa-shield-halved text-lg"></i>
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#1A4D2E] shadow-lg shadow-black/5">
+              <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
             </div>
             <span>RabiesResQ</span>
           </a>
 
-          <div
-            class="mt-6 flex items-center gap-3 rounded-md border border-slate-100 bg-slate-50 p-3 text-left sidebar-link-transition"
+          <a
+            href="{{ url_for('super_profile') }}"
+            class="mt-6 flex items-center gap-3 rounded-md border border-slate-100 bg-slate-50 p-3 text-left sidebar-link-transition hover:bg-slate-100"
           >
             <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-800">
               {{ super_initials|default('S') }}
@@ -54,21 +62,21 @@
               <p class="truncate text-sm font-semibold text-[#1A4D2E]">{{ super_display_name }}</p>
               <p class="truncate text-xs text-slate-500">Super Administrator</p>
             </div>
-          </div>
+          </a>
 
           <nav class="mt-6 space-y-1 text-sm">
             <a
               href="{{ url_for('super_reporting') }}"
               class="flex items-center gap-3 rounded-md px-4 py-3.5 sidebar-link-transition nav-link-hover {{ 'bg-[#1A4D2E] font-medium text-white shadow-lg shadow-[#1A4D2E]/20' if (active_page|default('')) == 'reporting' else 'text-slate-500 hover:bg-slate-100' }}"
             >
-              <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+              <i class="fa-solid fa-chart-pie"></i>
               <span>Reporting</span>
             </a>
             <a
               href="{{ url_for('super_clinics') }}"
               class="flex items-center gap-3 rounded-md px-4 py-3.5 sidebar-link-transition nav-link-hover {{ 'bg-[#1A4D2E] font-medium text-white shadow-lg shadow-[#1A4D2E]/20' if (active_page|default('')) == 'clinics' else 'text-slate-500 hover:bg-slate-100' }}"
             >
-              <i class="fa-solid fa-hospital w-5 text-center"></i>
+              <i class="fa-solid fa-hospital"></i>
               <span>Clinic Branches</span>
             </a>
 
@@ -76,17 +84,17 @@
               href="{{ url_for('super_users') }}"
               class="flex items-center gap-3 rounded-md px-4 py-3.5 sidebar-link-transition nav-link-hover {{ 'bg-[#1A4D2E] font-medium text-white shadow-lg shadow-[#1A4D2E]/20' if (active_page|default('')) == 'users' else 'text-slate-500 hover:bg-slate-100' }}"
             >
-              <i class="fa-solid fa-user-shield w-5 text-center"></i>
+              <i class="fa-solid fa-user-shield"></i>
               <span>Administrators</span>
             </a>
             <a
               href="{{ url_for('super_session_logs') }}"
               class="flex items-center gap-3 rounded-md px-4 py-3.5 sidebar-link-transition nav-link-hover {{ 'bg-[#1A4D2E] font-medium text-white shadow-lg shadow-[#1A4D2E]/20' if (active_page|default('')) == 'session_logs' else 'text-slate-500 hover:bg-slate-100' }}"
             >
-              <i class="fa-solid fa-clipboard-list w-5 text-center"></i>
+              <i class="fa-solid fa-clipboard-list"></i>
               <span>Session Logs</span>
               {% if super_nav_badges and super_nav_badges.session_logs %}
-                <span class="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm shadow-red-500/20">
+                <span class="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-[#1A4D2E] text-[10px] font-bold text-white shadow-sm shadow-[#1A4D2E]/20">
                   {{ super_nav_badges.session_logs if super_nav_badges.session_logs < 100 else '99+' }}
                 </span>
               {% endif %}

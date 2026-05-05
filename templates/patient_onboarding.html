@@ -1,149 +1,182 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Welcome - RabiesResQ</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}?v=4" />
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}?v=4" />
-    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}?v=4" />
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v=4" />
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}?v=4" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateX(30px); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+      }
+      .slide-entry {
+        animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+      .fade-in-up {
+        animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+      .animate-float {
+        animation: float 4s ease-in-out infinite;
+      }
+      .svg-pulse {
+        transition: transform 0.3s ease;
+      }
+      .slide-panel:hover .svg-pulse {
+        transform: scale(1.05);
+      }
+      .dot-active {
+        width: 2rem !important;
+        background-color: #6FCF97 !important;
+        border-color: #6FCF97 !important;
+      }
+    </style>
   </head>
-  <body class="min-h-screen bg-[#F8F8F8] text-slate-800">
-    <div class="mx-auto min-h-screen max-w-6xl px-4 py-8 md:py-12">
+  <body class="min-h-screen bg-slate-50 text-slate-900 selection:bg-[#6FCF97]/20">
+    <div class="mx-auto min-h-screen max-w-6xl px-6 py-8 md:py-16">
       <!-- Skip (top right) -->
-      <div class="flex justify-end">
+      <div class="flex justify-end mb-8 fade-in-up">
         <form method="post" action="{{ url_for('patient_onboarding_complete') }}" class="inline">
-          <button type="submit" class="text-base font-medium text-slate-600 hover:text-[#1A4D2E] md:text-lg">Skip</button>
+          <button type="submit" class="group flex items-center gap-2 text-base font-bold text-slate-400 hover:text-slate-600 transition-colors">
+            Skip Tour
+            <i class="fa-solid fa-chevron-right text-xs group-hover:translate-x-1 transition-transform"></i>
+          </button>
         </form>
       </div>
 
-      <!-- Slide 1: Splash style -->
-      <div class="slide-panel flex min-h-[70vh] flex-col items-center justify-center gap-8 md:flex-row md:gap-12" data-slide="1">
-        <div class="flex w-full shrink-0 justify-center md:w-2/5">
-          <div class="flex h-72 w-72 items-center justify-center rounded-3xl bg-[#FFFBEB] shadow-lg md:h-96 md:w-96">
-            <svg class="h-48 w-48 text-slate-800 md:h-64 md:w-64" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M60 8L20 22v28c0 22 16 40 40 50 24-10 40-28 40-50V22L60 8z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" fill="#FFFBEB"/>
-              <circle cx="48" cy="48" r="6" fill="currentColor"/>
-              <circle cx="72" cy="48" r="6" fill="currentColor"/>
-              <circle cx="60" cy="40" r="5" fill="currentColor"/>
-              <circle cx="60" cy="68" r="10" fill="currentColor"/>
-            </svg>
-          </div>
-        </div>
-        <div class="flex flex-1 flex-col justify-center text-center md:text-left">
-          <h1 class="text-4xl font-bold tracking-tight text-[#1A4D2E] md:text-5xl lg:text-6xl">Prevent Rabies, Protect Lives</h1>
-          <p class="mt-5 text-lg text-slate-600 md:text-xl lg:text-2xl">Your guide to bite prevention and post-exposure support.</p>
-          <div class="mt-10">
-            <button type="button" class="rounded-xl bg-[#6FCF97] px-10 py-4 text-lg font-medium text-white shadow-sm hover:opacity-90 onboarding-next md:text-xl">Get Started</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Slides 2-5: Carousel style -->
-      <div class="slide-panel hidden" data-slide="2">
-        <div class="flex min-h-[65vh] flex-col gap-8 md:flex-row md:items-center md:gap-12">
-          <div class="flex w-full shrink-0 justify-center md:w-2/5">
-            <div class="flex h-80 w-full max-w-md items-center justify-center rounded-3xl border-2 border-teal-200 bg-white p-6 shadow-lg md:h-96">
-              <svg class="h-56 w-56 text-teal-600 md:h-72 md:w-72" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="80" cy="85" r="50" fill="#CCFBF1" stroke="#2DD4BF" stroke-width="2"/>
-                <path d="M80 50v70M55 85h50" stroke="#0D9488" stroke-width="3" stroke-linecap="round"/>
-                <path d="M80 35l-8 15h16L80 35z" fill="#0D9488"/>
-                <circle cx="80" cy="85" r="8" fill="#0D9488"/>
-                <ellipse cx="80" cy="130" rx="25" ry="8" fill="#99F6E4"/>
-                <path d="M65 95c0-8 7-15 15-15s15 7 15 15" stroke="#0D9488" stroke-width="2" fill="none"/>
+      <div class="relative flex min-h-[60vh] flex-col justify-center">
+        <!-- Slide 1: Splash style -->
+        <div class="slide-panel slide-entry flex flex-col items-center gap-12 lg:flex-row lg:gap-20" data-slide="1">
+          <div class="flex w-full shrink-0 justify-center lg:w-1/2">
+            <div class="relative flex h-80 w-80 items-center justify-center rounded-[3rem] bg-gradient-to-br from-[#6FCF97]/10 to-emerald-50 shadow-2xl shadow-emerald-200/50 lg:h-[450px] lg:w-[450px] animate-float">
+               <div class="absolute inset-0 rounded-[3rem] border-2 border-white/50"></div>
+               <svg class="svg-pulse h-56 w-56 text-[#1A4D2E] lg:h-72 lg:w-72" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M60 8L20 22v28c0 22 16 40 40 50 24-10 40-28 40-50V22L60 8z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" fill="white" fill-opacity="0.5"/>
+                <circle cx="48" cy="48" r="6" fill="currentColor"/>
+                <circle cx="72" cy="48" r="6" fill="currentColor"/>
+                <path d="M45 70c5 5 25 5 30 0" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
               </svg>
             </div>
           </div>
-          <div class="flex flex-1 flex-col justify-center">
-            <h2 class="text-3xl font-bold text-[#1A4D2E] md:text-4xl lg:text-5xl">Rabies is 100% Preventable</h2>
-            <p class="mt-5 text-lg text-slate-600 md:text-xl lg:text-2xl">Vaccinating animals is the most effective strategy to prevent rabies in people.</p>
+          <div class="flex flex-1 flex-col text-center lg:text-left">
+            <span class="mb-4 inline-block self-center rounded-full bg-emerald-100 px-4 py-1 text-sm font-bold tracking-wide text-emerald-700 lg:self-start">WELCOME TO RABIESRESQ</span>
+            <h1 class="text-4xl font-extrabold tracking-tight text-[#1A4D2E] md:text-5xl lg:text-7xl leading-tight">
+              Prevent Rabies, <br/><span class="text-emerald-500">Protect Lives.</span>
+            </h1>
+            <p class="mt-6 text-lg text-slate-600 md:text-xl leading-relaxed lg:max-w-md">
+              Your comprehensive guide to bite prevention, clinical care, and post-exposure support.
+            </p>
+            <div class="mt-10">
+              <button type="button" class="group rounded-2xl bg-[#1A4D2E] px-10 py-5 text-lg font-bold text-white shadow-xl shadow-[#1A4D2E]/20 transition-all hover:bg-emerald-900 hover:-translate-y-1 onboarding-next">
+                Get Started
+                <i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="slide-panel hidden" data-slide="3">
-        <div class="flex min-h-[65vh] flex-col gap-8 md:flex-row md:items-center md:gap-12">
-          <div class="flex w-full shrink-0 justify-center md:w-2/5">
-            <div class="flex h-80 w-full max-w-md items-center justify-center rounded-3xl border-2 border-teal-200 bg-white p-6 shadow-lg md:h-96">
-              <svg class="h-56 w-56 text-teal-600 md:h-72 md:w-72" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="30" y="50" width="100" height="80" rx="8" fill="#F0FDFA" stroke="#2DD4BF" stroke-width="2"/>
-                <path d="M70 70h40M70 90h35M70 110h30" stroke="#0D9488" stroke-width="2" stroke-linecap="round"/>
-                <circle cx="50" cy="85" r="18" fill="#CCFBF1" stroke="#2DD4BF" stroke-width="2"/>
-                <path d="M50 75v20M42 85h16" stroke="#0D9488" stroke-width="2" stroke-linecap="round"/>
-                <path d="M80 40v20l20-10-20-10z" fill="#0D9488"/>
+        <!-- Slides 2-5: Carousel style -->
+        <div class="slide-panel slide-entry hidden flex-col items-center gap-12 lg:flex-row lg:gap-20" data-slide="2">
+          <div class="flex w-full shrink-0 justify-center lg:w-1/2">
+            <div class="flex h-72 w-full max-w-md items-center justify-center rounded-[2.5rem] bg-white border border-slate-100 shadow-xl shadow-slate-200/40 lg:h-96">
+              <svg class="svg-pulse h-48 w-48 text-emerald-600 lg:h-64 lg:w-64" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="80" cy="85" r="50" fill="#ECFDF5" stroke="#10B981" stroke-width="2"/>
+                <path d="M80 50v70M55 85h50" stroke="#047857" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="80" cy="85" r="8" fill="#047857"/>
               </svg>
             </div>
           </div>
-          <div class="flex flex-1 flex-col justify-center">
-            <h2 class="text-3xl font-bold text-[#1A4D2E] md:text-4xl lg:text-5xl">Post-Exposure Care Saves Lives</h2>
-            <p class="mt-5 text-lg text-slate-600 md:text-xl lg:text-2xl">Washing the wound and getting vaccines quickly after a bite greatly reduces risk.</p>
+          <div class="flex flex-1 flex-col text-center lg:text-left">
+            <h2 class="text-3xl font-extrabold text-[#1A4D2E] md:text-4xl lg:text-5xl leading-tight">Rabies is 100% <br/><span class="text-emerald-500">Preventable.</span></h2>
+            <p class="mt-6 text-lg text-slate-600 md:text-xl leading-relaxed">Vaccinating animals is the most effective strategy to prevent rabies in people.</p>
           </div>
         </div>
-      </div>
 
-      <div class="slide-panel hidden" data-slide="4">
-        <div class="flex min-h-[65vh] flex-col gap-8 md:flex-row md:items-center md:gap-12">
-          <div class="flex w-full shrink-0 justify-center md:w-2/5">
-            <div class="flex h-80 w-full max-w-md items-center justify-center rounded-3xl border-2 border-teal-200 bg-white p-6 shadow-lg md:h-96">
-              <svg class="h-56 w-56 text-teal-600 md:h-72 md:w-72" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M80 25L35 45v35c0 28 18 52 45 65 27-13 45-37 45-65V45L80 25z" fill="#CCFBF1" stroke="#2DD4BF" stroke-width="2" stroke-linejoin="round"/>
-                <path d="M65 80l12 12 28-28" stroke="#0D9488" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                <circle cx="80" cy="80" r="35" fill="none" stroke="#99F6E4" stroke-width="2"/>
+        <div class="slide-panel slide-entry hidden flex-col items-center gap-12 lg:flex-row lg:gap-20" data-slide="3">
+          <div class="flex w-full shrink-0 justify-center lg:w-1/2">
+            <div class="flex h-72 w-full max-w-md items-center justify-center rounded-[2.5rem] bg-white border border-slate-100 shadow-xl shadow-slate-200/40 lg:h-96">
+              <svg class="svg-pulse h-48 w-48 text-emerald-600 lg:h-64 lg:w-64" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="30" y="50" width="100" height="80" rx="8" fill="#F0FDFA" stroke="#10B981" stroke-width="2"/>
+                <path d="M70 70h40M70 90h35M70 110h30" stroke="#047857" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="50" cy="85" r="18" fill="#D1FAE5" stroke="#10B981" stroke-width="2"/>
               </svg>
             </div>
           </div>
-          <div class="flex flex-1 flex-col justify-center">
-            <h2 class="text-3xl font-bold text-[#1A4D2E] md:text-4xl lg:text-5xl">You're in Safe Hands</h2>
-            <p class="mt-5 text-lg text-slate-600 md:text-xl lg:text-2xl">RabiesResQ connects you with clinics and clear steps so you know what to do next.</p>
+          <div class="flex flex-1 flex-col text-center lg:text-left">
+            <h2 class="text-3xl font-extrabold text-[#1A4D2E] md:text-4xl lg:text-5xl leading-tight">Post-Exposure <br/><span class="text-emerald-500">Care Saves Lives.</span></h2>
+            <p class="mt-6 text-lg text-slate-600 md:text-xl leading-relaxed">Washing the wound and getting vaccines quickly after a bite greatly reduces risk.</p>
           </div>
         </div>
-      </div>
 
-      <div class="slide-panel hidden" data-slide="5">
-        <div class="flex min-h-[65vh] flex-col gap-8 md:flex-row md:items-center md:gap-12">
-          <div class="flex w-full shrink-0 justify-center md:w-2/5">
-            <div class="flex h-80 w-full max-w-md items-center justify-center rounded-3xl border-2 border-teal-200 bg-white p-6 shadow-lg md:h-96">
-              <svg class="h-56 w-56 text-teal-600 md:h-72 md:w-72" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="25" y="35" width="110" height="90" rx="10" fill="#F0FDFA" stroke="#2DD4BF" stroke-width="2"/>
-                <rect x="35" y="50" width="45" height="25" rx="4" fill="white" stroke="#0D9488" stroke-width="1.5"/>
-                <rect x="90" y="50" width="35" height="25" rx="4" fill="white" stroke="#0D9488" stroke-width="1.5"/>
-                <rect x="35" y="85" width="90" height="30" rx="4" fill="white" stroke="#0D9488" stroke-width="1.5"/>
-                <path d="M45 62h25M45 70h18" stroke="#0D9488" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M98 62h20M105 78h13" stroke="#0D9488" stroke-width="1.5" stroke-linecap="round"/>
-                <circle cx="50" cy="100" r="4" fill="#0D9488"/>
-                <path d="M60 98h55" stroke="#0D9488" stroke-width="1.5" stroke-linecap="round"/>
+        <div class="slide-panel slide-entry hidden flex-col items-center gap-12 lg:flex-row lg:gap-20" data-slide="4">
+          <div class="flex w-full shrink-0 justify-center lg:w-1/2">
+            <div class="flex h-72 w-full max-w-md items-center justify-center rounded-[2.5rem] bg-white border border-slate-100 shadow-xl shadow-slate-200/40 lg:h-96">
+              <svg class="svg-pulse h-48 w-48 text-emerald-600 lg:h-64 lg:w-64" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M80 25L35 45v35c0 28 18 52 45 65 27-13 45-37 45-65V45L80 25z" fill="#ECFDF5" stroke="#10B981" stroke-width="2"/>
+                <path d="M65 80l12 12 28-28" stroke="#047857" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
           </div>
-          <div class="flex flex-1 flex-col justify-center">
-            <h2 class="text-3xl font-bold text-[#1A4D2E] md:text-4xl lg:text-5xl">Stay Informed, Stay Safe</h2>
-            <p class="mt-5 text-lg text-slate-600 md:text-xl lg:text-2xl">Use your dashboard to track cases, appointments, and guidance.</p>
+          <div class="flex flex-1 flex-col text-center lg:text-left">
+            <h2 class="text-3xl font-extrabold text-[#1A4D2E] md:text-4xl lg:text-5xl leading-tight">You're in <br/><span class="text-emerald-500">Safe Hands.</span></h2>
+            <p class="mt-6 text-lg text-slate-600 md:text-xl leading-relaxed">RabiesResQ connects you with clinics and clear steps so you know what to do next.</p>
+          </div>
+        </div>
+
+        <div class="slide-panel slide-entry hidden flex-col items-center gap-12 lg:flex-row lg:gap-20" data-slide="5">
+          <div class="flex w-full shrink-0 justify-center lg:w-1/2">
+            <div class="flex h-72 w-full max-w-md items-center justify-center rounded-[2.5rem] bg-white border border-slate-100 shadow-xl shadow-slate-200/40 lg:h-96">
+              <svg class="svg-pulse h-48 w-48 text-emerald-600 lg:h-64 lg:w-64" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="25" y="35" width="110" height="90" rx="10" fill="#F0FDFA" stroke="#10B981" stroke-width="2"/>
+                <path d="M45 62h25M45 70h18" stroke="#047857" stroke-width="1.5" stroke-linecap="round"/>
+                <circle cx="50" cy="100" r="4" fill="#047857"/>
+                <path d="M60 98h55" stroke="#047857" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+          <div class="flex flex-1 flex-col text-center lg:text-left">
+            <h2 class="text-3xl font-extrabold text-[#1A4D2E] md:text-4xl lg:text-5xl leading-tight">Stay Informed, <br/><span class="text-emerald-500">Stay Safe.</span></h2>
+            <p class="mt-6 text-lg text-slate-600 md:text-xl leading-relaxed">Use your dashboard to track cases, appointments, and guidance.</p>
           </div>
         </div>
       </div>
 
-      <!-- Progress dots + Next / Go to Dashboard (slides 2-5) -->
-      <div id="nav-area" class="mt-10 flex flex-col items-center gap-6 sm:flex-row sm:justify-between">
-        <div class="flex gap-2" aria-label="Slide progress">
-          <button type="button" class="dot h-2.5 w-2.5 rounded-full border-2 border-teal-400 bg-transparent" data-slide="1" aria-label="Slide 1"></button>
-          <button type="button" class="dot h-2.5 w-2.5 rounded-full border-2 border-slate-300 bg-transparent" data-slide="2" aria-label="Slide 2"></button>
-          <button type="button" class="dot h-2.5 w-2.5 rounded-full border-2 border-slate-300 bg-transparent" data-slide="3" aria-label="Slide 3"></button>
-          <button type="button" class="dot h-2.5 w-2.5 rounded-full border-2 border-slate-300 bg-transparent" data-slide="4" aria-label="Slide 4"></button>
-          <button type="button" class="dot h-2.5 w-2.5 rounded-full border-2 border-slate-300 bg-transparent" data-slide="5" aria-label="Slide 5"></button>
+      <!-- Navigation Footer -->
+      <footer id="nav-area" class="mt-16 flex flex-col items-center justify-between gap-8 sm:flex-row fade-in-up">
+        <div class="flex items-center gap-3" aria-label="Slide progress">
+          <button type="button" class="dot h-2.5 w-2.5 rounded-full border border-slate-300 bg-slate-200 transition-all duration-300" data-slide="1"></button>
+          <button type="button" class="dot h-2.5 w-2.5 rounded-full border border-slate-300 bg-slate-200 transition-all duration-300" data-slide="2"></button>
+          <button type="button" class="dot h-2.5 w-2.5 rounded-full border border-slate-300 bg-slate-200 transition-all duration-300" data-slide="3"></button>
+          <button type="button" class="dot h-2.5 w-2.5 rounded-full border border-slate-300 bg-slate-200 transition-all duration-300" data-slide="4"></button>
+          <button type="button" class="dot h-2.5 w-2.5 rounded-full border border-slate-300 bg-slate-200 transition-all duration-300" data-slide="5"></button>
         </div>
+        
         <div class="flex items-center gap-4">
-          <button type="button" id="btn-next" class="rounded-xl bg-[#6FCF97] px-8 py-3 text-base font-medium text-white hover:opacity-90 onboarding-next md:text-lg">Next</button>
+          <button type="button" id="btn-next" class="rounded-2xl bg-[#1A4D2E] px-10 py-4 text-base font-bold text-white shadow-lg shadow-[#1A4D2E]/20 transition-all hover:bg-emerald-900 hover:-translate-y-1 onboarding-next">
+            Next Step
+          </button>
           <div id="btn-complete-wrap" class="hidden">
             <form method="post" action="{{ url_for('patient_onboarding_complete') }}" class="inline">
-              <button type="submit" class="rounded-xl bg-[#6FCF97] px-8 py-3 text-base font-medium text-white hover:opacity-90 md:text-lg">Go to Dashboard</button>
+              <button type="submit" class="rounded-2xl bg-emerald-500 px-10 py-4 text-base font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-600 hover:-translate-y-1">
+                Go to Dashboard
+              </button>
             </form>
           </div>
         </div>
-      </div>
+      </footer>
     </div>
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <script>
       (function() {
         var current = 1;
@@ -160,6 +193,10 @@
             if (num === current) {
               p.classList.remove('hidden');
               p.classList.add('flex');
+              // Trigger entry animation
+              p.classList.remove('slide-entry');
+              void p.offsetWidth; // trigger reflow
+              p.classList.add('slide-entry');
             } else {
               p.classList.add('hidden');
               p.classList.remove('flex');
@@ -167,15 +204,14 @@
           });
           dots.forEach(function(d) {
             var num = parseInt(d.getAttribute('data-slide'), 10);
-            d.setAttribute('aria-current', num === current ? 'true' : 'false');
-            d.classList.remove('bg-teal-400', 'border-teal-400');
-            d.classList.add('border-slate-300', 'bg-transparent');
+            d.classList.remove('dot-active', 'bg-slate-200');
             if (num === current) {
-              d.classList.add('bg-teal-400', 'border-teal-400');
-              d.classList.remove('border-slate-300', 'bg-transparent');
+              d.classList.add('dot-active');
+            } else {
+              d.classList.add('bg-slate-200');
             }
           });
-          btnNext.style.display = (current === 1 || current === 5) ? 'none' : 'inline-block';
+          btnNext.style.display = (current === 5) ? 'none' : 'inline-block';
           btnCompleteWrap.classList.toggle('hidden', current !== 5);
         }
 

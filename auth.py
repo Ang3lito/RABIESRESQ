@@ -401,29 +401,8 @@ def register_post():
         flash("Registration failed. Please try again.", "error")
         return render_template("register.html", form=request.form)
 
-    # Auto-login
-    session.clear()
-    session["user_id"] = user_id
-    session["role"] = "patient"
-    session["username"] = username
-    session["email"] = email
-
-    logged_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    try:
-        cur = db.execute(
-            """
-            INSERT INTO user_session_logs (user_id, role_at_login, logged_in_at)
-            VALUES (?, ?, ?)
-            """,
-            (user_id, "patient", logged_at),
-        )
-        db.commit()
-        session["session_log_id"] = cur.lastrowid
-    except Exception:
-        db.rollback()
-
-    flash("Registration successful. Welcome!", "success")
-    return redirect(url_for("patient_dashboard"))
+    flash("Registration successful. Please log in to continue.", "success")
+    return redirect(url_for("auth.login"))
 
 
 @bp.get("/forgot-password")

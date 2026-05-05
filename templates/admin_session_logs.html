@@ -45,19 +45,19 @@
                 </td>
                 <td class="px-6 py-4">
                   {% if row.role_at_login == 'system_admin' %}
-                    <span class="inline-flex items-center rounded-lg bg-purple-50 px-2 py-1 text-[11px] font-bold text-purple-700 ring-1 ring-inset ring-purple-600/20"><i class="fa-solid fa-crown mr-1.5 opacity-70"></i>Admin</span>
+                    <span class="inline-flex items-center rounded-lg bg-purple-50 px-2 py-1 text-[11px] font-bold text-purple-700 ring-1 ring-inset ring-purple-600/20">Admin</span>
                   {% elif row.role_at_login == 'clinic_personnel' %}
-                    <span class="inline-flex items-center rounded-lg bg-blue-50 px-2 py-1 text-[11px] font-bold text-blue-700 ring-1 ring-inset ring-blue-600/20"><i class="fa-solid fa-user-nurse mr-1.5 opacity-70"></i>Staff</span>
+                    <span class="inline-flex items-center rounded-lg bg-blue-50 px-2 py-1 text-[11px] font-bold text-blue-700 ring-1 ring-inset ring-blue-600/20">Staff</span>
                   {% else %}
-                    <span class="inline-flex items-center rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-700 ring-1 ring-inset ring-slate-500/20"><i class="fa-solid fa-user mr-1.5 opacity-70"></i>Patient</span>
+                    <span class="inline-flex items-center rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-700 ring-1 ring-inset ring-slate-500/20">Patient</span>
                   {% endif %}
                 </td>
                 <td class="px-6 py-4 font-medium text-slate-600">
-                  <i class="fa-regular fa-clock mr-2 text-emerald-500"></i>{{ row.logged_in_at }}
+                  {{ row.logged_in_at }}
                 </td>
                 <td class="px-6 py-4 font-medium text-slate-600">
                   {% if row.logged_out_display != '—' %}
-                    <i class="fa-regular fa-clock mr-2 text-rose-500"></i>{{ row.logged_out_display }}
+                    {{ row.logged_out_display }}
                   {% else %}
                     <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">Session Active</span>
                   {% endif %}

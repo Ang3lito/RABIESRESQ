@@ -10,9 +10,33 @@
 {% endblock %}
 
 {% block main_content %}
+  <section class="mb-6 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+    <details>
+      <summary class="cursor-pointer list-none">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="text-sm font-bold text-[#1A4D2E]">Role Overview</p>
+            <p class="mt-1 text-xs text-slate-500">Quick reference for administrative role access and scope.</p>
+          </div>
+          <span class="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600">Expand</span>
+        </div>
+      </summary>
+      <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+        <article class="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3">
+          <p class="text-xs font-bold uppercase tracking-wide text-emerald-700">Super Admin</p>
+          <p class="mt-1 text-sm text-slate-700">Global oversight and platform governance. Access to clinic management, cross-branch reporting, and super-user auditing.</p>
+        </article>
+        <article class="rounded-xl border border-purple-100 bg-purple-50/40 p-3">
+          <p class="text-xs font-bold uppercase tracking-wide text-purple-700">System Admin</p>
+          <p class="mt-1 text-sm text-slate-700">Full branch access: analytics/reporting, appointments oversight, user management (staff/patients), and clinic settings.</p>
+        </article>
+      </div>
+    </details>
+  </section>
+
   <!-- New Administrator Form -->
-  <section class="rounded-[2rem] border border-slate-200 bg-white shadow-sm overflow-hidden">
-    <div class="border-b border-slate-100 bg-slate-50/50 px-8 py-4">
+  <section class="rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+    <div class="border-b border-slate-100 bg-slate-50/50 px-8 py-4 rounded-t-[2rem]">
       <h2 class="text-lg font-bold text-[#1A4D2E]">New Clinic Administrator</h2>
       <p class="text-xs text-slate-500">Create a top-level account with management privileges for a specific branch.</p>
     </div>
@@ -164,14 +188,9 @@
           {% for a in admins %}
             <tr class="group transition-colors even:bg-slate-50/30 hover:bg-slate-100/50">
               <td class="px-8 py-5">
-                <div class="flex items-center gap-3">
-                  <div class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-50 font-bold text-indigo-600 border border-indigo-100">
-                    {{ a.username[0]|upper }}
-                  </div>
-                  <div class="flex flex-col leading-tight">
-                    <span class="font-bold text-slate-900 group-hover:text-[#1A4D2E] transition-colors">{{ a.username }}</span>
-                    <span class="text-xs text-slate-500">{{ a.email }}</span>
-                  </div>
+                <div class="flex flex-col leading-tight">
+                  <span class="font-bold text-slate-900 group-hover:text-[#1A4D2E] transition-colors">{{ a.username }}</span>
+                  <span class="text-xs text-slate-500">{{ a.email }}</span>
                 </div>
               </td>
               <td class="px-8 py-5">
@@ -266,13 +285,13 @@
   </section>
 {% endblock %}
 
-{% block modals %}
+{% block extra_modals %}
   <!-- Edit Administrator Modal -->
   <div id="edit-user-modal" class="hidden fixed inset-0 z-[100] overflow-y-auto">
     <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeEditUserModal()"></div>
     <div class="flex min-h-full items-center justify-center p-4">
-      <div class="relative w-full max-w-4xl transform overflow-hidden rounded-[2rem] bg-white shadow-2xl transition-all">
-        <div class="border-b border-slate-100 bg-slate-50/50 px-8 py-6">
+      <div class="relative w-full max-w-4xl transform rounded-[2rem] bg-white shadow-2xl transition-all">
+        <div class="border-b border-slate-100 bg-slate-50/50 px-8 py-6 rounded-t-[2rem]">
           <div class="flex items-center justify-between">
             <div>
               <h2 class="text-xl font-bold text-[#1A4D2E]">Edit Administrator</h2>
@@ -284,7 +303,7 @@
           </div>
         </div>
 
-        <form id="edit-user-form" method="post" class="p-8 space-y-8">
+        <form id="edit-user-form" method="post" class="p-8 space-y-8" data-confirm="Are you sure you want to save these changes to the administrator account?">
           <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
             <!-- Account Details -->
             <div class="space-y-4">
@@ -377,16 +396,6 @@
                       <i class="fa-solid fa-signature text-[10px]"></i>
                     </div>
                     <input id="edit-su-ln" name="last_name" 
-                      class="w-full rounded-xl border border-slate-200 bg-slate-50/30 py-2.5 pl-9 pr-4 text-sm transition-focus focus:border-[#1A4D2E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]/10" />
-                  </div>
-                </div>
-                <div class="sm:col-span-2">
-                  <label class="mb-1.5 block text-xs font-bold text-slate-500" for="edit-su-employee">Employee / Staff ID</label>
-                  <div class="relative">
-                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                      <i class="fa-solid fa-id-badge text-[10px]"></i>
-                    </div>
-                    <input id="edit-su-employee" name="employee_id" required 
                       class="w-full rounded-xl border border-slate-200 bg-slate-50/30 py-2.5 pl-9 pr-4 text-sm transition-focus focus:border-[#1A4D2E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]/10" />
                   </div>
                 </div>
@@ -490,19 +499,30 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    editSearchInput.addEventListener('focus', () => {
-        editOptionsContainer.classList.remove('hidden');
-        editArrow.style.transform = 'rotate(180deg)';
-        filterEditOptions();
-    });
-
-    editSearchInput.addEventListener('input', filterEditOptions);
-
     document.addEventListener('click', (e) => {
         if (editCombobox && !editCombobox.contains(e.target)) {
             editOptionsContainer.classList.add('hidden');
             editArrow.style.transform = 'rotate(0deg)';
+
+            // If empty, revert to current clinic label
+            if (!editIdInput.value || !editSearchInput.value) {
+                // We need to find the label for editIdInput.value
+                const selected = Array.from(editOptions).find(opt => opt.getAttribute('data-value') === editIdInput.value);
+                if (selected) {
+                    editSearchInput.value = selected.getAttribute('data-label');
+                }
+            }
         }
+    });
+
+    editSearchInput.addEventListener('focus', () => {
+        // Clear if it's the current selection to show all options immediately
+        if (editIdInput.value) {
+            editSearchInput.value = '';
+        }
+        editOptionsContainer.classList.remove('hidden');
+        editArrow.style.transform = 'rotate(180deg)';
+        filterEditOptions();
     });
 
     editOptions.forEach(opt => {
@@ -532,7 +552,6 @@ function openEditUserModal(id, username, email, clinicId, clinicLabel, fn, ln, e
     document.getElementById('edit-su-clinic-search').classList.remove('italic');
     document.getElementById('edit-su-fn').value = fn;
     document.getElementById('edit-su-ln').value = ln;
-    document.getElementById('edit-su-employee').value = empId;
     
     form.action = `/super/users/${id}/edit`;
     modal.classList.remove('hidden');
