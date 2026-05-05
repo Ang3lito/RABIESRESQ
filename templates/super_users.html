@@ -147,6 +147,23 @@
           </div>
         </div>
 
+        <!-- Security Options -->
+        <div class="mt-6 space-y-4">
+          <h3 class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400">
+            <i class="fa-solid fa-lock"></i> Security Policy
+          </h3>
+          <div class="flex items-center gap-3 rounded-xl border border-amber-100 bg-amber-50/30 p-4">
+            <div class="flex h-5 items-center">
+              <input id="su-force-pass" name="force_password_change" type="checkbox" checked
+                class="h-4 w-4 rounded border-slate-300 text-[#1A4D2E] focus:ring-[#1A4D2E]" />
+            </div>
+            <div class="text-sm">
+              <label for="su-force-pass" class="font-bold text-slate-700">Force password change on first login</label>
+              <p class="text-xs text-slate-500">The administrator will be required to set a new password immediately after their initial login.</p>
+            </div>
+          </div>
+        </div>
+
         <div class="flex items-center justify-end border-t border-slate-100 pt-6">
           <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-[#1A4D2E] px-8 py-3 text-sm font-bold text-white shadow-lg shadow-[#1A4D2E]/20 transition-all hover:bg-[#163f27] active:scale-[0.98]">
             <i class="fa-solid fa-user-plus text-xs"></i>
@@ -224,11 +241,18 @@
                       data-fn="{{ a.first_name or '' }}"
                       data-ln="{{ a.last_name or '' }}"
                       data-emp-id="{{ a.employee_id or '' }}"
+                      data-must-change="{{ '1' if a.must_change_password else '0' }}"
                       onclick="openEditUserModalFromBtn(this)"
                       class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-all hover:border-[#1A4D2E] hover:bg-[#1A4D2E]/5 hover:text-[#1A4D2E]"
                       title="Edit administrator">
                       <i class="fa-solid fa-pen-to-square text-[11px]"></i>
                     </button>
+
+                    {% if a.must_change_password %}
+                    <div class="flex h-8 items-center px-2 rounded-lg bg-amber-50 border border-amber-100 text-amber-600" title="Password reset pending">
+                      <i class="fa-solid fa-key text-[10px]"></i>
+                    </div>
+                    {% endif %}
 
                     <form method="post" action="{{ url_for('super_user_set_active', user_id=a.user_id) }}" class="inline">
                       {% if a.is_active %}
@@ -538,10 +562,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function openEditUserModalFromBtn(btn) {
     const ds = btn.dataset;
-    openEditUserModal(ds.id, ds.username, ds.email, ds.clinicId, ds.clinicLabel, ds.fn, ds.ln, ds.empId);
+    openEditUserModal(ds.id, ds.username, ds.email, ds.clinicId, ds.clinicLabel, ds.fn, ds.ln, ds.empId, ds.mustChange);
 }
 
-function openEditUserModal(id, username, email, clinicId, clinicLabel, fn, ln, empId) {
+function openEditUserModal(id, username, email, clinicId, clinicLabel, fn, ln, empId, mustChange) {
     const modal = document.getElementById('edit-user-modal');
     const form = document.getElementById('edit-user-form');
     
@@ -552,6 +576,7 @@ function openEditUserModal(id, username, email, clinicId, clinicLabel, fn, ln, e
     document.getElementById('edit-su-clinic-search').classList.remove('italic');
     document.getElementById('edit-su-fn').value = fn;
     document.getElementById('edit-su-ln').value = ln;
+    document.getElementById('edit-su-force-pass').checked = (mustChange === '1');
     
     form.action = `/super/users/${id}/edit`;
     modal.classList.remove('hidden');

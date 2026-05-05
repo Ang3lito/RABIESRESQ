@@ -1,5 +1,4 @@
-#
-# How to run (PowerShell, from repo root):
+#   How to run (PowerShell, from repo root):
 #   
 #   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 #   .\.venv\Scripts\Activate.ps1

@@ -287,6 +287,7 @@ CREATE TABLE IF NOT EXISTS medical_audit_logs (
   entity_type TEXT NOT NULL,
   entity_id INTEGER NOT NULL,
   case_id INTEGER,
+  clinic_id INTEGER,
   action TEXT NOT NULL CHECK(action IN ('INSERT','UPDATE','DELETE','VIEW')),
   field_name TEXT,
   old_value TEXT,
@@ -295,7 +296,8 @@ CREATE TABLE IF NOT EXISTS medical_audit_logs (
   change_reason TEXT,
   FOREIGN KEY (clinic_personnel_id) REFERENCES clinic_personnel(id) ON DELETE RESTRICT,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-  FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE SET NULL
+  FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE SET NULL,
+  FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE SET NULL
 );
 
 -- =========================
@@ -425,6 +427,7 @@ CREATE INDEX IF NOT EXISTS idx_admin_page_last_seen_user_key ON admin_page_last_
 CREATE INDEX IF NOT EXISTS idx_audit_personnel ON medical_audit_logs(clinic_personnel_id);
 CREATE INDEX IF NOT EXISTS idx_audit_entity ON medical_audit_logs(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_audit_case ON medical_audit_logs(case_id);
+CREATE INDEX IF NOT EXISTS idx_audit_clinic ON medical_audit_logs(clinic_id);
 
 -- =========================
 -- Additional helpful indexes (FKs / common lookups)

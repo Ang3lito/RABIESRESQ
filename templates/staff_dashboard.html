@@ -138,21 +138,33 @@
               </td>
               <td class="px-6 py-4">
                 {% set status_lower = (appt.status or "")|lower %}
-                {% if status_lower == "completed" %}
+                {% if status_lower in ("completed", "complete", "approved") %}
                 <span
-                  class="inline-flex items-center gap-1.5 rounded-full bg-[#1A4D2E]/10 px-3 py-1 text-xs font-bold text-[#1A4D2E]">
-                  <span class="h-1.5 w-1.5 rounded-full bg-[#1A4D2E]"></span>
+                  class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                  <span class="h-1.5 w-1.5 rounded-full bg-emerald-600"></span>
                   {{ appt.status }}
                 </span>
-                {% elif status_lower == "in progress" %}
+                {% elif status_lower in ("in progress", "pending", "scheduled") %}
                 <span
-                  class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
+                  class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20">
                   <span class="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                  {{ appt.status }}
+                </span>
+                {% elif status_lower in ("cancelled", "canceled", "removed") %}
+                <span
+                  class="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700 ring-1 ring-inset ring-red-600/20">
+                  <span class="h-1.5 w-1.5 rounded-full bg-red-600"></span>
+                  {{ appt.status }}
+                </span>
+                {% elif status_lower == "rescheduled" %}
+                <span
+                  class="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700 ring-1 ring-inset ring-sky-600/20">
+                  <span class="h-1.5 w-1.5 rounded-full bg-sky-600"></span>
                   {{ appt.status }}
                 </span>
                 {% else %}
                 <span
-                  class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                  class="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1 text-xs font-bold text-slate-700 ring-1 ring-inset ring-slate-500/20">
                   <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
                   {{ appt.status }}
                 </span>

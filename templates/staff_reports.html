@@ -18,23 +18,45 @@
 {% endblock %}
 
 {% block main_content %}
-  <section class="mt-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+  <section class="mt-6 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
     <div>
       <h1 class="text-4xl font-bold text-[#1A4D2E]">Clinic Operations</h1>
-      <p class="mt-1 max-w-2xl text-slate-600">Day-to-day workload: cases, appointments, categories, and doses. Default range is the last 14 days. Use <span class="font-medium text-slate-700">Reporting</span> in the admin area for longer trends and program oversight.</p>
+      <p class="mt-1 max-w-xl text-slate-500 text-sm">Real-time operational workload: tracking cases, categories, and vaccine administration.</p>
     </div>
-    <form method="get" action="{{ url_for('staff_reports') }}" class="grid grid-cols-1 gap-2 rounded-[2rem] border border-slate-200 bg-white p-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto_auto]">
-      <div>
-        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" for="date_from">From</label>
-        <input id="date_from" name="date_from" type="date" value="{{ date_from }}" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
-      </div>
-      <div>
-        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" for="date_to">To</label>
-        <input id="date_to" name="date_to" type="date" value="{{ date_to }}" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
-      </div>
-      <button type="submit" class="self-end rounded-xl bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Apply</button>
-      <a href="{{ url_for('staff_reports') }}" class="self-end rounded-xl border border-slate-300 px-4 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-slate-100">Reset</a>
-    </form>
+
+    <!-- Integrated Date Filter Toolbar -->
+    <div class="flex items-center gap-3">
+      <form method="get" action="{{ url_for('staff_reports') }}" 
+            class="flex flex-wrap items-center gap-3 rounded-[2rem] border border-slate-200 bg-white p-2 pr-4 shadow-sm transition hover:border-slate-300">
+        
+        <div class="flex items-center gap-2 pl-2">
+          <div class="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-1.5 border border-slate-100">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400" for="date_from">From</label>
+            <input id="date_from" name="date_from" type="date" value="{{ date_from }}" 
+                   class="bg-transparent text-sm font-medium text-slate-700 outline-none focus:ring-0" />
+          </div>
+          
+          <div class="h-4 w-px bg-slate-200"></div>
+
+          <div class="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-1.5 border border-slate-100">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400" for="date_to">To</label>
+            <input id="date_to" name="date_to" type="date" value="{{ date_to }}" 
+                   class="bg-transparent text-sm font-medium text-slate-700 outline-none focus:ring-0" />
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 border-l border-slate-100 pl-3">
+          <button type="submit" 
+                  class="rounded-[1.5rem] bg-[#1A4D2E] px-5 py-2 text-sm font-bold text-white shadow-md shadow-[#1A4D2E]/20 transition hover:bg-[#1A4D2E]/90 active:scale-95">
+            Apply
+          </button>
+          <a href="{{ url_for('staff_reports') }}" 
+             class="rounded-[1.5rem] border border-slate-200 bg-white px-5 py-2 text-sm font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 active:scale-95">
+            Reset
+          </a>
+        </div>
+      </form>
+    </div>
   </section>
 
   <section class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -98,8 +120,8 @@
             <th class="px-4 py-3">Case ID</th>
             <th class="px-4 py-3">Patient Name</th>
             <th class="px-4 py-3">Exposure Date</th>
-            <th class="px-4 py-3">Category</th>
-            <th class="px-4 py-3">Status</th>
+            <th class="w-px whitespace-nowrap px-4 py-3 text-center">Category</th>
+            <th class="whitespace-nowrap px-4 py-3 text-center">Status</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 bg-white">
@@ -111,8 +133,45 @@
                   <a href="{{ url_for('view_patient_case', case_id=row.id) }}" class="font-medium text-[#1A4D2E] hover:text-[#1A4D2E]">{{ row.patient_name|namecase }}</a>
                 </td>
                 <td class="px-4 py-3 text-center text-slate-700">{{ row.exposure_date }}</td>
-                <td class="px-4 py-3 text-center text-slate-700">{{ row.category }}</td>
-                <td class="px-4 py-3 text-center text-slate-700">{{ row.case_status }}</td>
+                <td class="w-px whitespace-nowrap px-4 py-3 text-center">
+                  {% set category_lower = (row.category or '')|lower %}
+                  {% if category_lower == 'category i' %}
+                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                      <span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-emerald-600"></span>
+                      Category I
+                    </span>
+                  {% elif category_lower == 'category ii' %}
+                    <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                      <span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-amber-600"></span>
+                      Category II
+                    </span>
+                  {% elif category_lower == 'category iii' %}
+                    <span class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20">
+                      <span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-rose-600"></span>
+                      Category III
+                    </span>
+                  {% else %}
+                    <span class="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 ring-1 ring-inset ring-slate-600/20">
+                      {{ row.category or 'N/A' }}
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="px-4 py-3 text-center">
+                  {% set status_lower = (row.case_status or '')|lower %}
+                  {% if status_lower in ('completed', 'complete', 'approved') %}
+                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">{{ row.case_status }}</span>
+                  {% elif status_lower == 'pending' %}
+                    <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20">Pending</span>
+                  {% elif status_lower in ('cancelled', 'canceled') %}
+                    <span class="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-600/20">Cancelled</span>
+                  {% elif status_lower == 'rescheduled' %}
+                    <span class="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 ring-1 ring-inset ring-sky-600/20">Rescheduled</span>
+                  {% elif status_lower == 'no show' %}
+                    <span class="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-500/20">No Show</span>
+                  {% else %}
+                    <span class="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-500/20">{{ row.case_status or 'N/A' }}</span>
+                  {% endif %}
+                </td>
               </tr>
             {% endfor %}
           {% else %}

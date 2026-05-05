@@ -62,6 +62,25 @@
     right: 0;
     top: 0;
     width: auto;
+    z-index: 20;
+  }
+  /* Fix scrollbar issues */
+  #pre-screening-modal {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+  #pre-screening-modal::-webkit-scrollbar {
+    width: 6px;
+  }
+  #pre-screening-modal::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  #pre-screening-modal::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+  }
+  #pre-screening-modal::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
   }
 </style>
 {# This template is included site-wide (via base_patient.html). Not all pages pass patient/clinics. #}
@@ -76,8 +95,8 @@
   {% endif %}
 
   <!-- Modal / card content -->
-  <div class="{% if _ps_emb %}relative block w-full{% else %}flex min-h-full items-center justify-center p-4{% endif %}">
-    <div class="relative w-full max-w-4xl transform overflow-visible rounded-xl bg-white shadow-xl transition-all">
+  <div class="{% if _ps_emb %}relative block w-full{% else %}flex min-h-full items-center justify-center p-4 sm:p-6{% endif %}">
+    <div class="relative w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all">
       <!-- Header -->
       <div class="sticky top-0 z-10 border-b border-slate-200 bg-white px-6 py-4">
         <div class="flex items-center justify-between">
@@ -147,7 +166,7 @@
               </div>
               <div>
                 <label for="victim_middle_initial" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Middle Initial <span class="font-normal text-slate-500">(optional)</span></label>
-                <input type="text" id="victim_middle_initial" name="victim_middle_initial" maxlength="2" data-self-value="" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="M.I.">
+                <input type="text" id="victim_middle_initial" name="victim_middle_initial" maxlength="2" value="{{ patient.middle_initial or '' }}" data-self-value="{{ patient.middle_initial or '' }}" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-[#1A4D2E] placeholder-slate-400 focus:border-[#1A4D2E] focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]" placeholder="M.I.">
               </div>
               <div>
                 <label for="victim_last_name" class="mb-2 block text-sm font-semibold text-[#1A4D2E]">Last Name</label>
@@ -882,6 +901,16 @@ function openPreScreeningModal(formType = 'case') {
   updateAgeFromDob();
   closeAffectedAreaPanel();
   updateAffectedAreaTriggerText();
+
+  // Retrieve current patient data if it's "Self"
+  var rel = document.getElementById('relationship_to_user');
+  if (rel) {
+    rel.value = 'Self';
+    if (typeof syncRelationshipVictimAutofill === 'function') {
+      syncRelationshipVictimAutofill();
+    }
+  }
+
   if (isAppointmentFlow) {
     buildCalendar();
   }

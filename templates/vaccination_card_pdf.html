@@ -5,55 +5,58 @@
 <style>
     @page {
         size: letter;
-        margin: 1.5cm;
+        margin: 0.3cm;
     }
     body {
         font-family: Helvetica, sans-serif;
-        font-size: 10pt;
+        font-size: 8pt;
         color: #1e293b;
+        margin: 0;
+        padding: 0;
+        line-height: 1.1;
     }
     .header-bg {
         background-color: #1A4D2E;
         color: #ffffff;
     }
     .header-sup {
-        font-size: 8pt;
+        font-size: 6pt;
         color: #a7f3d0;
         font-weight: bold;
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
     }
     .header-title {
-        font-size: 20pt;
+        font-size: 14pt;
         font-weight: bold;
         color: #ffffff;
     }
     .badge {
         background-color: #3f6e50; 
         color: #ffffff;
-        font-size: 9pt;
+        font-size: 7pt;
         font-weight: bold;
-        padding: 4px 10px;
+        padding: 1px 5px;
     }
     .label {
-        font-size: 7pt;
+        font-size: 5.5pt;
         color: #94a3b8;
         font-weight: bold;
         text-transform: uppercase;
     }
     .val {
-        font-size: 10pt;
+        font-size: 8pt;
         color: #1e293b;
         font-weight: bold;
     }
     .section-title {
-        font-size: 10pt;
+        font-size: 8pt;
         color: #1e293b;
         font-weight: bold;
         text-transform: uppercase;
     }
     .bar {
         background-color: #1A4D2E;
-        width: 4px;
+        width: 2px;
     }
     .tbl {
         width: 100%;
@@ -61,14 +64,14 @@
     .dose-th {
         background-color: #f8fafc;
         color: #94a3b8;
-        font-size: 8pt;
+        font-size: 6pt;
         font-weight: bold;
-        padding: 8px;
+        padding: 3px;
         text-align: left;
     }
     .dose-td {
-        padding: 8px;
-        font-size: 9pt;
+        padding: 3px;
+        font-size: 7pt;
         border-bottom: 1px solid #f1f5f9;
     }
 </style>
@@ -81,15 +84,22 @@
 <!-- HEADER -->
 <table class="header-bg" width="100%" cellpadding="0" cellspacing="0">
 <tr>
-    <td style="padding: 30px;">
-        <div class="header-sup">OFFICIAL MEDICAL RECORD</div>
-        <div class="header-title">Rabies Vaccination Card</div>
-        <br>
-        <table cellpadding="0" cellspacing="0">
+    <td style="padding: 12px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
-                <td class="badge">{{ victim_label }}</td>
-                <td width="10"></td>
-                <td style="color: #a7f3d0; font-size: 9pt; font-weight: bold;">ID: #{{ appointment_id }}</td>
+                <td>
+                    <div class="header-sup">OFFICIAL MEDICAL RECORD</div>
+                    <div class="header-title">Rabies Vaccination Card</div>
+                </td>
+                <td align="right" valign="bottom">
+                    <table cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td class="badge">{{ victim_label }}</td>
+                            <td width="8"></td>
+                            <td style="color: #a7f3d0; font-size: 7.5pt; font-weight: bold;">ID: #{{ appointment_id }}</td>
+                        </tr>
+                    </table>
+                </td>
             </tr>
         </table>
     </td>
@@ -97,117 +107,123 @@
 </table>
 
 <!-- PADDING WRAPPER FOR BODY -->
-<table width="100%" cellpadding="30" cellspacing="0"><tr><td>
+<table width="100%" cellpadding="10" cellspacing="0"><tr><td>
 
 <!-- PATIENT INFO -->
-<table class="tbl" cellpadding="5" cellspacing="0">
+<table class="tbl" cellpadding="1" cellspacing="0">
     <tr>
-        <td width="40%">
+        <td width="35%">
             <div class="label">Patient Full Name</div>
-            <div class="val">{{ victim_full_name }}</div>
+            <div class="val" style="font-size: 9pt;">{{ victim_full_name }}</div>
         </td>
-        <td width="30%">
+        <td width="20%">
             <div class="label">Gender / Age</div>
             <div class="val">{{ victim_gender }} / {{ victim_age or '-' }}</div>
         </td>
-        <td width="30%">
+        <td width="20%">
+            <div class="label">Birthday</div>
+            <div class="val">{{ victim_birthday }}</div>
+        </td>
+        <td width="25%">
             <div class="label">Contact</div>
             <div class="val">{{ victim_contact_number or '-' }}</div>
         </td>
     </tr>
     <tr>
-        <td width="40%" style="padding-top: 15px;">
+        <td colspan="4" style="padding-top: 5px;">
             <div class="label">Permanent Address</div>
-            <div class="val" style="font-weight: normal; font-size: 9pt;">{{ victim_address }}</div>
+            <div class="val" style="font-weight: normal; font-size: 7.5pt;">{{ victim_address }}</div>
         </td>
-        <td width="30%" style="padding-top: 15px;">
-            <div class="label">Birthday</div>
-            <div class="val">{{ victim_birthday }}</div>
-        </td>
-        <td width="30%"></td>
     </tr>
 </table>
 
-<hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+<hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 5px 0;">
 
 <!-- EXPOSURE & VACCINE -->
 <table class="tbl" cellpadding="0" cellspacing="0">
 <tr>
     <td width="48%" valign="top">
         <!-- EXPOSURE -->
-        <table cellpadding="0" cellspacing="0" style="margin-bottom: 15px;">
+        <table cellpadding="0" cellspacing="0" style="margin-bottom: 5px;">
             <tr>
                 <td class="bar"></td>
-                <td width="8"></td>
+                <td width="5"></td>
                 <td class="section-title">Exposure Details</td>
             </tr>
         </table>
 
-        <table width="100%" cellpadding="5" cellspacing="0">
+        <table width="100%" cellpadding="2" cellspacing="0">
             <tr>
                 <td width="50%" class="label" style="color: #64748b; font-weight: normal; text-transform: none;">Risk Category</td>
-                <td width="50%" class="val" align="right" style="color: #1A4D2E;">{{ category_value or 'N/A' }}</td>
+                <td width="50%" class="val" align="right" style="color: #1A4D2E; font-size: 7.5pt;">{{ category_value or 'N/A' }}</td>
             </tr>
             <tr>
                 <td class="label" style="color: #64748b; font-weight: normal; text-transform: none;">Exposure Type</td>
-                <td class="val" align="right">{{ type_of_exposure or 'N/A' }}</td>
+                <td class="val" align="right" style="font-size: 7.5pt;">{{ type_of_exposure or 'N/A' }}</td>
             </tr>
             <tr>
                 <td class="label" style="color: #64748b; font-weight: normal; text-transform: none;">Affected Area</td>
-                <td class="val" align="right">{{ affected_area or 'N/A' }}</td>
+                <td class="val" align="right" style="font-size: 7.5pt;">{{ affected_area or 'N/A' }}</td>
             </tr>
             <tr>
                 <td class="label" style="color: #64748b; font-weight: normal; text-transform: none;">Bleeding</td>
-                <td class="val" align="right">{{ bleeding_type or 'N/A' }}</td>
+                <td class="val" align="right" style="font-size: 7.5pt;">{{ bleeding_type or 'N/A' }}</td>
             </tr>
         </table>
 
-        <br>
-        <table width="100%" cellpadding="15" cellspacing="0" style="border: 1px solid #e2e8f0; background-color: #f8fafc;">
-            <tr>
-                <td>
-                    <div class="label">Local Treatment / Wound Description</div>
-                    <div style="font-size: 9pt; color: #475569; font-style: italic; margin-top: 5px;">"{{ wound_description or 'No specific wound treatment recorded.' }}"</div>
-                </td>
-            </tr>
-        </table>
+        <div style="margin-top: 5px; border: 1px solid #e2e8f0; background-color: #f8fafc; padding: 6px;">
+            <div class="label">Treatment / Wound Description</div>
+            <div style="font-size: 7.5pt; color: #475569; font-style: italic; margin-top: 2px;">"{{ wound_description or 'No specific wound treatment recorded.' }}"</div>
+        </div>
 
     </td>
     <td width="4%"></td> <!-- Gutter -->
     <td width="48%" valign="top">
         <!-- VACCINE -->
-        <table cellpadding="0" cellspacing="0" style="margin-bottom: 15px;">
+        <table cellpadding="0" cellspacing="0" style="margin-bottom: 5px;">
             <tr>
                 <td class="bar"></td>
-                <td width="8"></td>
+                <td width="5"></td>
                 <td class="section-title">Vaccine Information</td>
             </tr>
         </table>
 
-        <table width="100%" cellpadding="20" cellspacing="0" style="border: 1px solid #e2e8f0;">
+        <table width="100%" cellpadding="8" cellspacing="0" style="border: 1px solid #e2e8f0;">
             <tr>
                 <td>
                     <div class="label">Primary Vaccine</div>
-                    <div class="val" style="color: #1A4D2E; margin-bottom: 15px;">{{ vaccination_card.anti_rabies or '-' }}</div>
+                    <div class="val" style="color: #1A4D2E; margin-bottom: 4px;">{{ vaccination_card.anti_rabies or vaccination_card.pvrv or '-' }}</div>
                     
                     <table width="100%" cellpadding="0" cellspacing="0">
                         <tr>
                             <td width="50%">
-                                <div class="label">Batch Number</div>
-                                <div class="val">{{ vaccination_card.pcec_batch or '-' }}</div>
+                                <div class="label">Batch</div>
+                                <div class="val" style="font-size: 7.5pt;">{{ vaccination_card.pcec_batch or '-' }}</div>
                             </td>
                             <td width="50%">
-                                <div class="label">Expiry Date</div>
-                                <div class="val">{{ vaccination_card.pcec_expiry or '-' }}</div>
+                                <div class="label">Expiry</div>
+                                <div class="val" style="font-size: 7.5pt;">{{ vaccination_card.pcec_expiry or '-' }}</div>
                             </td>
                         </tr>
                     </table>
 
-                    <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
+                    <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 6px 0;">
 
                     <div class="label">Tetanus Prophylaxis</div>
-                    <div class="val">{{ vaccination_card.tetanus_prophylaxis or '-' }}</div>
-                    <div style="font-size: 8pt; color: #64748b; margin-top: 5px;">{{ vaccination_card.tetanus_toxoid or vaccination_card.ats or vaccination_card.htig or 'No tetanus vaccine details' }}</div>
+                    <div class="val" style="font-size: 7.5pt; margin-bottom: 4px;">{{ vaccination_card.tetanus_prophylaxis or vaccination_card.tetanus_toxoid or vaccination_card.ats or vaccination_card.htig or '-' }}</div>
+                    
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td width="50%">
+                                <div class="label">Batch</div>
+                                <div class="val" style="font-size: 7.5pt;">{{ vaccination_card.tetanus_batch or '-' }}</div>
+                            </td>
+                            <td width="50%">
+                                <div class="label">Expiry</div>
+                                <div class="val" style="font-size: 7.5pt;">{{ vaccination_card.tetanus_expiry or '-' }}</div>
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
         </table>
@@ -215,38 +231,34 @@
 </tr>
 </table>
 
-<br><br>
+<div style="height: 4px;"></div>
 
 <!-- DOSE RECORDS -->
 {% for sec in dose_course_sections %}
-<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 10px;">
+<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 4px;">
     <tr>
         <td width="50%" valign="bottom">
             <table cellpadding="0" cellspacing="0">
                 <tr>
                     <td class="bar"></td>
-                    <td width="8"></td>
-                    <td class="section-title">Dose Record: {{ sec.course_label }}</td>
+                    <td width="5"></td>
+                    <td class="section-title" style="font-size: 7.5pt;">Dose Record: {{ sec.course_label }}</td>
                 </tr>
             </table>
         </td>
         <td width="50%" align="right" valign="bottom">
-            <table cellpadding="0" cellspacing="0" align="right">
-                <tr>
-                    <td style="background-color: #ecfdf5; color: #065f46; font-size: 8pt; font-weight: bold; padding: 4px 10px;">
-                        {{ sec.doses_completed }} of {{ sec.expected_doses }} Doses Completed
-                    </td>
-                </tr>
-            </table>
+            <div style="display: inline-block; background-color: #ecfdf5; color: #065f46; font-size: 7pt; font-weight: bold; padding: 2px 6px;">
+                {{ sec.doses_completed }} of {{ sec.expected_doses }} Doses Completed
+            </div>
         </td>
     </tr>
 </table>
 
 <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e2e8f0;">
     <tr>
-        <td class="dose-th" width="15%">Day</td>
-        <td class="dose-th" width="20%">Date</td>
-        <td class="dose-th" width="25%">Vaccine Type</td>
+        <td class="dose-th" width="10%">Day</td>
+        <td class="dose-th" width="18%">Date</td>
+        <td class="dose-th" width="32%">Vaccine Type</td>
         <td class="dose-th" width="20%">Dose / Site</td>
         <td class="dose-th" width="20%">Given By</td>
     </tr>
@@ -257,25 +269,20 @@
         <td class="dose-td">{{ row.type_of_vaccine or '-' }}</td>
         <td class="dose-td">
             <strong>{{ row.dose or '-' }}</strong> 
-            <span style="color: #94a3b8; font-size: 8pt; font-style: italic;">({{ row.route_site or '-' }})</span>
+            <span style="color: #94a3b8; font-size: 6.5pt; font-style: italic;">({{ row.route_site or '-' }})</span>
         </td>
         <td class="dose-td">{{ row.given_by or '-' }}</td>
     </tr>
     {% endfor %}
 </table>
-<br>
+<div style="height: 3px;"></div>
 {% endfor %}
 
-<br>
 <!-- REMARKS -->
-<table width="100%" cellpadding="15" cellspacing="0" style="background-color: #f8fafc;">
-    <tr>
-        <td align="center">
-            <div class="label" style="margin-bottom: 5px;">Remarks & Notes</div>
-            <div style="font-size: 9pt; color: #475569; font-style: italic;">{{ vaccination_card.remarks or pre_screening_vaccination_note or 'No additional remarks recorded for this vaccination card.' }}</div>
-        </td>
-    </tr>
-</table>
+<div style="margin-top: 5px; background-color: #f8fafc; padding: 6px; border: 1px solid #f1f5f9; text-align: center;">
+    <div class="label" style="margin-bottom: 2px;">Remarks & Notes</div>
+    <div style="font-size: 7.5pt; color: #475569; font-style: italic;">{{ vaccination_card.remarks or pre_screening_vaccination_note or 'No additional remarks recorded.' }}</div>
+</div>
 
 </td></tr></table>
 <!-- END PADDING WRAPPER -->

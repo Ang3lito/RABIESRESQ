@@ -16,12 +16,12 @@
 {% block main_content %}
   <!-- Program Insights (System-wide) -->
   <form method="get" action="{{ url_for('super_reporting') }}"
-    class="mb-6 grid grid-cols-1 gap-4 rounded-[2rem] border border-slate-200 bg-slate-50/80 p-6 sm:grid-cols-2 lg:grid-cols-4">
+    class="mb-6 grid grid-cols-1 gap-5 rounded-[2rem] border border-slate-200 bg-slate-50/80 p-8 sm:grid-cols-2 lg:grid-cols-12">
     
-    <div class="flex flex-col gap-1">
-      <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Clinic Branch</label>
+    <div class="flex flex-col gap-1.5 lg:col-span-3">
+      <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Clinic Branch</label>
       <select name="insights_clinic_id"
-        class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 focus:ring">
+        class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4">
         <option value="">All Clinics</option>
         {% for c in clinics %}
         <option value="{{ c.id }}" {% if target_clinic_id == c.id %}selected{% endif %}>{{ c.name }}</option>
@@ -29,10 +29,10 @@
       </select>
     </div>
 
-    <div class="flex flex-col gap-1">
-      <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Period</label>
+    <div class="flex flex-col gap-1.5 lg:col-span-2">
+      <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Period</label>
       <select name="period" id="period-select"
-        class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 focus:ring"
+        class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4"
         onchange="toggleDateRange(this.value)">
         <option value="30d" {% if period == '30d' %}selected{% endif %}>Last 30 Days</option>
         <option value="yearly" {% if period == 'yearly' %}selected{% endif %}>Yearly</option>
@@ -40,31 +40,31 @@
       </select>
     </div>
 
-    <div id="year-select-div" class="flex flex-col gap-1 {{ 'hidden' if period != 'yearly' }}">
-      <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Year</label>
+    <div id="year-select-div" class="flex flex-col gap-1.5 lg:col-span-2 {{ 'hidden' if period != 'yearly' }}">
+      <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Year</label>
       <select name="year"
-        class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 focus:ring">
+        class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4">
         {% for y in admin_year_options %}
         <option value="{{ y }}" {% if yearly_year == y %}selected{% endif %}>{{ y }}</option>
         {% endfor %}
       </select>
     </div>
 
-    <div id="date-range-div" class="flex flex-col gap-1 col-span-1 lg:col-span-2 {{ 'hidden' if period != 'custom' }}">
-      <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Custom Dates</label>
+    <div id="date-range-div" class="flex flex-col gap-1.5 col-span-1 lg:col-span-4 {{ 'hidden' if period != 'custom' }}">
+      <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Custom Dates</label>
       <div class="flex items-center gap-2">
         <input type="date" name="date_from" value="{{ date_from }}"
-          class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
-        <span class="text-slate-400">to</span>
+          class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4" />
+        <span class="text-slate-400 font-bold text-xs uppercase">to</span>
         <input type="date" name="date_to" value="{{ date_to }}"
-          class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-[#1A4D2E]/30 focus:ring" />
+          class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4" />
       </div>
     </div>
 
-    <div class="flex flex-col gap-1">
-      <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Barangay</label>
+    <div class="flex flex-col gap-1.5 lg:col-span-2">
+      <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Barangay</label>
       <select name="insights_barangay"
-        class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 focus:ring">
+        class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4">
         <option value="">All Barangays</option>
         {% for b in insights_barangay_options %}
         <option value="{{ b }}" {% if insights_filters.get('barangay') == b %}selected{% endif %}>{{ b }}</option>
@@ -72,10 +72,10 @@
       </select>
     </div>
 
-    <div class="flex flex-col gap-1">
-      <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Animal Type</label>
+    <div class="flex flex-col gap-1.5 lg:col-span-2">
+      <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Animal Type</label>
       <select name="insights_animal"
-        class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 focus:ring">
+        class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4">
         <option value="">All Animals</option>
         {% for a in insights_animal_options %}
         <option value="{{ a }}" {% if insights_filters.get('animal') == a %}selected{% endif %}>{{ a }}</option>
@@ -83,10 +83,10 @@
       </select>
     </div>
 
-    <div class="flex flex-col gap-1">
-      <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Bite Category</label>
+    <div class="flex flex-col gap-1.5 lg:col-span-3">
+      <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Bite Category</label>
       <select name="insights_bite"
-        class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#1A4D2E]/30 focus:ring">
+        class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none ring-[#1A4D2E]/20 transition-all focus:border-[#1A4D2E] focus:ring-4">
         <option value="">All Categories</option>
         {% for bt in insights_bite_options %}
         <option value="{{ bt }}" {% if insights_filters.get('bite_type') == bt %}selected{% endif %}>{{ bt }}</option>
@@ -94,18 +94,18 @@
       </select>
     </div>
 
-    <div class="flex flex-col gap-2 lg:col-span-1 lg:flex-row lg:items-end">
+    <div class="flex flex-col gap-3 lg:col-span-4 lg:flex-row lg:items-end xl:col-span-3">
       <button type="submit"
-        class="flex-1 rounded-xl bg-[#1A4D2E] px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#1A4D2E]/20 transition hover:bg-[#1A4D2E]/90">
+        class="flex-1 whitespace-nowrap rounded-2xl bg-[#1A4D2E] px-8 py-3.5 text-sm font-bold text-white shadow-xl shadow-[#1A4D2E]/20 transition-all hover:scale-[1.02] hover:bg-[#1A4D2E]/90 active:scale-95">
         Apply Filters
       </button>
       
       <div class="relative flex-none" id="export-dropdown-root">
         <button type="button" onclick="toggleExportDropdown()"
-          class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 shadow-sm hover:bg-slate-50">
-          <i class="fa-solid fa-download text-xs"></i>
-          Export
-          <i class="fa-solid fa-chevron-down text-[10px] opacity-50"></i>
+          class="flex h-full items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-bold text-slate-600 shadow-sm transition-colors hover:bg-slate-50">
+          <i class="fa-solid fa-download text-xs text-slate-400"></i>
+          <span class="hidden sm:inline">Export</span>
+          <i class="fa-solid fa-chevron-down text-[10px] opacity-40"></i>
         </button>
         
         <div id="export-dropdown" class="absolute right-0 top-full z-[60] mt-2 hidden w-48 origin-top-right rounded-2xl border border-slate-200 bg-white p-2 shadow-xl ring-1 ring-black/5">

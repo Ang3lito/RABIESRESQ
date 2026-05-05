@@ -213,6 +213,29 @@ def enforce_staff_password_change():
     return redirect(url_for("auth.staff_force_password"))
 
 
+@bp.before_app_request
+def enforce_admin_password_change():
+    user_id = session.get("user_id")
+    if not user_id or session.get("role") != "system_admin":
+        return None
+    if g.get("user") is None:
+        return None
+    must_change = g.user["must_change_password"] if "must_change_password" in g.user.keys() else 0
+    if not must_change:
+        return None
+
+    endpoint = request.endpoint or ""
+    allowed_endpoints = {
+        "auth.admin_force_password",
+        "auth.admin_force_password_post",
+        "auth.logout",
+        "static",
+    }
+    if endpoint in allowed_endpoints:
+        return None
+    return redirect(url_for("auth.admin_force_password"))
+
+
 @bp.get("/login")
 def login():
     return render_template("login.html")
@@ -275,6 +298,9 @@ def login_post():
             return redirect(url_for("auth.staff_force_password"))
         return redirect(url_for("staff_dashboard"))
     if user["role"] == "system_admin":
+        mc = int(user["must_change_password"] or 0) if "must_change_password" in user.keys() else 0
+        if mc:
+            return redirect(url_for("auth.admin_force_password"))
         return redirect(url_for("admin_analytics", tab="overview", period="30d"))
     if user["role"] == "super_admin":
         return redirect(url_for("super_reporting"))
@@ -645,6 +671,50 @@ def staff_force_password_post():
 
     flash("Password updated successfully.", "success")
     return redirect(url_for("staff_dashboard"))
+
+
+@bp.get("/admin/force-password")
+@login_required
+def admin_force_password():
+    if session.get("role") != "system_admin":
+        return redirect(url_for("index"))
+    return render_template("admin_force_password.html")
+
+
+@bp.post("/admin/force-password")
+@login_required
+def admin_force_password_post():
+    if session.get("role") != "system_admin":
+        return redirect(url_for("index"))
+
+    new_password = request.form.get("new_password", "").strip()
+    confirm_password = request.form.get("confirm_password", "").strip()
+
+    if len(new_password) < 8:
+        flash("Password must be at least 8 characters.", "error")
+        return render_template("admin_force_password.html")
+    if new_password != confirm_password:
+        flash("Passwords do not match.", "error")
+        return render_template("admin_force_password.html")
+
+    db = get_db()
+    try:
+        db.execute(
+            """
+            UPDATE users
+            SET password_hash = ?, must_change_password = 0, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            (generate_password_hash(new_password), session["user_id"]),
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+        flash("Failed to update password. Please try again.", "error")
+        return render_template("admin_force_password.html")
+
+    flash("Password updated successfully.", "success")
+    return redirect(url_for("admin_analytics", tab="overview", period="30d"))
 
 
 @bp.get("/logout")

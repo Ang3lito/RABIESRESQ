@@ -114,7 +114,30 @@
                 </div>
                 <div>
                   <dt class="text-slate-500">Category / Risk</dt>
-                  <dd class="font-semibold text-slate-800">{{ appointment.category }}</dd>
+                  <dd class="mt-1">
+                    {% set category_value = appointment.category or 'N/A' %}
+                    {% set category_lower = (category_value or '')|lower %}
+                    {% if category_lower == 'category i' %}
+                      <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                        <span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-emerald-600"></span>
+                        Category I
+                      </span>
+                    {% elif category_lower == 'category ii' %}
+                      <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                        <span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-amber-600"></span>
+                        Category II
+                      </span>
+                    {% elif category_lower == 'category iii' %}
+                      <span class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20">
+                        <span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-rose-600"></span>
+                        Category III
+                      </span>
+                    {% else %}
+                      <span class="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 ring-1 ring-inset ring-slate-600/20">
+                        {{ category_value }}
+                      </span>
+                    {% endif %}
+                  </dd>
                 </div>
                 <div>
                   <dt class="text-slate-500">Type of exposure</dt>

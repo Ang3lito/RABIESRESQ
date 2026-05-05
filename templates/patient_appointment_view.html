@@ -12,16 +12,17 @@
           </h1>
           {% set raw_status = appointment.status or 'Scheduled' %}
           {% set display_status = 'Cancelled' if raw_status in ['Removed', 'Cancelled'] else 'Scheduled' if raw_status == 'Approved' else raw_status %}
-          {% if display_status == 'Cancelled' %}
-          <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-sm font-medium text-red-700">
-            {{ display_status }}
-          </span>
-          {% elif display_status == 'Expired' %}
-          <span class="inline-flex items-center rounded-full bg-slate-300 px-2.5 py-0.5 text-sm font-medium text-slate-800">Expired</span>
+          {% set st_lower = display_status|lower %}
+          {% if st_lower in ('scheduled', 'approved', 'completed', 'complete') %}
+            <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-sm font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">{{ display_status }}</span>
+          {% elif st_lower in ('cancelled', 'canceled', 'removed') %}
+            <span class="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-sm font-semibold text-red-700 ring-1 ring-inset ring-red-600/20">{{ display_status }}</span>
+          {% elif st_lower == 'pending' %}
+            <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-sm font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20">{{ display_status }}</span>
+          {% elif st_lower == 'rescheduled' %}
+            <span class="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-0.5 text-sm font-semibold text-sky-700 ring-1 ring-inset ring-sky-600/20">{{ display_status }}</span>
           {% else %}
-          <span class="inline-flex items-center rounded-full bg-[#1A4D2E]/10 px-2.5 py-0.5 text-sm font-medium text-[#1A4D2E]">
-            {{ display_status }}
-          </span>
+            <span class="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-0.5 text-sm font-semibold text-slate-600 ring-1 ring-inset ring-slate-500/20">{{ display_status }}</span>
           {% endif %}
         </div>
         <p class="mt-1 text-sm text-slate-600">
@@ -156,8 +157,19 @@
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <dt class="text-slate-500">Status</dt>
-                <dd class="mt-1 font-semibold text-[#1A4D2E]">
-                  {{ display_status }}
+                <dd class="mt-1">
+                  {% set st_lower = display_status|lower %}
+                  {% if st_lower in ('scheduled', 'approved', 'completed', 'complete') %}
+                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">{{ display_status }}</span>
+                  {% elif st_lower in ('cancelled', 'canceled', 'removed') %}
+                    <span class="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-600/20">{{ display_status }}</span>
+                  {% elif st_lower == 'pending' %}
+                    <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20">{{ display_status }}</span>
+                  {% elif st_lower == 'rescheduled' %}
+                    <span class="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 ring-1 ring-inset ring-sky-600/20">{{ display_status }}</span>
+                  {% else %}
+                    <span class="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-500/20">{{ display_status }}</span>
+                  {% endif %}
                 </dd>
               </div>
               <div>
@@ -191,13 +203,24 @@
               {% set category_lower = (category_value or '')|lower %}
               <dd class="mt-1">
                 {% if category_lower == 'category i' %}
-                  <span class="rounded-full bg-[#1A4D2E]/10 px-3 py-1 text-xs font-semibold text-[#1A4D2E]">{{ category_value }}</span>
+                  <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                    <span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-emerald-600"></span>
+                    Category I
+                  </span>
                 {% elif category_lower == 'category ii' %}
-                  <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">{{ category_value }}</span>
+                  <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                    <span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-amber-600"></span>
+                    Category II
+                  </span>
                 {% elif category_lower == 'category iii' %}
-                  <span class="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">{{ category_value }}</span>
+                  <span class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20">
+                    <span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-rose-600"></span>
+                    Category III
+                  </span>
                 {% else %}
-                  <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{{ category_value }}</span>
+                  <span class="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 ring-1 ring-inset ring-slate-600/20">
+                    {{ category_value }}
+                  </span>
                 {% endif %}
               </dd>
             </div>

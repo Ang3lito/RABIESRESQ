@@ -10,26 +10,18 @@
 
 {% macro status_badge(text) %}
   {% set t = (text or '')|lower %}
-  {% if t in ('completed', 'complete') %}
-    <span class="rounded-full bg-[#1A4D2E]/10 px-2.5 py-1 text-xs font-semibold text-[#1A4D2E]">{{ text }}</span>
-  {% elif t in ('cancelled', 'canceled', 'removed') %}
-    <span class="rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">{{ text }}</span>
-  {% elif t == 'expired' %}
-    <span class="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-800">{{ text }}</span>
-  {% elif t in ('scheduled', 'pending', 'approved', 'rescheduled', 'in progress') %}
-    <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">{{ text }}</span>
-  {% elif t == 'ongoing' %}
-    <span class="rounded-full bg-[#1A4D2E]/10 px-2.5 py-1 text-xs font-semibold text-[#1A4D2E]">{{ text }}</span>
-  {% elif t in ('high risk', 'high-risk') %}
-    <span class="rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">{{ text }}</span>
-  {% elif t == 'active' %}
-    <span class="rounded-full bg-[#1A4D2E]/10 px-2.5 py-1 text-xs font-semibold text-[#1A4D2E]">{{ text }}</span>
-  {% elif t in ('inactive', 'deactivated') %}
-    <span class="rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">{{ text }}</span>
-  {% elif 'setup' in t %}
-    <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">{{ text }}</span>
+  {% if t in ('completed', 'complete', 'approved', 'active', 'ongoing') %}
+    <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">{{ text }}</span>
+  {% elif t in ('cancelled', 'canceled', 'removed', 'high risk', 'high-risk', 'inactive', 'deactivated') %}
+    <span class="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-600/20">{{ text }}</span>
+  {% elif t in ('pending', 'scheduled', 'in progress') or 'setup' in t %}
+    <span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20">{{ text }}</span>
+  {% elif t == 'rescheduled' %}
+    <span class="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 ring-1 ring-inset ring-sky-600/20">{{ text }}</span>
+  {% elif t in ('no show', 'missed', 'expired') %}
+    <span class="rounded-full bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-500/20">{{ text }}</span>
   {% else %}
-    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{{ text or 'N/A' }}</span>
+    <span class="rounded-full bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-500/20">{{ text or 'N/A' }}</span>
   {% endif %}
 {% endmacro %}
 
